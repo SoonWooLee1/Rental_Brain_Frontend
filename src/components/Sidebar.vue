@@ -13,6 +13,9 @@
       <div class="user-info">
         <span class="name">DevOops</span>
         <span class="role">시스템 관리자</span>
+            <button type="button" @click.stop="logout">
+          로그아웃
+        </button>
       </div>
 
       <!-- 알림 -->
@@ -71,7 +74,7 @@
       <el-sub-menu index="customer">
         <template #title>
           <el-icon><UserFilled /></el-icon>
-          <span>고객관리</span>
+          <span>고객 관리</span>
         </template>
 
         <el-menu-item index="/customers">
@@ -79,10 +82,20 @@
           고객 목록
         </el-menu-item>
 
-        <el-menu-item index="/cs">
-          <el-icon><ChatDotRound /></el-icon>
-          고객응대
-        </el-menu-item>
+        <el-sub-menu index="cs">
+          <template #title>
+            <el-icon><ChatDotRound /></el-icon>
+            <span>고객 응대</span>
+          </template>
+          
+          <el-menu-item index="/cs/supports">
+            <el-icon><QuestionFilled /></el-icon> 문의 관리
+          </el-menu-item>
+          
+          <el-menu-item index="/cs/feedbacks">
+            <el-icon><Star /></el-icon> 피드백 관리
+          </el-menu-item>
+        </el-sub-menu>
 
         <el-menu-item index="/analysis/overview">
           <el-icon><TrendCharts /></el-icon>
@@ -100,7 +113,7 @@
       <el-sub-menu index="business">
         <template #title>
           <el-icon><Briefcase /></el-icon>
-          <span>영업관리</span>
+          <span>영업 관리</span>
         </template>
 
         <el-menu-item index="/quotes">
@@ -123,7 +136,7 @@
       <el-sub-menu index="product">
         <template #title>
           <el-icon><Box /></el-icon>
-          <span>제품관리</span>
+          <span>제품 관리</span>
         </template>
 
         <el-menu-item index="/assets">
@@ -133,14 +146,14 @@
 
         <el-menu-item index="/as">
           <el-icon><Tools /></el-icon>
-          AS/정기점검
+          AS / 정기점검
         </el-menu-item>
       </el-sub-menu>
 
       <!-- 결재관리 -->
       <el-menu-item index="/approvals">
         <el-icon><Notebook /></el-icon>
-        전자결재
+        전자 결재
       </el-menu-item>
 
       <!-- 시스템메뉴 -->
@@ -150,10 +163,14 @@
       </el-menu-item>
 
     </el-menu>
+
   </div>
 </template>
 
 <script setup>
+import api from "@/api/axios";
+import { useAuthStore } from "@/store/auth.store";
+import { useToastStore } from "@/store/useToast";
 import {
   Bell,
   Grid,
@@ -169,8 +186,32 @@ import {
   Box,
   Setting,
   Tools,
-  CreditCard
+  CreditCard,
+  QuestionFilled, // 문의 관리 아이콘
+  Star            // 피드백 관리 아이콘
 } from "@element-plus/icons-vue";
+import { useRouter } from "vue-router";
+
+const authStore = useAuthStore();
+const toastStore = useToastStore();
+const router = useRouter();
+
+const logout = async ()=>{
+  console.log('empId:',authStore.empId);
+  authStore.logout();
+  try{
+    const response = await api.post('/emp/logout',{
+      empId:authStore.empId
+    })
+    console.log(response.data);
+  }catch(e){
+    console.log('로그아웃 통신 fail');
+  }
+  console.log('empId:',authStore.empId);
+  toastStore.showToast('로그아웃' + authStore.empId);
+  router.push('/login');
+}
+
 </script>
 
 <style scoped>
