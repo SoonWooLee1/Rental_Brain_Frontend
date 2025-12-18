@@ -1,34 +1,27 @@
+// src/api/customerlist.js
 import api from './axios'
 
-// 고객 목록 조회 (파라미터: pageNum, amount, keyword, segments)
+// 1. 고객 목록 조회 (페이징 + 검색)
 export const getCustomerList = (params) => {
-  return api.get('/customers/all', {
-    params: { ...params },
-    paramsSerializer: (params) => {
-      const searchParams = new URLSearchParams()
-      for (const key in params) {
-        const value = params[key]
-        if (Array.isArray(value)) {
-          // 배열인 경우 (예: segments=['VIP', '신규']) -> segments=VIP&segments=신규
-          value.forEach(v => searchParams.append(key, v))
-        } else if (value !== undefined && value !== null && value !== '') {
-          // 일반 값인 경우 (빈 문자열 제외)
-          searchParams.append(key, value)
-        }
-      }
-      return searchParams.toString()
-    }
-  })
+  return api.get('/customers/all', { params })
 }
 
-// KPI 조회
-export const getCustomerKpi = () => api.get('/customers/kpi')
+// 2. 고객 상세 조회 (전체 이력 포함)
+export const getCustomerDetail = (id) => {
+  return api.get(`/customers/${id}`)
+}
 
-// 상세 조회
-export const getCustomerDetail = (id) => api.get(`/customers/${id}`)
+// 3. 고객 정보 등록 (신규 추가)
+export const createCustomer = (data) => {
+  return api.post('/customers', data)
+}
 
-// [Command] RPC 스타일 URL
-export const createCustomer = (data) => api.post('/customers/insertCustomer', data)
-export const updateCustomer = (id, data) => api.put(`/customers/updateCustomer/${id}`, data)
-export const deleteCustomer = (id) => api.delete(`/customers/deleteCustomer/${id}`)
-export const restoreCustomer = (id) => api.put(`/customers/restoreCustomer/${id}`)
+// 4. 고객 정보 수정 (★ 요청하신 함수 추가)
+export const updateCustomer = (id, data) => {
+  return api.put(`/customers/${id}`, data)
+}
+
+// 5. 고객 KPI 데이터 조회 (고객 목록 화면용)
+export const getCustomerKpi = () => {
+  return api.get('/customers/kpi')
+}

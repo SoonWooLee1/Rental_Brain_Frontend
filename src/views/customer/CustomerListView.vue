@@ -1,69 +1,99 @@
 <template>
   <div class="page-container">
-    <div class="header-row">
-      <h2>고객 목록</h2>
-      <el-button type="primary" :icon="Plus" @click="openRegisterModal">신규 기업 등록</el-button>
+    <div class="kpi-wrapper">
+      <div class="kpi-box">
+        <span class="kpi-title">총 거래 고객</span>
+        <span class="kpi-count">{{ kpiData.totalCustomers?.toLocaleString() || 0 }}명</span>
+      </div>
+      <div class="kpi-box">
+        <span class="kpi-title">VIP 고객</span>
+        <span class="kpi-count highlight">{{ kpiData.vipCustomers?.toLocaleString() || 0 }}명</span>
+      </div>
+      <div class="kpi-box warning-box">
+        <span class="kpi-title">이탈 위험</span>
+        <span class="kpi-count warning">{{ kpiData.riskCustomers?.toLocaleString() || 0 }}명</span>
+      </div>
+      <div class="kpi-box danger-box">
+        <span class="kpi-title">블랙리스트</span>
+        <span class="kpi-count danger">{{ kpiData.blacklistCustomers?.toLocaleString() || 0 }}명</span>
+      </div>
     </div>
+
+    <div class="action-header">
+      <h2>고객 목록</h2>
+      <div class="btn-group">
+        <el-button class="btn-filter" @click="showFilterModal = true">
+          <img src="@/assets/Icon-1.svg" width="14" style="margin-right:5px"/> 필터 설정
+        </el-button>
+        <el-button type="primary" @click="showRegisterModal = true">신규 기업 등록</el-button>
+      </div>
+    </div>
+
     <el-card shadow="never" class="table-card">
-      <el-table :data="customers" style="width: 100%" v-loading="loading">
-        <el-table-column prop="customerCode" label="ID" width="100" />
+      <el-table :data="customerList" style="width: 100%" v-loading="loading">
+        <el-table-column prop="customerCode" label="ID" width="120" />
         <el-table-column label="기업명" min-width="150">
-          <template #default="scope">
-            <span style="font-weight: 600; cursor: pointer" @click="goDetail(scope.row.id)">{{ scope.row.name }}</span>
+          <template #default="{ row }">
+            <span class="link-name" @click="goDetail(row.id)">{{ row.name }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="inCharge" label="담당자" width="100" />
-        <el-table-column prop="dept" label="부서/직책" width="120" />
-        <el-table-column label="연락처" width="130">
-           <template #default="scope">{{ formatPhoneNumber(scope.row.callNum) }}</template>
+        <el-table-column label="연락처" width="140">
+          <template #default="{ row }">{{ formatPhone(row.callNum) }}</template>
         </el-table-column>
-        <el-table-column label="첫 계약일" width="120">
-          <template #default="scope">{{ formatDate(scope.row.firstContractDate) }}</template>
+        <el-table-column label="세그먼트" width="150">
+          <template #default="{ row }">
+            <el-tag :type="getSegmentColor(row.segmentName)">{{ row.segmentName }}</el-tag>
+          </template>
         </el-table-column>
-        <el-table-column label="세그먼트" width="120">
-          <template #default="scope">
-            <el-tag :type="getSegmentColor(scope.row.segmentName)" effect="light">
-              {{ scope.row.segmentName || '미지정' }}
+        <el-table-column label="상태" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.isDeleted === 'N' ? 'success' : 'info'" size="small">
+              {{ row.isDeleted === 'N' ? '활성' : '비활성' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="총 거래액" width="140" align="right">
-          <template #default="scope">{{ (scope.row.totalTransactionAmount || 0).toLocaleString() }}원</template>
-        </el-table-column>
-        <el-table-column prop="contractCount" label="계약 수" width="80" align="center">
-           <template #default="scope">{{ scope.row.contractCount }}건</template>
-        </el-table-column>
-        <el-table-column label="액션" width="100" align="center">
-          <template #default="scope">
-            <el-button link type="primary" @click="goDetail(scope.row.id)">상세보기</el-button>
-          </template>
-        </el-table-column>
       </el-table>
-
-      <div class="pagination-row">
-        <el-pagination
-          background
-          layout="prev, pager, next"
-          :total="totalCount"
-          :page-size="pageSize"
-          @current-change="handlePageChange"
-        />
-      </div>
     </el-card>
 
-    <el-dialog v-model="registerModalVisible" title="신규 기업 등록" width="600px">
-      <el-form :model="registerForm" label-width="140px">
-        <el-form-item label="기업명" required><el-input v-model="registerForm.name" placeholder="예: (주)데브옵스" /></el-form-item>
-        <el-form-item label="담당자"><el-input v-model="registerForm.inCharge" placeholder="예: 홍길동" /></el-form-item>
-        <el-form-item label="부서/직책"><el-input v-model="registerForm.dept" placeholder="예: 경영지원 / 대리" /></el-form-item>
-        <el-form-item label="사업자번호"><el-input v-model="registerForm.businessNum" placeholder="예: 123-45-67890" /></el-form-item>
-        <el-form-item label="전화번호"><el-input v-model="registerForm.callNum" placeholder="예: 02-1234-5678" /></el-form-item>
-        <el-form-item label="휴대폰"><el-input v-model="registerForm.phone" placeholder="예: 010-1234-5678" /></el-form-item>
-        <el-form-item label="이메일"><el-input v-model="registerForm.email" placeholder="예: example@email.com" /></el-form-item>
-        <el-form-item label="주소"><el-input v-model="registerForm.addr" placeholder="주소를 입력하세요" /></el-form-item>
+    <el-dialog v-model="showFilterModal" title="필터 설정" width="450px">
+      <div class="filter-section">
+        <p class="label">고객 세그먼트</p>
+        <el-checkbox-group v-model="filter.segments" class="segment-grid">
+          <el-checkbox label="VIP 고객" border>VIP</el-checkbox>
+          <el-checkbox label="신규 고객" border>신규</el-checkbox>
+          <el-checkbox label="일반 고객" border>일반</el-checkbox>
+          <el-checkbox label="이탈 위험 고객" border>이탈위험</el-checkbox>
+          <el-checkbox label="블랙리스트 고객" border>블랙리스트</el-checkbox>
+          <el-checkbox label="확장 의사 고객 (기회 고객)" border>확장/기회</el-checkbox>
+        </el-checkbox-group>
+      </div>
+      <div class="filter-section">
+        <p class="label">활성화 상태</p>
+        <el-radio-group v-model="filter.status">
+          <el-radio label="ALL">전체</el-radio>
+          <el-radio label="ACTIVE">활성</el-radio>
+          <el-radio label="INACTIVE">비활성</el-radio>
+        </el-radio-group>
+      </div>
+      <template #footer>
+        <el-button @click="showFilterModal = false">닫기</el-button>
+        <el-button type="primary" @click="fetchData">적용</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="showRegisterModal" title="신규 기업 등록" width="600px">
+      <el-form :model="regForm" label-width="120px">
+        <el-form-item label="기업명" required><el-input v-model="regForm.name" /></el-form-item>
+        <el-form-item label="사업자번호"><el-input v-model="regForm.businessNum" placeholder="하이픈 없이 숫자만 입력" /></el-form-item>
+        <el-form-item label="전화번호"><el-input v-model="regForm.callNum" placeholder="하이픈 없이 숫자만 입력" /></el-form-item>
+        <el-form-item label="휴대폰"><el-input v-model="regForm.phone" placeholder="하이픈 없이 숫자만 입력" /></el-form-item>
+        <el-form-item label="담당자"><el-input v-model="regForm.inCharge" /></el-form-item>
+        <el-form-item label="이메일"><el-input v-model="regForm.email" /></el-form-item>
+        <el-form-item label="주소"><el-input v-model="regForm.addr" /></el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="registerModalVisible = false">취소</el-button>
+        <el-button @click="showRegisterModal = false">취소</el-button>
         <el-button type="primary" @click="handleRegister">등록</el-button>
       </template>
     </el-dialog>
@@ -71,65 +101,84 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
-import { getCustomerList, createCustomer } from '@/api/customerlist'
-import { ElMessage } from 'element-plus'
-import dayjs from 'dayjs'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { getCustomerList, getCustomerKpi, createCustomer } from '@/api/customerlist';
+import { ElMessage } from 'element-plus';
 
-const router = useRouter()
-const customers = ref([])
-const totalCount = ref(0)
-const loading = ref(false)
-const searchKeyword = ref('')
-const currentPage = ref(1)
-const pageSize = ref(10)
-const registerModalVisible = ref(false)
-const registerForm = ref({ name: '', inCharge: '', dept: '', businessNum: '', callNum: '', phone: '', email: '', addr: '' })
-
-// 500 에러 해결: 외래키(channelId, segmentId) 기본값 설정
-const handleRegister = async () => {
-  try {
-    const payload = {
-      ...registerForm.value,
-      channelId: 1, // DB에 존재하는 ID여야 함
-      segmentId: 1  // DB에 존재하는 ID여야 함
-    }
-    // 하이픈 제거
-    if(payload.businessNum) payload.businessNum = payload.businessNum.replace(/-/g, '')
-    if(payload.callNum) payload.callNum = payload.callNum.replace(/-/g, '')
-    if(payload.phone) payload.phone = payload.phone.replace(/-/g, '')
-
-    await createCustomer(payload)
-    ElMessage.success('등록되었습니다.')
-    registerModalVisible.value = false
-    fetchData()
-  } catch(e) {
-    ElMessage.error('등록 실패')
-  }
-}
+const router = useRouter();
+const kpiData = ref({
+  totalCustomers: 0,
+  vipCustomers: 0,
+  riskCustomers: 0,
+  blacklistCustomers: 0
+});
+const customerList = ref([]);
+const loading = ref(false);
+const showFilterModal = ref(false);
+const showRegisterModal = ref(false);
+const filter = ref({ segments: [], status: 'ACTIVE' });
+const regForm = ref({});
 
 const fetchData = async () => {
-  loading.value = true
+  loading.value = true;
+  showFilterModal.value = false;
   try {
-    const params = {
-      pageNum: currentPage.value,
-      amount: pageSize.value,
-      keyword: searchKeyword.value
-    }
-    const res = await getCustomerList(params)
-    customers.value = res.data.contents
-    totalCount.value = res.data.totalCount
-  } catch (e) { console.error(e) } 
-  finally { loading.value = false }
-}
+    const kpiRes = await getCustomerKpi();
+    if(kpiRes.data) kpiData.value = kpiRes.data;
+    
+    // 필터 조건 전송
+    const listRes = await getCustomerList({
+        pageNum: 1, 
+        amount: 10,
+        segments: filter.value.segments, // 선택된 세그먼트 배열 전송
+        status: filter.value.status
+    });
+    customerList.value = listRes.data.contents;
+  } catch (e) {
+    console.error(e);
+  } finally {
+    loading.value = false;
+  }
+};
 
-const handlePageChange = (val) => { currentPage.value = val; fetchData() }
-const goDetail = (id) => router.push(`/customers/${id}`)
-const formatDate = (d) => d ? dayjs(d).format('YYYY-MM-DD') : '-'
-const formatPhoneNumber = (num) => { /* 포맷팅 생략 */ return num }
-const getSegmentColor = (seg) => { /* 색상 로직 생략 */ return 'success' }
+const handleRegister = async () => {
+  const payload = { ...regForm.value };
+  ['businessNum', 'callNum', 'phone'].forEach(k => {
+    if(payload[k]) payload[k] = payload[k].replace(/-/g, '');
+  });
+  
+  try {
+    await createCustomer(payload);
+    ElMessage.success('등록되었습니다.');
+    showRegisterModal.value = false;
+    regForm.value = {}; // 초기화
+    fetchData();
+  } catch(e) { 
+    ElMessage.error('등록 실패'); 
+  }
+};
 
-onMounted(() => { fetchData() })
+const formatPhone = (v) => v ? v.replace(/(^02|^0505|^1[0-9]{3}|^0[0-9]{2})([0-9]+)?([0-9]{4})$/,"$1-$2-$3") : '-';
+const getSegmentColor = (s) => {
+    if(s === 'VIP 고객') return 'warning';
+    if(s === '이탈 위험 고객') return 'danger';
+    if(s === '블랙리스트 고객') return 'info';
+    return '';
+};
+const goDetail = (id) => router.push(`/customers/${id}`);
+
+onMounted(fetchData);
 </script>
+
+<style scoped>
+.kpi-wrapper { display: flex; gap: 15px; margin-bottom: 20px; }
+.kpi-box { flex: 1; background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+.kpi-title { font-size: 14px; color: #666; margin-bottom: 8px; display: block; }
+.kpi-count { font-size: 24px; font-weight: bold; }
+.highlight { color: #f59e0b; } .warning { color: #ef4444; } .danger { color: #374151; }
+.action-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.link-name { font-weight: 600; cursor: pointer; color: #2c3e50; }
+.segment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.filter-section { margin-bottom: 20px; }
+</style>
