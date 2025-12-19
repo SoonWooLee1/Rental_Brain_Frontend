@@ -1,340 +1,232 @@
 <template>
-  <div class="detail-container" v-loading="loading">
-    <div class="detail-header" v-if="customer.id">
-      <div class="title-row">
-        <h1 class="comp-name" style="color: #000;">{{ customer.name }}</h1>
-        <el-button size="small" @click="openEdit">정보 수정</el-button>
+  <div class="page-container" v-loading="loading">
+    
+    <div class="detail-header">
+      <div class="header-left">
+        <el-button @click="goList" circle plain>
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        
+        <h2 class="company-name">{{ customer.name }}</h2>
+        <el-tag :type="getSegmentColor(customer.segmentName)" effect="dark" class="segment-tag">
+          {{ customer.segmentName || '일반' }}
+        </el-tag>
       </div>
-      <div class="sub-info">
-        <span class="info-id" style="margin-right: 20px;">ID: {{ customer.customerCode }}</span>
-        <el-tag effect="plain">{{ customer.segmentName }}</el-tag>
-      </div>
-      <div class="contact-info">
-        <span>{{ formatPhone(customer.callNum) }}</span>
-        <span class="sep">|</span>
-        <span>{{ formatPhone(customer.phone) }}</span>
+
+      <div class="header-right">
+        <el-button type="primary" @click="enableEditMode" v-if="!isEditMode">
+          <el-icon><Edit /></el-icon> 정보 수정
+        </el-button>
+        <el-button type="danger" plain @click="handleDelete" v-if="!isEditMode">
+          <el-icon><Delete /></el-icon> 고객 삭제
+        </el-button>
       </div>
     </div>
 
-    <el-tabs v-model="activeTab" class="custom-tabs">
+    <div class="info-grid">
       
-      <el-tab-pane label="종합 정보" name="summary">
-        <div class="pane-content">
-          <h3>기본 정보</h3>
-          <p><strong>담당자:</strong> {{ customer.inCharge }} <span v-if="customer.dept">({{ customer.dept }})</span></p>
-          <p><strong>사업자번호:</strong> {{ customer.businessNum }}</p>
-          <p><strong>주소:</strong> {{ customer.addr }}</p>
+      <el-card class="info-card" shadow="never">
+        <template #header><span class="card-title">기본 정보</span></template>
+        
+        <el-descriptions :column="1" border v-if="!isEditMode">
+          <el-descriptions-item label="기업명">{{ customer.name }}</el-descriptions-item>
+          <el-descriptions-item label="담당자">{{ customer.inCharge }}</el-descriptions-item>
+          <el-descriptions-item label="부서/직책">{{ customer.dept || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="연락처">{{ formatPhone(customer.phone) }}</el-descriptions-item>
+          <el-descriptions-item label="이메일">{{ customer.email || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="주소">{{ customer.addr || '-' }}</el-descriptions-item>
+        </el-descriptions>
 
-          <h3 class="mt-20">고객 대응 히스토리</h3>
-          <ul class="timeline">
-            <li v-for="(item, idx) in customer.historyList" :key="idx" class="timeline-item">
-              <span class="date">{{ formatDate(item.date) }}</span>
-              <el-tag size="small" class="badge">{{ item.type }}</el-tag>
-              <span class="content">{{ item.content }}</span>
-              <span class="performer" v-if="item.performer">- {{ item.performer }}</span>
-              <span class="status">{{ item.status }}</span>
-            </li>
-            <li v-if="!customer.historyList?.length" class="no-data">이력이 없습니다.</li>
-          </ul>
-        </div>
-      </el-tab-pane>
+        <el-form v-else :model="editForm" label-width="80px">
+          <el-form-item label="기업명"><el-input v-model="editForm.name" /></el-form-item>
+          <el-form-item label="담당자"><el-input v-model="editForm.inCharge" /></el-form-item>
+          <el-form-item label="부서/직책"><el-input v-model="editForm.dept" /></el-form-item>
+          <el-form-item label="연락처"><el-input v-model="editForm.phone" /></el-form-item>
+          <el-form-item label="이메일"><el-input v-model="editForm.email" /></el-form-item>
+          <el-form-item label="주소"><el-input v-model="editForm.addr" /></el-form-item>
+          
+          <div class="edit-buttons">
+            <el-button @click="cancelEdit">취소</el-button>
+            <el-button type="primary" @click="saveEdit">저장</el-button>
+          </div>
+        </el-form>
+      </el-card>
 
-      <el-tab-pane label="문의 내역" name="inquiry">
-        <el-table :data="customer.supportList" style="width: 100%">
-          <el-table-column prop="createDate" label="접수일" width="120" :formatter="(r)=>formatDate(r.createDate)"/>
-          <el-table-column prop="title" label="제목"/>
-          <el-table-column prop="status" label="상태" width="100"/>
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="견적 내역" name="quote">
-        <el-table :data="customer.quoteList" style="width: 100%">
-          <el-table-column prop="counselingDate" label="상담일" width="120" :formatter="(r)=>formatDate(r.counselingDate)"/>
-          <el-table-column prop="summary" label="요약"/>
-          <el-table-column prop="counselor" label="상담원" width="100"/>
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="계약 내역" name="contract">
-        <el-table :data="customer.contractList" style="width: 100%">
-          <el-table-column prop="startDate" label="시작일" width="120" :formatter="(r)=>formatDate(r.startDate)"/>
-          <el-table-column prop="contractName" label="계약명"/>
-          <el-table-column prop="totalAmount" label="총 금액" align="right">
-             <template #default="{row}">{{ row.totalAmount?.toLocaleString() }}원</template>
-          </el-table-column>
-          <el-table-column prop="status" label="상태" width="100"/>
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="AS / 정기점검 내역" name="as">
-        <el-table :data="customer.asList" style="width: 100%">
-          <el-table-column prop="scheduleDate" label="예정일" width="120" :formatter="(r)=>formatDate(r.scheduleDate)"/>
-          <el-table-column prop="type" label="구분" width="100"/>
-          <el-table-column prop="contents" label="내용"/>
-          <el-table-column prop="engineerName" label="담당기사" width="100"/>
-          <el-table-column prop="status" label="상태" width="100"/>
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="피드백 내역" name="feedback">
-        <el-table :data="customer.feedbackList" style="width: 100%">
-          <el-table-column prop="createDate" label="등록일" width="120" :formatter="(r)=>formatDate(r.createDate)"/>
-          <el-table-column prop="title" label="제목"/>
-          <el-table-column prop="star" label="평점" width="80">
-             <template #default="{row}">{{ row.star }}점</template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="캠페인 내역" name="campaign">
-        <h4>보유 쿠폰</h4>
-        <el-table :data="customer.couponList" style="width: 100%; margin-bottom: 20px;">
-          <el-table-column prop="name" label="쿠폰명"/>
-          <el-table-column prop="rate" label="할인율" width="100">
-             <template #default="{row}">{{ row.rate }}%</template>
-          </el-table-column>
-          <el-table-column prop="status" label="상태" width="100"/>
-        </el-table>
-
-        <h4>참여 프로모션</h4>
-        <el-table :data="customer.promotionList" style="width: 100%">
-          <el-table-column prop="name" label="프로모션명"/>
-          <el-table-column prop="status" label="상태" width="100"/>
-        </el-table>
-      </el-tab-pane>
-
-      <el-tab-pane label="고객 메모" name="memo">
-        <el-input 
-          type="textarea" 
-          v-model="customer.memo" 
-          :rows="10" 
-          readonly 
-          placeholder="등록된 메모가 없습니다."
+      <el-card class="info-card" shadow="never">
+        <template #header><span class="card-title">고객 메모</span></template>
+        <el-input
+          v-model="customer.memo"
+          type="textarea"
+          :rows="15"
+          placeholder="메모 내용이 없습니다."
+          :readonly="!isEditMode"
+          class="memo-box"
         />
-        <el-button style="margin-top:10px" type="primary" @click="openEdit">메모 수정하기</el-button>
-      </el-tab-pane>
-    </el-tabs>
+        <div v-if="isEditMode" class="memo-tip">
+          * 메모 내용은 '저장' 버튼 클릭 시 함께 반영됩니다.
+        </div>
+      </el-card>
 
-    <el-dialog v-model="editModal" title="기본 정보 및 메모 수정" width="500px">
-      <el-form :model="editForm" label-width="100px">
-        <el-form-item label="담당자명">
-          <el-input v-model="editForm.inCharge" />
-        </el-form-item>
-        <el-form-item label="부서/직책">
-          <el-input v-model="editForm.dept" />
-        </el-form-item>
-        <el-form-item label="전화번호">
-          <el-input v-model="editForm.callNum" placeholder="숫자만 입력 (예: 0212345678)" />
-        </el-form-item>
-        <el-form-item label="휴대폰">
-          <el-input v-model="editForm.phone" placeholder="숫자만 입력 (예: 01012345678)" />
-        </el-form-item>
-        <el-form-item label="고객 메모">
-          <el-input type="textarea" v-model="editForm.memo" :rows="5" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="editModal = false">취소</el-button>
-        <el-button type="primary" @click="saveEdit">저장</el-button>
-      </template>
-    </el-dialog>
+      <el-card class="info-card" shadow="never">
+        <template #header><span class="card-title">고객 대응 히스토리</span></template>
+        
+        <el-scrollbar height="400px">
+          <el-timeline v-if="customer.historyList && customer.historyList.length > 0">
+            <el-timeline-item
+              v-for="(item, index) in customer.historyList"
+              :key="index"
+              :timestamp="formatDate(item.date)"
+              placement="top"
+              :color="item.status === '완료' ? '#0bbd87' : '#409eff'"
+            >
+              <el-card class="history-item" shadow="hover">
+                <div class="history-header">
+                  <span class="history-type">[{{ item.type }}]</span>
+                  <span class="history-performer">{{ item.performer }}</span>
+                </div>
+                <div class="history-content">{{ item.content }}</div>
+                <div class="history-status">
+                  <el-tag size="small" :type="item.status === '완료' ? 'success' : 'primary'">
+                    {{ item.status }}
+                  </el-tag>
+                </div>
+              </el-card>
+            </el-timeline-item>
+          </el-timeline>
+          <el-empty v-else description="히스토리가 없습니다." :image-size="80" />
+        </el-scrollbar>
+      </el-card>
+
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-// api/customerlist.js에 정의된 함수 import
-import { getCustomerDetail, updateCustomer } from '@/api/customerlist';
-import dayjs from 'dayjs';
-import { ElMessage } from 'element-plus';
+import { useRoute, useRouter } from 'vue-router';
+import { getCustomerDetail, updateCustomer, deleteCustomer } from '@/api/customerlist';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { ArrowLeft, Edit, Delete } from '@element-plus/icons-vue';
 
 const route = useRoute();
-const customer = ref({});
-// 기본 탭: 종합 정보
-const activeTab = ref('summary');
+const router = useRouter();
+const customerId = route.params.id;
+
 const loading = ref(false);
-const editModal = ref(false);
+const customer = ref({});
+const isEditMode = ref(false);
 const editForm = ref({});
 
-// 데이터 로드
-const loadData = async () => {
+// 데이터 불러오기
+const fetchData = async () => {
   loading.value = true;
   try {
-    const res = await getCustomerDetail(route.params.id);
+    const res = await getCustomerDetail(customerId);
     customer.value = res.data;
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     ElMessage.error('고객 정보를 불러오는데 실패했습니다.');
   } finally {
     loading.value = false;
   }
 };
 
-// 수정 모달 열기
-const openEdit = () => {
-  // 현재 데이터를 복사해서 수정 폼에 할당
-  editForm.value = { ...customer.value };
-  editModal.value = true;
+// 수정 모드 활성화
+const enableEditMode = () => {
+  editForm.value = { ...customer.value }; // 현재 데이터 복사
+  isEditMode.value = true;
 };
 
-// 수정 내용 저장
+// 수정 취소
+const cancelEdit = () => {
+  isEditMode.value = false;
+  editForm.value = {};
+};
+
+// 수정 저장
 const saveEdit = async () => {
   try {
-    // 하이픈이 있다면 제거하고 저장 (DB 스키마에 맞춤)
-    const payload = { ...editForm.value };
-    if (payload.callNum) payload.callNum = payload.callNum.replace(/-/g, '');
-    if (payload.phone) payload.phone = payload.phone.replace(/-/g, '');
+    // 메모는 v-model로 customer.memo에 바인딩되어 있지만,
+    // 저장 시에는 editForm에도 반영해줘야 할 수 있음 (여기선 editForm 위주로 전송)
+    editForm.value.memo = customer.value.memo; 
 
-    await updateCustomer(customer.value.id, payload);
-    
-    ElMessage.success('정보가 수정되었습니다.');
-    editModal.value = false;
-    // 최신 데이터 다시 로드
-    loadData();
-  } catch (e) {
-    console.error(e);
-    ElMessage.error('수정에 실패했습니다.');
+    await updateCustomer(customerId, editForm.value);
+    ElMessage.success('고객 정보가 수정되었습니다.');
+    isEditMode.value = false;
+    fetchData(); // 최신 데이터 재조회
+  } catch (error) {
+    console.error(error);
+    ElMessage.error('수정 실패: ' + (error.response?.data || error.message));
   }
 };
 
-// 전화번호 포맷팅 함수 (0261000060 -> 02-6100-0060)
-const formatPhone = (value) => {
-  if (!value) return '';
-  const clean = value.replace(/[^0-9]/g, '');
-  
-  if (clean.length < 4) return clean;
-
-  // 서울 지역번호 (02)
-  if (clean.startsWith('02')) {
-    // 02-123-4567 or 02-1234-5678
-    return clean.replace(/(\d{2})(\d{3,4})(\d{4})/, '$1-$2-$3');
-  } 
-  // 그 외 (010, 031 등)
-  else {
-    // 010-1234-5678
-    return clean.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3');
-  }
+// 고객 삭제
+const handleDelete = () => {
+  ElMessageBox.confirm(
+    '정말로 이 고객을 삭제하시겠습니까? (복구 가능)',
+    '삭제 확인',
+    { confirmButtonText: '삭제', cancelButtonText: '취소', type: 'warning' }
+  ).then(async () => {
+    try {
+      await deleteCustomer(customerId);
+      ElMessage.success('고객이 삭제되었습니다.');
+      router.push('/customers'); // 목록으로 이동
+    } catch (error) {
+      ElMessage.error('삭제 실패: ' + error.message);
+    }
+  });
 };
 
-// 날짜 포맷팅 (YYYY-MM-DD)
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-';
-  return dayjs(dateStr).format('YYYY-MM-DD');
+const goList = () => router.push('/customers');
+
+// 포맷팅 함수들
+const formatPhone = (v) => v ? v.replace(/(^02|^0505|^1[0-9]{3}|^0[0-9]{2})([0-9]+)?([0-9]{4})$/,"$1-$2-$3") : '-';
+const formatDate = (d) => d ? d.substring(0, 10) : '';
+
+const getSegmentColor = (s) => {
+    if(!s) return 'info';
+    if(s.includes('VIP')) return 'warning';
+    if(s.includes('이탈')) return 'danger';
+    if(s.includes('신규')) return 'success';
+    return '';
 };
 
-// 컴포넌트 마운트 시 데이터 로드
-onMounted(loadData);
+onMounted(fetchData);
 </script>
 
 <style scoped>
-.detail-container {
-  padding: 20px;
-  background-color: #fff;
-  min-height: 100vh;
+.page-container { padding: 20px; max-width: 1600px; margin: 0 auto; }
+
+/* 헤더 */
+.detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.header-left { display: flex; align-items: center; gap: 15px; }
+.company-name { margin: 0; font-size: 24px; font-weight: 700; color: #333; }
+.segment-tag { font-size: 14px; padding: 14px 10px; }
+
+/* 그리드 레이아웃 */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* 3단 구성 */
+  gap: 20px;
+  align-items: start;
 }
 
-/* 헤더 스타일 */
-.detail-header {
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
-}
+.info-card { min-height: 500px; display: flex; flex-direction: column; }
+.card-title { font-weight: 700; font-size: 16px; }
 
-.title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* 메모 박스 */
+.memo-box :deep(.el-textarea__inner) {
+  border: none; background-color: #f9f9f9; resize: none; font-size: 14px; line-height: 1.6; padding: 15px;
 }
+.memo-tip { margin-top: 10px; font-size: 12px; color: #888; text-align: right; }
 
-.comp-name {
-  font-size: 28px;
-  font-weight: bold;
-  color: #000; /* 검은색 */
-  margin: 0;
-}
+/* 히스토리 */
+.history-item { margin-bottom: 5px; }
+.history-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; color: #666; }
+.history-type { font-weight: bold; color: #409eff; }
+.history-content { font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #333; }
+.history-status { text-align: right; }
 
-.sub-info {
-  margin-top: 10px;
-  color: #666;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-}
-
-.info-id {
-  margin-right: 20px; /* ID와 세그먼트 사이 간격 */
-}
-
-.contact-info {
-  margin-top: 10px;
-  font-size: 15px;
-  color: #333;
-}
-
-.sep {
-  margin: 0 10px;
-  color: #ddd;
-}
-
-/* 탭 컨텐츠 스타일 */
-.pane-content {
-  padding: 10px 0;
-}
-
-.mt-20 {
-  margin-top: 30px;
-  margin-bottom: 15px;
-}
-
-/* 타임라인 스타일 */
-.timeline {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.timeline-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.date {
-  width: 100px;
-  color: #888;
-  font-size: 13px;
-}
-
-.badge {
-  margin-right: 12px;
-  min-width: 60px;
-  text-align: center;
-}
-
-.content {
-  flex: 1;
-  font-weight: 500;
-  color: #333;
-}
-
-.performer {
-  margin-left: 10px;
-  color: #666;
-  font-size: 13px;
-}
-
-.status {
-  width: 80px;
-  text-align: right;
-  color: #555;
-  font-size: 13px;
-}
-
-.no-data {
-  padding: 20px 0;
-  color: #999;
-  text-align: center;
-}
+/* 수정 버튼 그룹 */
+.edit-buttons { display: flex; justify-content: flex-end; margin-top: 15px; gap: 10px; }
 </style>
