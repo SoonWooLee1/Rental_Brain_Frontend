@@ -95,7 +95,9 @@
                     </div>
                     <div class="history-content">{{ item.content }}</div>
                     <div class="history-status">
-                       <el-tag size="small" :type="getStatusType(item.status)">{{ item.status }}</el-tag>
+                      <el-tag size="small" :type="getStatusType(item.status)">
+                        {{ item.status === '완료' ? '완료' : '진행 중' }}
+                      </el-tag>
                     </div>
                   </el-card>
                 </el-timeline-item>
@@ -218,31 +220,32 @@
         </el-table>
       </el-tab-pane>
 
-      <el-tab-pane label="세그먼트 변경 이력" name="history">
-        <el-timeline style="padding: 20px;">
-          <el-timeline-item
-            v-for="(item, index) in customer.segmentHistoryList"
-            :key="index"
-            :timestamp="formatDate(item.changedAt)"
-            placement="top"
-            color="#409eff"
-          >
-            <el-card shadow="hover">
-              <div class="history-item">
-                <strong>
-                  {{ item.previousSegmentName || '가입' }} 
-                  <el-icon style="vertical-align: middle;"><Right /></el-icon> 
-                  {{ item.currentSegmentName }}
-                </strong>
-                <p class="history-reason">
-                    사유: {{ item.reason }} 
-                    <el-tag size="small" effect="plain" class="ml-2">{{ item.triggerType }}</el-tag>
-                </p>
-              </div>
-            </el-card>
-          </el-timeline-item>
-        </el-timeline>
-      </el-tab-pane>
+    <el-tab-pane label="세그먼트 변경 이력" name="history">
+      <el-timeline style="padding: 20px;">
+        <el-timeline-item
+          v-for="(item, index) in customer.segmentHistoryList"
+          :key="index"
+          :timestamp="formatDate(item.historyChangedAt)" 
+          placement="top"
+          color="#409eff"
+        >
+      <el-card shadow="hover">
+        <div class="history-item">
+          <strong>
+            {{ item.previousSegmentName || '가입' }} 
+            <el-icon style="vertical-align: middle;"><Right /></el-icon> 
+            {{ item.currentSegmentName }}
+          </strong>
+          <p class="history-reason">
+            사유: {{ item.historyReason }} 
+            
+            <el-tag size="small" effect="plain" class="ml-2">{{ item.historyTriggerType }}</el-tag>
+          </p>
+        </div>
+      </el-card>
+    </el-timeline-item>
+  </el-timeline>
+</el-tab-pane>
 
     </el-tabs>
   </div>
@@ -322,8 +325,10 @@ const formatDate = (d) => d ? d.substring(0, 10) : '';
 const dateFormatter = (row, col, val) => formatDate(val);
 const formatPhone = (v) => v ? v.replace(/(^02|^0505|^1[0-9]{3}|^0[0-9]{2})([0-9]+)?([0-9]{4})$/,"$1-$2-$3") : '-';
 const getSegmentColor = (s) => { if(!s) return 'info'; if(s.includes('VIP')) return 'warning'; if(s.includes('이탈')) return 'danger'; if(s.includes('신규')) return 'success'; return ''; };
-const getStatusColor = (status) => status === '완료' ? '#0bbd87' : '#409eff';
-const getStatusType = (status) => status === '완료' ? 'success' : 'primary';
+// 색상 결정 (타임라인 점 색상)
+const getStatusColor = (status) => status === '완료' ? '#0bbd87' : '#ff9900'; // 완료: 초록, 그외: 주황
+// 태그 타입 결정 (Tag 색상)
+const getStatusType = (status) => status === '완료' ? 'success' : 'warning'; // 완료: 초록(success), 그외: 주황(warning)
 
 onMounted(fetchData);
 </script>
