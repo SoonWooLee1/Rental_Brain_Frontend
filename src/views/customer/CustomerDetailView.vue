@@ -1,5 +1,6 @@
 <template>
   <div class="page-container" v-loading="loading">
+    
     <div class="detail-header">
       <div class="header-left">
         <el-button @click="goList" circle plain>
@@ -9,18 +10,25 @@
           {{ customer.name }}
           <el-tag v-if="customer.isDeleted === 'Y'" type="danger" effect="dark" class="ml-2">비활성</el-tag>
         </h2>
-        <el-tag :type="getSegmentColor(customer.segmentName)" effect="plain" class="segment-tag">
+        <el-tag :type="getSegmentColor(customer.segmentName)" effect="light" class="segment-tag">
           {{ customer.segmentName || '일반' }}
         </el-tag>
       </div>
 
       <div class="header-right">
         <template v-if="!isEditMode && customer.isDeleted !== 'Y'">
-          <el-button type="primary" @click="enableEditMode"><el-icon><Edit /></el-icon> 정보 수정</el-button>
-          <el-button type="danger" plain @click="handleDelete"><el-icon><Delete /></el-icon> 고객 삭제</el-button>
+          <el-button type="primary" @click="enableEditMode">
+            <el-icon><Edit /></el-icon> 정보 수정
+          </el-button>
+          <el-button type="danger" plain @click="handleDelete">
+            <el-icon><Delete /></el-icon> 고객 삭제
+          </el-button>
         </template>
+
         <template v-if="customer.isDeleted === 'Y'">
-          <el-button type="success" @click="handleRestore"><el-icon><RefreshLeft /></el-icon> 고객 복구</el-button>
+          <el-button type="success" @click="handleRestore">
+            <el-icon><RefreshLeft /></el-icon> 고객 복구
+          </el-button>
         </template>
       </div>
     </div>
@@ -127,13 +135,15 @@
 
       <el-tab-pane label="계약 내역" name="contract">
         <el-table :data="customer.contractList" border stripe>
-          <el-table-column prop="contractCode" label="계약 번호" width="140" align="center" />
-          <el-table-column prop="contractName" label="계약명" min-width="180" />
-          <el-table-column prop="startDate" label="계약 시작일" width="120" align="center" :formatter="dateFormatter" />
-          <el-table-column prop="contractPeriod" label="기간(개월)" width="100" align="center" />
-          <el-table-column prop="totalAmount" label="총 금액" width="150" align="right">
-            <template #default="{row}">{{ row.totalAmount?.toLocaleString() }}원</template>
+          <el-table-column prop="contract_code" label="계약 번호" width="140" align="center" />
+          <el-table-column prop="conName" label="계약명" min-width="180" />
+          <el-table-column prop="start_date" label="계약 시작일" width="120" align="center" :formatter="dateFormatter" />
+          <el-table-column prop="contract_period" label="기간(개월)" width="100" align="center" />
+          
+          <el-table-column prop="monthly_payment" label="월 납입금" width="150" align="right">
+            <template #default="{row}">{{ row.monthly_payment?.toLocaleString() }}원</template>
           </el-table-column>
+          
           <el-table-column prop="status" label="계약 상태" width="100" align="center">
              <template #default="{row}">
                <el-tag :type="getContractStatusTag(row.status)">{{ formatContractStatus(row.status) }}</el-tag>
@@ -144,13 +154,17 @@
 
       <el-tab-pane label="AS / 정기점검" name="as">
         <el-table :data="customer.asList" border stripe>
-          <el-table-column prop="afterServiceCode" label="관리 번호" width="140" align="center" />
-          <el-table-column prop="scheduleDate" label="예정일" width="120" align="center" :formatter="dateFormatter" />
+          <el-table-column prop="after_service_code" label="관리 번호" width="140" align="center" />
+          <el-table-column prop="dueDate" label="예정일" width="120" align="center" :formatter="dateFormatter" />
           <el-table-column prop="type" label="유형" width="100" align="center">
-             <template #default="{row}">{{ row.type === 'R' ? '정기 점검' : 'AS' }}</template>
+             <template #default="{row}">
+               <el-tag :type="row.type === 'R' ? 'success' : 'warning'" effect="plain">
+                  {{ row.type === 'R' ? '정기 점검' : 'AS' }}
+               </el-tag>
+             </template>
           </el-table-column>
-          <el-table-column prop="contents" label="내용" min-width="200" />
-          <el-table-column prop="engineerName" label="기사님" width="100" align="center" />
+          <el-table-column prop="contents" label="내용" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="engineer" label="기사님" width="100" align="center" />
           <el-table-column prop="status" label="처리 상태" width="100" align="center">
             <template #default="{row}">
                <el-tag :type="getAsStatusTag(row.status)">{{ formatAsStatus(row.status) }}</el-tag>
@@ -266,7 +280,6 @@ const fetchData = async () => {
   }
 };
 
-// ... (수정/삭제/복구/목록이동 로직은 기존과 동일) ...
 const enableEditMode = () => { editForm.value = { ...customer.value }; isEditMode.value = true; };
 const cancelEdit = () => { isEditMode.value = false; editForm.value = {}; };
 const saveEdit = async () => {
@@ -276,12 +289,9 @@ const handleDelete = () => { ElMessageBox.confirm('정말 삭제(비활성화) �
 const handleRestore = () => { ElMessageBox.confirm('고객을 다시 활성화 하시겠습니까?', '복구 확인', { type: 'success' }).then(async () => { try { await restoreCustomer(customerId); ElMessage.success('고객이 복구되었습니다.'); fetchData(); } catch (e) { ElMessage.error('복구 실패'); } }); };
 const goList = () => router.push('/customers');
 
-
-// ▼▼▼ [상태 코드 변환 함수들] ▼▼▼
-
-// 1. 계약 상태 (P:진행, C:완료, W:대기, R:반려, T:해지)
+// ▼ 상태 코드 변환 함수 ▼
 const formatContractStatus = (status) => {
-    const map = { P: '진행 중', C: '완료', W: '대기', R: '반려', T: '해지', I: '만료 임박' };
+    const map = { P: '진행 중', C: '완료', W: '승인 대기', R: '반려', T: '해지', I: '만료 임박' };
     return map[status] || status;
 };
 const getContractStatusTag = (status) => {
@@ -289,7 +299,6 @@ const getContractStatusTag = (status) => {
     return map[status] || 'info';
 };
 
-// 2. 문의 상태 (P:처리중, C:완료, W:대기)
 const formatSupportStatus = (status) => {
     const map = { P: '처리 중', C: '완료', W: '대기' };
     return map[status] || status;
@@ -299,9 +308,8 @@ const getSupportStatusTag = (status) => {
     return map[status] || 'info';
 };
 
-// 3. AS 상태 (P:예정, C:완료, R:접수)
 const formatAsStatus = (status) => {
-    const map = { P: '예정', C: '완료', R: '접수' };
+    const map = { P: '방문 예정', C: '처리 완료', R: '접수됨' };
     return map[status] || status;
 };
 const getAsStatusTag = (status) => {

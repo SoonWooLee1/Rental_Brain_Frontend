@@ -92,6 +92,7 @@ const login = async () => {
       data.empId,
       data.name,
       data.roles,
+      data.dept,
       data.accessToken
     );
     toastStore.showToast('로그인 되었습니다 :' + ' ' + authStore.employeeCode + ' ' + authStore.name);
@@ -100,7 +101,7 @@ const login = async () => {
   }
   catch (e) {
     console.log('로그인 실패', e);
-    toastStore.showToast(e);
+    toastStore.showToast(e.response?.data?.error);
   }
 };
 
