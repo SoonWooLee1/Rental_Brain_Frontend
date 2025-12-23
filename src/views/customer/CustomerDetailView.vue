@@ -57,6 +57,7 @@
               <el-form-item label="연락처"><el-input v-model="editForm.callNum" /></el-form-item>
               <el-form-item label="이메일"><el-input v-model="editForm.email" /></el-form-item>
               <el-form-item label="주소"><el-input v-model="editForm.addr" /></el-form-item>
+              <el-form-item label="기업명" required><el-input v-model="form.name" :disabled="!isEditMode" /></el-form-item>
               <div class="edit-buttons">
                 <el-button @click="cancelEdit">취소</el-button>
                 <el-button type="primary" @click="saveEdit">저장</el-button>
@@ -147,9 +148,9 @@
           </el-table-column>
           
           <el-table-column prop="status" label="계약 상태" width="100" align="center">
-             <template #default="{row}">
-               <el-tag :type="getContractStatusTag(row.status)">{{ formatContractStatus(row.status) }}</el-tag>
-             </template>
+            <template #default="{row}">
+              <el-tag :type="getContractStatusTag(row.status)">{{ formatContractStatus(row.status) }}</el-tag>
+            </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>

@@ -213,6 +213,14 @@
             placeholder="상세 문의 내용을 입력하세요" 
           />
         </el-form-item>
+        <el-form-item label="조치사항" v-if="isEditMode">
+          <el-input 
+            v-model="createForm.action" 
+            type="textarea" 
+            :rows="3" 
+            placeholder="조치 내용을 입력하세요" 
+          />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createModalVisible = false">취소</el-button>
@@ -251,8 +259,16 @@
            <el-button type="danger" plain @click="handleDelete">삭제</el-button>
         </div>
         <div class="dialog-footer-right">
-           <el-button type="primary" @click="openEditModal">수정</el-button>
-           <el-button @click="detailModalVisible = false">닫기</el-button>
+          <el-button 
+            v-if="selectedSupport && selectedSupport.status !== 'C' && selectedSupport.status !== '완료'"
+            type="success" 
+            @click="handleComplete"
+          >
+            처리 완료
+          </el-button>
+
+          <el-button type="primary" @click="openEditModal">수정</el-button>
+          <el-button @click="detailModalVisible = false">닫기</el-button>
         </div>
       </template>
     </el-dialog>
@@ -415,6 +431,19 @@ const openDetailModal = (row) => {
   detailModalVisible.value = true;
 };
 
+// [추가] 상태 변경(처리 완료) 핸들러
+const handleComplete = async () => {
+    try {
+        // 상태만 'C'로 업데이트 (필요 시 action도 같이 보낼 수 있음)
+        await updateSupport(selectedSupport.value.id, { status: 'C' });
+        ElMessage.success('문의가 완료 처리되었습니다.');
+        detailModalVisible.value = false;
+        fetchData();
+    } catch (e) {
+        ElMessage.error('처리 실패: ' + e.message);
+    }
+};
+
 // [추가] 수정 모달 열기
 const openEditModal = () => {
     isEditMode.value = true;
@@ -428,6 +457,7 @@ const openEditModal = () => {
         channelId: getChannelIdByName(item.channelName),
         title: item.title,
         content: item.content,
+        action: item.action,
     });
     
     // 기업명 검색용 초기화 (선택된 기업 보이게 하려면 추가 로직 필요)
@@ -493,6 +523,8 @@ const truncateText = (text, length) => {
   if (!text) return '';
   return text.length > length ? text.substring(0, length) + '....' : text;
 };
+
+
 
 // [수정] 날짜 포맷 (시간 포함)
 const dateFormatter = (row, col, val) => {

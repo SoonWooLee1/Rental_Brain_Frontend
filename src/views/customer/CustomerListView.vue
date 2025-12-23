@@ -270,12 +270,13 @@ const resetSearch = () => {
     fetchData();
 };
 
-// [추가] 정렬 핸들러
+// [수정] 정렬 핸들러
 const handleSortChange = ({ prop, order }) => {
-    if (prop === 'customerCode') { // 화면엔 customerCode, 실제 정렬은 id로 가정
+    // 테이블의 prop="customerCode"를 백엔드가 아는 "id"로 변환
+    if (prop === 'customerCode') { 
         sortState.value.sortBy = 'id';
         sortState.value.sortOrder = order === 'ascending' ? 'asc' : 'desc';
-        fetchData();
+        fetchData(); // 데이터 재요청
     }
 };
 
