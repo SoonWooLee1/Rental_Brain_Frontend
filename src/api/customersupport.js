@@ -29,3 +29,8 @@ export const deleteSupport = (id) => {
 export const getSupportKpi = () => {
   return api.get('/customersupports/kpi');
 };
+
+// 담당자 목록 조회
+export const getInChargeList = () => {
+  return api.get('/customersupports/in-charge');
+};

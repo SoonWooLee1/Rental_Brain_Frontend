@@ -7,28 +7,38 @@
           <h2>{{ itemName }}</h2>
           <p>{{ categoryName }}</p>
         </div>
+        <button
+                  class="edit-btn"
+                  @click="openNameEditModal(itemName, monthlyPrice, categoryName)"
+                >
+                  수정
+                </button>
         <button class="icon-btn" @click="emitClose">✕</button>
       </div>
 
-      <!-- 상단 KPI 카드 4개 -->
-      <!-- <div class="detail-kpi-row">
-        <div class="detail-kpi-card blue">
+      <!-- 상단 KPI 카드 5개 -->
+      <div class="detail-kpi-row">
+        <div class="detail-kpi-card">
           <p class="label">총 보유</p>
           <p class="value">{{ kpiDetail.totalCount }}개</p>
         </div>
-        <div class="detail-kpi-card indigo">
+        <div class="detail-kpi-card">
           <p class="label">렌탈 중</p>
           <p class="value">{{ kpiDetail.rentCount }}개</p>
         </div>
-        <div class="detail-kpi-card green">
+        <div class="detail-kpi-card">
           <p class="label">대여 가능</p>
           <p class="value">{{ kpiDetail.availableCount }}개</p>
         </div>
-        <div class="detail-kpi-card orange">
+        <div class="detail-kpi-card">
           <p class="label">수리 중</p>
           <p class="value">{{ kpiDetail.repairCount }}개</p>
         </div>
-      </div> -->
+        <div class="detail-kpi-card">
+          <p class="label">연체</p>
+          <p class="value">{{ kpiDetail.overdueCount }}개</p>
+        </div>
+      </div>
 
       <!-- 개별 제품 목록 -->
       <div class="detail-table-wrapper">
@@ -90,9 +100,20 @@
       <!-- 개별 수정 모달 -->
       <ProductUnitEditModal
         v-if="isEditModalOpen"
+        :item-id="selectedId"
         :unit="selectedUnit"
         @close="closeEditModal"
         @updated="handleUnitUpdated"
+      />
+
+      <!-- 제품 수정 모달 -->
+      <ProductEditModal
+        v-if="isNameEditModalOpen"
+        :item-name="selecteditemName"
+        :monthly-price="selectedMonthlyPrice"
+        :category-name="selectedCategoryName"
+        @close="closeNameEditModal"
+        @updated="handleUpdated"
       />
     </div>
   </div>
@@ -102,10 +123,15 @@
 import { ref, onMounted, watch } from "vue";
 import api from '@/api/axios';
 import ProductUnitEditModal from "./ProductUnitEditModal.vue";
+import ProductEditModal from './ProductEditModal.vue';
 
 const props = defineProps({
   itemName: {
     type: String,
+    required: true,
+  },
+  monthlyPrice: {
+    type: [Number, String],
     required: true,
   },
   categoryName: {
@@ -123,32 +149,39 @@ const STATUS_MAP = {
 
 const emit = defineEmits(["close", "updated", "deleted"]);
 
-// const kpiDetail = ref({
-//   totalCount: 0,
-//   rentCount: 0,
-//   availableCount: 0,
-//   repairCount: 0,
-//   categoryName: '',
-// });
+const kpiDetail = ref({
+  totalCount: 0,
+  rentCount: 0,
+  availableCount: 0,
+  repairCount: 0,
+  overdueCount: 0,
+  categoryName: '',
+});
 
 
 
 const unitList = ref([]);
 
 const isEditModalOpen = ref(false);
+const selectedId = ref(0);
 const selectedUnit = ref(null);
 
+const isNameEditModalOpen = ref(false);
+const selecteditemName = ref('');
+const selectedCategoryName = ref('');
+const selectedMonthlyPrice = ref(0);
+
 // 상단 카드 데이터
-// async function fetchKpiDetail() {
-//   try {
-//     const res = await api.get(
-//       `/item/kpi-detail-count/${props.itemName}`
-//     );
-//     kpiDetail.value = res.data;
-//   } catch (err) {
-//     console.error("상세 KPI 조회 실패", err);
-//   }
-// }
+async function fetchKpiDetail() {
+  try {
+    const res = await api.get(
+      `/item/kpi/${props.itemName}`
+    );
+    kpiDetail.value = res.data;
+  } catch (err) {
+    console.error("상세 KPI 조회 실패", err);
+  }
+}
 
 // 개별 제품 목록
 async function fetchUnitList() {
@@ -186,31 +219,57 @@ function formatDate(dateTime) {
   }
 }
 
-// 수정 모달 열기/닫기
+// 개별 제품 수정 모달 열기/닫기
 function openEditModal(unit) {
+  selectedId.value = unit.id;
+  console.log('id:', unit.id);
   selectedUnit.value = unit;
   isEditModalOpen.value = true;
 }
 
 function closeEditModal() {
   isEditModalOpen.value = false;
+  selectedId.value = 0;
   selectedUnit.value = null;
+}
+
+// 제품 수정 모달 열기/닫기
+function openNameEditModal(itemName, monthlyPrice, categoryName) {
+  console.log('itemName:', itemName);
+  selecteditemName.value = itemName;
+  selectedMonthlyPrice.value = monthlyPrice;
+  selectedCategoryName.value = categoryName;
+  console.log('monthlyPrice:', monthlyPrice);
+  console.log('categoryName:', categoryName);
+  isNameEditModalOpen.value = true;
+}
+
+function closeNameEditModal() {
+  isNameEditModalOpen.value = false;
+  selecteditemName.value = '';
+  selectedMonthlyPrice.value = 0;
+  selectedCategoryName.value = '';
 }
 
 // 수정 완료 시 목록 재조회
 async function handleUnitUpdated() {
   await fetchUnitList();
-//   await fetchKpiDetail();
+  await fetchKpiDetail();
   emit("updated");
+}
+
+async function handleUpdated() {
+  emit("updated");
+  emit('close');
 }
 
 // 삭제
 async function deleteUnit(unit) {
   if (!confirm("해당 개별 제품을 삭제하시겠습니까?")) return;
   try {
-    await api.delete(`/item/delete/${unit.unitId}`);
+    await api.delete(`/item/delete/${unit.id}`);
     await fetchUnitList();
-    // await fetchKpiDetail();
+    await fetchKpiDetail();
     emit("deleted");
   } catch (err) {
     console.error("개별 제품 삭제 실패", err);
@@ -218,16 +277,14 @@ async function deleteUnit(unit) {
 }
 
 onMounted(async () => {
-  // await Promise.all([fetchKpiDetail(), fetchUnitList()]);  kpi api 추가하면 아래줄 지우고 이거 주석풀기
-    await Promise.all([fetchUnitList()]);
+  await Promise.all([fetchKpiDetail(), fetchUnitList()]);
 });
 
 // 혹시 부모에서 itemName이 바뀌는 경우를 대비
 watch(
   () => [props.itemName, props.categoryName],
   async () => {
-    // await Promise.all([fetchKpiDetail(), fetchUnitList()]);  kpi api 추가하면 아래줄 지우고 이거 주석풀기
-    await Promise.all([fetchUnitList()]);
+    await Promise.all([fetchKpiDetail(), fetchUnitList()]);
   }
 );
 </script>
@@ -273,6 +330,15 @@ watch(
   color: #6b7280;
 }
 
+.edit-btn {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 15px;
+  cursor: pointer;
+  margin-right: 650px;
+}
+
 .icon-btn {
   border: none;
   background: transparent;
@@ -280,7 +346,7 @@ watch(
   cursor: pointer;
 }
 
-/* .detail-kpi-row {
+.detail-kpi-row {
   display: flex;
   gap: 12px;
   padding: 16px 24px 8px;
@@ -305,7 +371,7 @@ watch(
   margin-top: 4px;
 }
 
-.detail-kpi-card.blue {
+/* .detail-kpi-card.blue {
   border-color: #bfdbfe;
   background: #eff6ff;
 }

@@ -130,6 +130,7 @@ const onSubmit = async () => {
         authStore.logout();
         
         //   ElMessage.success("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+        
         toastStore.showToast("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
         router.push('/login');
     }

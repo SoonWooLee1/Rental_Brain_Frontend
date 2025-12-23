@@ -3,18 +3,18 @@
     <!-- 상단 타이틀 및 버튼 -->
     <div class="header">
       <div>
-        <h1>렌탈 자산 목록</h1>
-        <p>전체 자산 현황 및 수익성 관리</p>
+        <h1>렌탈 제품 목록</h1>
+        <p>전체 제품 현황 및 수익성 관리</p>
       </div>
       <button class="primary-btn" @click="openCreateModal">
-        신규 자산 등록
+        신규 제품 등록
       </button>
     </div>
 
     <!-- KPI 카드 3개 -->
     <div class="kpi-row">
       <div class="kpi-card">
-        <p class="label">총 자산</p>
+        <p class="label">총 제품</p>
         <p class="value">{{ kpi.wholeCount }}개</p>
         <p class="sub">오피스 관련 제품</p>
       </div>
@@ -30,94 +30,135 @@
     </div>
 
     <!-- 검색 / 카테고리 / 필터 -->
-    <div class="toolbar">
-      <div class="search-box">
-    <span class="search-icon">🔍</span>
-      <input
+    <div class="search-area card-box">
+      <div class="filter-wrapper">
+       <!-- 검색 -->
+       <el-input
         v-model="searchKeyword"
-        @keyup.enter="handleSearch"
-        type="text"
         placeholder="제품명으로 검색..."
-      />
-      </div>
+        class="search-input"
+        @keyup.enter="handleSearch"
+        clearable
+        style="width: 500px;"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
 
-      <select v-model="selectedCategory" @change="handleCategoryFilter">
-        <option value="">전체 카테고리</option>
-        <option
+      <!-- 카테고리 필터 -->
+      <el-select
+        v-model="selectedCategory"
+        placeholder="전체 카테고리"
+        style="width: 180px;"
+        @change="handleCategoryFilter"
+      >
+        <el-option label="전체 카테고리" value="" />
+        <el-option
           v-for="category in categoryOptions"
           :key="category"
+          :label="category"
           :value="category"
-        >
-          {{ category }}
-        </option>
-      </select>
+        />
+      </el-select>
 
-      <!-- 필요하면 추가 필터 버튼들 -->
-    </div>
+      <!-- 검색 버튼 -->
+      <el-button type="primary" @click="handleSearch">검색</el-button>
+  </div>
+
+ </div>
 
 
+
+    <el-card shadow="never" :body-style="{ padding: '0' }">
     <!-- 자산 목록 테이블 -->
-    <table class="asset-table">
-      <thead>
-        <tr>
-          <th>자산명</th>
-          <th>카테고리</th>
-          <th>월 렌탈료</th>
-          <th>재고 현황</th>
-          <th>총 매출</th>
-          <th>수리비</th>
-          <th>운용률</th>
-          <th>목록</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in itemList" :key="item.itemName">
-          <td>{{ item.itemName }}</td>
-          <td>{{ item.categoryName }}</td>
-          <td>{{ item.monthlyPrice }}원</td>
-          <td>
-            <div class="stock-line">
-              <span class="label">총</span>
-              <span class="value">{{ item.stockAmount }}개</span>
-            </div>
-            <div class="stock-line blue">
-              <span class="label">렌탈</span>
-              <span class="value">{{ item.rentalAmount }}개</span>
-              <span class="label">가능</span>
-              <span class="value">{{ item.possibleAmount }}개</span>
-            </div>
-            <div class="stock-line green">
-              <span class="label">수리</span>
-              <span class="value">{{ item.repairAmount }}개</span>
-              <span class="label">연체</span>
-              <span class="value">{{ item.overdueAmount }}개</span>
-            </div>
-          </td>
-          <td>{{ item.wholeSales }}</td>
-          <td>{{ item.wholeRepairCost }}</td>
-          <!-- 운용률 -->
-          <td>
-            <div class="usage-cell">
-              <div class="usage-bar-bg">
-                <div
-                  class="usage-bar-fill"
-                  :style="{ width: item.utilizationRate + '%' }"
-                ></div>
-              </div>
-              <span class="usage-text">{{ item.utilizationRate }}%</span>
-            </div>
-          </td>
-          <td>
-            <button class="link-btn" @click="openDetailModal(item)">
-              상세보기
-            </button>
-          </td>
-        </tr>
-        <tr v-if="itemList.length === 0">
-          <td colspan="9">조회된 자산이 없습니다.</td>
-        </tr>
-      </tbody>
-    </table>
+     <el-table :data="itemList" style="width: 100%" v-loading="loading">
+  <!-- 제품명 -->
+  <el-table-column prop="itemName" label="제품명" min-width="140" />
+
+  <!-- 카테고리 -->
+  <el-table-column prop="categoryName" label="카테고리" min-width="120" />
+
+  <!-- 월 렌탈료 -->
+  <el-table-column label="월 렌탈료" min-width="120">
+    <template #default="{ row }">
+      {{ formatToManWon(row.monthlyPrice) }}
+    </template>
+  </el-table-column>
+
+  <!-- 재고 현황 -->
+  <el-table-column label="재고 현황" min-width="180">
+    <template #default="{ row }">
+      <div class="stock-line">
+        <span class="label">총</span>
+        <span class="value">{{ row.stockAmount }}개</span>
+      </div>
+      <div class="stock-line blue">
+        <span class="label">렌탈</span>
+        <span class="value">{{ row.rentalAmount }}개</span>
+        <span class="label">가능</span>
+        <span class="value">{{ row.possibleAmount }}개</span>
+      </div>
+      <div class="stock-line green">
+        <span class="label">수리</span>
+        <span class="value">{{ row.repairAmount }}개</span>
+        <span class="label">연체</span>
+        <span class="value">{{ row.overdueAmount }}개</span>
+      </div>
+    </template>
+  </el-table-column>
+
+  <!-- 총 매출 -->
+  <el-table-column label="총 매출" min-width="120">
+    <template #default="{ row }">
+      {{ formatToManWon(row.wholeSales) }}
+    </template>
+  </el-table-column>
+
+  <!-- 수리비 -->
+  <el-table-column label="수리비" min-width="120">
+    <template #default="{ row }">
+      {{ formatToManWon(row.wholeRepairCost) }}
+    </template>
+  </el-table-column>
+
+  <!-- 운용률 -->
+  <el-table-column label="운용률" min-width="160">
+    <template #default="{ row }">
+      <div class="usage-cell">
+        <div class="usage-bar-bg">
+          <div
+            class="usage-bar-fill"
+            :style="{ width: row.utilizationRate + '%' }"
+          ></div>
+        </div>
+        <span class="usage-text">{{ row.utilizationRate }}%</span>
+      </div>
+    </template>
+  </el-table-column>
+
+  <!-- 목록 / 상세보기 -->
+  <el-table-column label="목록" width="120" align="center">
+    <template #default="{ row }">
+      <el-button class="link-btn" link type="primary" size="small" @click="openDetailModal(row)">
+        상세보기
+      </el-button>
+    </template>
+  </el-table-column>
+</el-table>
+
+
+    <!-- 페이지네이션 -->
+    <div class="pagination-area">
+        <el-pagination 
+          layout="prev, pager, next" 
+          :total="totalCount" 
+          v-model:current-page="page"
+          :page-size="pageSize"
+          @current-change="fetchItemList"
+        />
+      </div>
+      </el-card>
 
     <!-- 등록 모달 -->
     <ProductCreateModal
@@ -130,7 +171,8 @@
     <ProductDetailModal
       v-if="isDetailModalOpen"
       :item-name="selectedItemName"
-      :item-categoryName="selectedCategoryName"
+      :monthly-price="selectedMonthlyPrice"
+      :category-name="selectedCategoryName"
       @close="closeDetailModal"
       @updated="reloadList"
       @deleted="reloadList"
@@ -139,10 +181,10 @@
 </template>
 
 <script setup>
-    import { ref, onMounted } from 'vue';
-    import api from '@/api/axios';
-    import ProductCreateModal from './ProductCreateModal.vue';
-import ProductDetailModal from './ProductDetailModal.vue';
+  import { ref, onMounted } from 'vue';
+  import api from '@/api/axios';
+  import ProductCreateModal from './ProductCreateModal.vue';
+  import ProductDetailModal from './ProductDetailModal.vue';
 
 const kpi = ref({
   totalCount: 0,
@@ -160,6 +202,11 @@ const isCreateModalOpen = ref(false);
 const isDetailModalOpen = ref(false);
 const selectedItemName = ref('');
 const selectedCategoryName = ref('');
+const selectedMonthlyPrice = ref(0);
+
+const totalCount = ref(0);
+const page = ref(1);
+const pageSize = ref(5);
 
 // 1. KPI 조회
 async function fetchKpi() {
@@ -176,12 +223,18 @@ async function fetchKpi() {
 // 2. 기본 목록 조회
 async function fetchItemList() {
   try {
-    const res = await api.get('/item/read-groupby-name');
+    const res = await api.get('/item/read-groupby-name',{
+    params: {
+        page: page.value,
+        size: pageSize.value,
+      }
+      });
     console.log('기본 목록 조회 결과:', res.data);
     console.log('기본 목록 조회 결과:', res.data.contents);
     
     itemList.value = res.data.contents;
-    buildCategoryOptions();
+    totalCount.value = res.data.totalCount;
+    fetchCategory();
   } catch (err) {
     console.error("제품 목록 조회 실패", err);
   }
@@ -195,8 +248,14 @@ async function handleSearch() {
     return;
   }
   try {
-    const res = await api.get(`/item/search/${encodeURIComponent(keyword)}`);
+    const res = await api.get(`/item/search/${encodeURIComponent(keyword)}`,{
+    params: {
+        page: page.value,
+        size: pageSize.value,
+      }
+      });
     itemList.value = res.data.contents;
+    totalCount.value = res.data.totalCount;
   } catch (err) {
     console.error("제품명 검색 실패", err);
   }
@@ -211,29 +270,51 @@ async function handleCategoryFilter() {
   }
   try {
     const res = await api.get(
-      `/item/filtering/${encodeURIComponent(category)}`
-    );
+      `/item/filtering/${encodeURIComponent(category)}`,{
+    params: {
+        page: page.value,
+        size: pageSize.value,
+      }
+      });
     itemList.value = res.data.contents;
+    totalCount.value = res.data.totalCount;
   } catch (err) {
     console.error("카테고리 필터링 실패", err);
   }
 }
 
-// 5. 카테고리 조회
+// 5. 카테고리 조회(// 카테고리 select 옵션 구성)
 async function fetchCategory() {
   try {
     const res = await api.get('item/category');
-    categoryOptions.value = res.data;
+    categoryOptions.value = res.data.map((c) => c.name);
   } catch (err) {
     console.error('카테고리 조회 실패', err);
   }
 }
 
-// 카테고리 select 옵션 구성
-function buildCategoryOptions() {
-  const set = new Set();
-  itemList.value.forEach((item) => set.add(item.categoryName));
-  categoryOptions.value = Array.from(set);
+// 숫자 포맷 함수
+function formatToManWon(value) {
+  if (value == null) return '0';
+
+  const num = Number(value);
+  if (isNaN(num)) return '0';
+
+  const man = num / 10000;              // 만원 단위
+  const fixed = Number(man.toFixed(1)); // 1자리까지 반올림 후 숫자로 변환
+
+  if (fixed === 0) {
+    // 0.0만원 -> 0
+    return '0';
+  }
+
+  if (Number.isInteger(fixed)) {
+    // 26.0만원 -> 26만원
+    return fixed.toString() + '만원';
+  }
+
+  // 그 외: 26.5만원 등
+  return fixed.toString() + '만원';
 }
 
 // 모달 open/close
@@ -244,8 +325,10 @@ function openCreateModal() {
 function openDetailModal(item) {
   // item 객체 안에 있는 필드 이름은 실제 응답에 맞게 사용
   selectedItemName.value = item.itemName;
+  selectedMonthlyPrice.value = item.monthlyPrice;
   selectedCategoryName.value = item.categoryName;
   console.log('제품 카테고리:', item.categoryName);
+  console.log('제품 월 렌탈료:', item.monthlyPrice);
   console.log('제품명:', item.itemName);
   isDetailModalOpen.value = true;
 }
@@ -253,7 +336,13 @@ function openDetailModal(item) {
 function closeDetailModal() {
   isDetailModalOpen.value = false;
   selectedItemName.value = '';
-  selectedCategoryName.value = item.categoryName;
+  selectedMonthlyPrice.value = 0;
+  selectedCategoryName.value = '';
+}
+
+const changePage = (p) => {
+    page.value.current = p
+    fetchList()
 }
 
 // 목록 리로드 (모달에서 성공 이벤트 발생 시 사용)
@@ -309,6 +398,11 @@ onMounted(async () => {
   font-size: 12px;
   color: #999;
 }
+.search-area { 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 20px; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #eee;
+}
+.filter-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
 .toolbar {
   display: flex;
@@ -449,4 +543,6 @@ onMounted(async () => {
   color: #248efff2;
   cursor: pointer;
 }
+
+.pagination { display: flex; justify-content: center; margin-top: 16px; }
 </style>

@@ -127,14 +127,8 @@ import {
     User,
     Lock
 } from "@element-plus/icons-vue";
-import api from "@/api/axios";
 import dayjs from "dayjs";
-
-const router = useRouter();
-
-const form = ref({
-    position: {}
-});
+import api from "@/api/axios";
 
 onMounted(async () => {
     const response = await api.get('/emp/mypage');
@@ -142,6 +136,12 @@ onMounted(async () => {
     console.log(data);
     form.value = data;
 })
+const router = useRouter();
+
+const form = ref({
+    position: {}
+});
+
 
 const dateFormatter = (date) => {
   return date ? dayjs(date).format("YYYY-MM-DD") : "-";

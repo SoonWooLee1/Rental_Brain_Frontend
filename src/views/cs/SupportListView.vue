@@ -81,14 +81,6 @@
           sortable="custom" 
         />
         
-        <!-- <el-table-column 
-            prop="createDate" 
-            label="접수일시" 
-            width="160" 
-            align="center" 
-            :formatter="dateFormatter" 
-        /> -->
-
         <el-table-column prop="customerName" label="기업명" width="150" show-overflow-tooltip />
         <el-table-column prop="title" label="제목" min-width="150" show-overflow-tooltip />
 
@@ -100,6 +92,7 @@
 
         <el-table-column prop="categoryName" label="카테고리" width="120" align="center" />
         <el-table-column prop="channelName" label="유입 채널" width="100" align="center" />
+        <el-table-column prop="empName" label="담당자" width="100" align="center" />
         
         <el-table-column prop="action" label="조치 사항" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">
@@ -161,8 +154,20 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="담당자">
-              <el-input v-model="createForm.inCharge" placeholder="담당자 이름" />
+            <el-form-item label="담당자" required>
+              <el-select 
+                v-model="createForm.empId" 
+                placeholder="담당자를 선택하세요" 
+                filterable 
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="emp in inChargeList"
+                  :key="emp.id"
+                  :label="emp.name"
+                  :value="emp.id"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -259,6 +264,15 @@
            <el-button type="danger" plain @click="handleDelete">삭제</el-button>
         </div>
         <div class="dialog-footer-right">
+          
+          <el-button 
+            v-if="selectedSupport && (selectedSupport.status === 'C' || selectedSupport.status === '완료')"
+            type="warning" 
+            @click="handleReopen"
+          >
+            진행 중으로 변경
+          </el-button>
+
           <el-button 
             v-if="selectedSupport && selectedSupport.status !== 'C' && selectedSupport.status !== '완료'"
             type="success" 
@@ -280,7 +294,7 @@
 import { ref, onMounted, reactive } from 'vue';
 import { Search, Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { getSupportList, getSupportKpi, createSupport, updateSupport, deleteSupport } from '@/api/customersupport';
+import { getSupportList, getSupportKpi, createSupport, updateSupport, deleteSupport, getInChargeList } from '@/api/customersupport';
 import { getCustomerList } from '@/api/customerlist'; 
 
 // 상태 변수들
@@ -289,6 +303,7 @@ const supportList = ref([]);
 const kpi = ref({ total: 0, processing: 0, resolutionRate: 0 });
 const customerSearchLoading = ref(false);
 const customerOptions = ref([]); 
+const inChargeList = ref([]); 
 
 // 수정 모드 상태
 const isEditMode = ref(false);
@@ -321,7 +336,7 @@ const selectedSupport = ref(null);
 // 등록/수정 폼 데이터
 const createForm = reactive({
   customerId: null,
-  inCharge: '',
+  empId: null, 
   phone: '',
   email: '',
   categoryId: null,
@@ -331,6 +346,17 @@ const createForm = reactive({
 });
 
 // --- 메서드 ---
+
+const fetchInChargeList = async () => {
+  try {
+    const res = await getInChargeList();
+    if (res.data) {
+        inChargeList.value = res.data;
+    }
+  } catch (error) {
+    console.error('담당자 목록 로드 실패:', error);
+  }
+};
 
 const fetchData = async () => {
   loading.value = true;
@@ -374,12 +400,28 @@ const resetSearch = () => {
   handleSearch();
 };
 
+// [수정] 정렬 핸들러 수정
 const handleSortChange = ({ prop, order }) => {
-  if (prop === 'customerSupportCode') { 
+  // 1. prop이 customerSupportCode일 경우 DB의 'id' (혹은 customer_support_code)로 매핑
+  // 2. order가 null (정렬 취소)일 경우 기본 정렬(id desc)로 초기화
+  
+  if (!order) {
+    // 정렬 취소 시 기본값
     sortState.sortBy = 'id';
+    sortState.sortOrder = 'desc';
+  } else {
+    // 정렬 적용
+    if (prop === 'customerSupportCode') {
+      sortState.sortBy = 'id'; // DB 컬럼명에 맞게 설정 (보통 PK인 id로 정렬)
+    } else {
+      sortState.sortBy = prop;
+    }
+    // element-plus는 'ascending'/'descending'을 반환하므로 'asc'/'desc'로 변환
     sortState.sortOrder = order === 'ascending' ? 'asc' : 'desc';
-    fetchData();
   }
+  
+  // 데이터 재조회
+  fetchData();
 };
 
 const handlePageChange = (val) => {
@@ -417,9 +459,11 @@ const searchCustomers = async (query) => {
 const openCreateModal = () => {
   isEditMode.value = false;
   Object.keys(createForm).forEach(key => createForm[key] = null);
-  createForm.inCharge = '';
   createForm.title = '';
   createForm.content = '';
+  createForm.phone = '';
+  createForm.email = '';
+  createForm.empId = null;
   
   createModalVisible.value = true;
   searchCustomers(''); 
@@ -431,10 +475,9 @@ const openDetailModal = (row) => {
   detailModalVisible.value = true;
 };
 
-// [추가] 상태 변경(처리 완료) 핸들러
+// 상태 변경(처리 완료) 핸들러
 const handleComplete = async () => {
     try {
-        // 상태만 'C'로 업데이트 (필요 시 action도 같이 보낼 수 있음)
         await updateSupport(selectedSupport.value.id, { status: 'C' });
         ElMessage.success('문의가 완료 처리되었습니다.');
         detailModalVisible.value = false;
@@ -444,15 +487,29 @@ const handleComplete = async () => {
     }
 };
 
-// [추가] 수정 모달 열기
+// [추가] 상태 변경(진행 중으로 되돌리기) 핸들러
+const handleReopen = async () => {
+    try {
+        // P (Processing) 상태로 업데이트
+        await updateSupport(selectedSupport.value.id, { status: 'P' });
+        ElMessage.success('상태가 진행 중으로 변경되었습니다.');
+        detailModalVisible.value = false;
+        fetchData();
+    } catch (e) {
+        ElMessage.error('상태 변경 실패: ' + e.message);
+    }
+};
+
+// 수정 모달 열기
 const openEditModal = () => {
     isEditMode.value = true;
     const item = selectedSupport.value;
     
-    // API에 맞게 폼 데이터 매핑
     Object.assign(createForm, {
-        customerId: null, // 수정 시 고객사 변경 막거나, 원본 데이터 필요 (화면엔 안보이지만)
-        inCharge: '', 
+        customerId: null,
+        empId: item.empId || null,
+        phone: item.phone || '',
+        email: item.email || '',
         categoryId: getCategoryIdByName(item.categoryName),
         channelId: getChannelIdByName(item.channelName),
         title: item.title,
@@ -460,17 +517,16 @@ const openEditModal = () => {
         action: item.action,
     });
     
-    // 기업명 검색용 초기화 (선택된 기업 보이게 하려면 추가 로직 필요)
     if(item.customerName) {
         customerOptions.value = [{ id: item.cum_id || 0, name: item.customerName }]; 
-        createForm.customerId = item.cum_id || 0; // cum_id가 DTO에 포함되어 있어야 함
+        createForm.customerId = item.cum_id || 0; 
     }
 
     detailModalVisible.value = false;
     createModalVisible.value = true;
 };
 
-// 헬퍼: 이름으로 ID 찾기 (간이 구현)
+// 헬퍼: 이름으로 ID 찾기
 const getCategoryIdByName = (name) => {
     const map = { '가격 문의': 1, '제품 문의': 2, '계약 문의': 3, '기술 지원': 4, '서비스 만족': 5, '제품 불량': 6, '제품 품질': 7, 'AS 지연': 8, '직원 응대': 9, '서비스 불만': 10 };
     return map[name] || null;
@@ -486,6 +542,7 @@ const submitCreate = async () => {
     ElMessage.warning('제목과 내용은 필수입니다.');
     return;
   }
+
   try {
     if (isEditMode.value) {
         // 수정
@@ -503,7 +560,7 @@ const submitCreate = async () => {
   }
 };
 
-// [추가] 삭제 핸들러
+// 삭제 핸들러
 const handleDelete = async () => {
     if (!selectedSupport.value) return;
     ElMessageBox.confirm('정말 삭제하시겠습니까?', '경고', { type: 'warning' })
@@ -524,14 +581,10 @@ const truncateText = (text, length) => {
   return text.length > length ? text.substring(0, length) + '....' : text;
 };
 
-
-
-// [수정] 날짜 포맷 (시간 포함)
-const dateFormatter = (row, col, val) => {
-  return val ? val : '-'; // 백엔드에서 이미 'YYYY-MM-DD HH:mm:ss'로 오면 그대로 출력
-};
-
-onMounted(fetchData);
+onMounted(() => {
+    fetchData();
+    fetchInChargeList();
+});
 </script>
 
 <style scoped>

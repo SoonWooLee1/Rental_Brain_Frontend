@@ -41,7 +41,11 @@ api.interceptors.response.use(
             return Promise.reject(e);
         }
 
-        if (e.response?.status === 401 && e.response?.data?.message === "access token expired") {
+        if (e.response?.status === 401) {
+            if(e.response?.data?.message !== "access token expired"){
+                return Promise.reject(e);
+            }
+            
             console.log('엑세스 토큰 만료')
             originalRequest._retry = true;
 

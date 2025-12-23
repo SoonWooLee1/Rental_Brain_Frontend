@@ -118,14 +118,31 @@
           <el-menu-item index="/cs/feedbacks">
             <el-icon><Star /></el-icon> 피드백 관리
           </el-menu-item>
+
+          <el-menu-item index="/cs/feedbacks">
+            <el-icon><Star /></el-icon> 설문조사 관리
+          </el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/analysis/overview">
-          <el-icon>
-            <TrendCharts />
-          </el-icon>
-          고객 분석
-        </el-menu-item>
+        <el-sub-menu index="/analysis">
+          <template #title>
+            <el-icon><DataAnalysis /></el-icon>
+            <span>고객 분석</span>
+          </template>
+
+        <el-menu-item index="/analysis/summary">
+            <el-icon><PieChart /></el-icon> 고객 요약 분석
+          </el-menu-item>
+          
+          <el-menu-item index="/analysis/support">
+            <el-icon><Headset /></el-icon>고객 응대 분석
+          </el-menu-item>
+
+           <el-menu-item index="/analysis/segment">
+            <el-icon><UserFilled /></el-icon>고객 세그먼트 분석
+          </el-menu-item>
+          
+        </el-sub-menu>
 
         <el-menu-item index="/customer/risk">
           <el-icon>
@@ -143,7 +160,7 @@
           <span>영업 관리</span>
         </template>
 
-        <el-menu-item index="/quotes">
+        <el-menu-item index="/quote">
           <el-icon>
             <Document />
           </el-icon>
@@ -157,12 +174,21 @@
           계약(결재)
         </el-menu-item>
 
-        <el-menu-item index="/campaign/promotions">
-          <el-icon>
-            <Promotion />
+      <el-sub-menu index="campaign">
+          <template #title><el-icon>
+            <Present />
           </el-icon>
-          캠페인
-        </el-menu-item>
+          <span>캠페인</span>
+          </template>
+
+          <el-menu-item index="/campaign/promotions">
+            <el-icon><Promotion /></el-icon> 프로모션
+          </el-menu-item>
+          
+          <el-menu-item index="/campaign/coupons">
+            <el-icon><Ticket /></el-icon> 쿠폰
+          </el-menu-item>
+        </el-sub-menu>
       </el-sub-menu>
 
       <!-- 자산운영 -->
@@ -229,7 +255,11 @@ import {
   Tools,
   CreditCard,
   QuestionFilled, // 문의 관리 아이콘
-  Star            // 피드백 관리 아이콘
+  Star,            // 피드백 관리 아이콘
+  DataAnalysis, // 여기서 부터 4개 고객 분석 아이콘
+  PieChart,
+  Headset,
+  Ticket,
 } from "@element-plus/icons-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -249,9 +279,7 @@ const goToMain = ()=>{
   router.push('/')
 }
 
-const logout = async () => {
-  console.log('empId:', authStore.empId);
-  authStore.logout();
+const logout = async () => {  
   try {
     const response = await api.post('/emp/logout', {
       empId: authStore.empId
@@ -260,7 +288,7 @@ const logout = async () => {
   } catch (e) {
     console.log('로그아웃 통신 fail');
   }
-  console.log('empId:', authStore.empId);
+  authStore.logout();
   toastStore.showToast('로그아웃' + authStore.empId);
   router.push('/login');
 }
@@ -322,6 +350,11 @@ const getIcon = (type) => {
   width: 260px;
   min-width: 260px;
   height: 100vh;
+
+  display: flex;          /* 추가 */
+  flex-direction: column; /* 추가 */
+  overflow: hidden;       /* 추가: 바깥은 고정, 안쪽만 스크롤 */
+
   background: #fff;
   border-right: 1px solid #eee;
   padding: 20px;
@@ -409,6 +442,9 @@ const getIcon = (type) => {
 /* 메뉴 */
 .menu {
   margin-top: 25px;
+  flex: 1;         /* 추가 */
+  min-height: 0;   /* 추가: flex 자식이 스크롤되려면 중요 */
+  overflow-y: auto;/* 추가 */
 }
 
 .badge {
