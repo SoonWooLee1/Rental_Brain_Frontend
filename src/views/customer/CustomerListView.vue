@@ -50,6 +50,7 @@
         </el-select>
 
         <el-button type="primary" @click="handleSearch">검색</el-button>
+        <el-button @click="resetSearch">초기화</el-button>
       </div>
 
       <el-button class="btn-guide" @click="showSegmentGuideModal = true">
@@ -77,8 +78,20 @@
     </div>
 
     <el-card shadow="never" class="table-card">
-      <el-table :data="customerList" style="width: 100%" v-loading="loading">
-        <el-table-column prop="customerCode" label="ID" width="120" align="center" />
+      <el-table 
+        :data="customerList" 
+        style="width: 100%" 
+        v-loading="loading"
+        @sort-change="handleSortChange"
+      >
+        <el-table-column 
+            prop="customerCode" 
+            label="ID" 
+            width="120" 
+            align="center" 
+            sortable="custom" 
+        />
+
         <el-table-column prop="name" label="기업명" min-width="140" show-overflow-tooltip />
         <el-table-column prop="inCharge" label="담당자" width="100" align="center" />
         <el-table-column label="부서/직책" width="140" align="center">
@@ -117,6 +130,7 @@
             layout="prev, pager, next"
             :total="totalCount"
             :page-size="pageSize"
+            v-model:current-page="currentPage"
             @current-change="handlePageChange"
           />
       </div>
@@ -124,30 +138,14 @@
 
     <el-dialog v-model="showRegisterModal" title="신규 기업 등록" width="600px">
       <el-form :model="regForm" label-width="100px">
-        <el-form-item label="기업명" required>
-            <el-input v-model="regForm.name" placeholder="예: (주)렌탈브레인" />
-        </el-form-item>
-        <el-form-item label="사업자번호">
-            <el-input v-model="regForm.businessNum" placeholder="예: 123-45-67890 (숫자만 입력)" />
-        </el-form-item>
-        <el-form-item label="전화번호">
-            <el-input v-model="regForm.callNum" placeholder="예: 02-1234-5678" />
-        </el-form-item>
-        <el-form-item label="담당자">
-            <el-input v-model="regForm.inCharge" placeholder="예: 홍길동" />
-        </el-form-item>
-        <el-form-item label="부서/직책">
-            <el-input v-model="regForm.dept" placeholder="예: 경영지원팀 / 과장" />
-        </el-form-item>
-        <el-form-item label="휴대폰">
-            <el-input v-model="regForm.phone" placeholder="예: 010-1234-5678" />
-        </el-form-item>
-        <el-form-item label="이메일">
-            <el-input v-model="regForm.email" placeholder="예: email@company.com" />
-        </el-form-item>
-        <el-form-item label="주소">
-            <el-input v-model="regForm.addr" placeholder="예: 서울특별시 강남구..." />
-        </el-form-item>
+        <el-form-item label="기업명" required><el-input v-model="regForm.name" placeholder="예: (주)렌탈브레인" /></el-form-item>
+        <el-form-item label="사업자번호"><el-input v-model="regForm.businessNum" placeholder="예: 123-45-67890 (숫자만 입력)" /></el-form-item>
+        <el-form-item label="전화번호"><el-input v-model="regForm.callNum" placeholder="예: 02-1234-5678" /></el-form-item>
+        <el-form-item label="담당자"><el-input v-model="regForm.inCharge" placeholder="예: 홍길동" /></el-form-item>
+        <el-form-item label="부서/직책"><el-input v-model="regForm.dept" placeholder="예: 경영지원팀 / 과장" /></el-form-item>
+        <el-form-item label="휴대폰"><el-input v-model="regForm.phone" placeholder="예: 010-1234-5678" /></el-form-item>
+        <el-form-item label="이메일"><el-input v-model="regForm.email" placeholder="예: email@company.com" /></el-form-item>
+        <el-form-item label="주소"><el-input v-model="regForm.addr" placeholder="예: 서울특별시 강남구..." /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showRegisterModal = false">취소</el-button>
@@ -191,17 +189,22 @@ const totalCount = ref(0);
 const pageSize = ref(10);
 const currentPage = ref(1);
 
-// 검색 및 필터 상태
+// 검색 및 필터
 const searchKeyword = ref('');
-const selectedSegments = ref([]); // 다중 선택
-const selectedStatus = ref('ACTIVE'); // 기본값 '활성'
+const selectedSegments = ref([]); 
+const selectedStatus = ref('ACTIVE');
+
+// [추가] 정렬 상태
+const sortState = ref({
+  sortBy: 'id',
+  sortOrder: 'desc'
+});
 
 // 모달 상태
 const showRegisterModal = ref(false);
 const showSegmentGuideModal = ref(false);
 const regForm = ref({});
 
-// 세그먼트 기준표 데이터 (수정됨)
 const segmentGuideData = [
   { grade: 'VIP 고객', criteria: '연간 거래액 1억원 이상 또는 계약 건수 10건 이상' },
   { grade: '일반 고객', criteria: '최근 1년 내 거래 이력이 있는 고객' },
@@ -209,27 +212,37 @@ const segmentGuideData = [
   { grade: '이탈 위험 고객', criteria: '최근 6개월간 거래가 없거나 문의 감소' },
   { grade: '블랙리스트 고객', criteria: '미수금 발생 또는 악성 민원 제기' },
   { grade: '잠재 고객', criteria: '견적 문의 단계의 가망 고객' },
-  { grade: '확장 의사 고객', criteria: '업셀링 대상, 결합 고객, 재계약 고객 포함' }, // 추가됨
+  { grade: '확장 의사 고객', criteria: '업셀링 대상, 결합 고객, 재계약 고객 포함' },
 ];
 
-// 데이터 조회
 const fetchData = async () => {
   loading.value = true;
   try {
-    // KPI 조회
     const kpiRes = await getCustomerKpi();
     if(kpiRes.data) kpiData.value = kpiRes.data;
     
-    // 목록 조회 (필터 포함)
+    // [수정] 정렬 파라미터(sortBy, sortOrder) 추가
     const listRes = await getCustomerList({
         pageNum: currentPage.value, 
         amount: pageSize.value,
         name: searchKeyword.value,
-        segments: selectedSegments.value, // 배열 전송
-        status: selectedStatus.value      // 상태 전송
+        segments: selectedSegments.value, 
+        status: selectedStatus.value,
+        sortBy: sortState.value.sortBy,      // 추가
+        sortOrder: sortState.value.sortOrder // 추가
     });
-    customerList.value = listRes.data.contents;
-    totalCount.value = listRes.data.totalCount;
+
+    // 백엔드 응답 구조에 따라 데이터 바인딩 (PageResponseDTO 기준)
+    if(listRes.data) {
+        // 백엔드가 contents를 쓰는지 data를 쓰는지 확인 (이전 코드 기반 contents 유지)
+        customerList.value = listRes.data.contents || listRes.data.data || [];
+        // totalCount 위치 확인
+        if (listRes.data.pageInfo) {
+             totalCount.value = listRes.data.pageInfo.total;
+        } else {
+             totalCount.value = listRes.data.totalCount || 0;
+        }
+    }
   } catch (e) {
     console.error(e);
     ElMessage.error('데이터를 불러오는데 실패했습니다.');
@@ -243,6 +256,29 @@ const handleSearch = () => {
     fetchData();
 };
 
+// [추가] 초기화 함수
+const resetSearch = () => {
+    searchKeyword.value = '';
+    selectedSegments.value = [];
+    selectedStatus.value = 'ACTIVE';
+    currentPage.value = 1;
+    
+    // 정렬 초기화 (선택 사항)
+    sortState.value.sortBy = 'id';
+    sortState.value.sortOrder = 'desc';
+    
+    fetchData();
+};
+
+// [추가] 정렬 핸들러
+const handleSortChange = ({ prop, order }) => {
+    if (prop === 'customerCode') { // 화면엔 customerCode, 실제 정렬은 id로 가정
+        sortState.value.sortBy = 'id';
+        sortState.value.sortOrder = order === 'ascending' ? 'asc' : 'desc';
+        fetchData();
+    }
+};
+
 const handlePageChange = (page) => {
     currentPage.value = page;
     fetchData();
@@ -250,7 +286,6 @@ const handlePageChange = (page) => {
 
 const handleRegister = async () => {
   const payload = { ...regForm.value };
-  // 하이픈 제거 로직
   ['businessNum', 'callNum', 'phone'].forEach(k => {
     if(payload[k]) payload[k] = payload[k].replace(/-/g, '');
   });
@@ -267,21 +302,19 @@ const handleRegister = async () => {
 };
 
 const goDetail = (id) => router.push(`/customers/${id}`);
-
 const formatPhone = (v) => v ? v.replace(/(^02|^0505|^1[0-9]{3}|^0[0-9]{2})([0-9]+)?([0-9]{4})$/,"$1-$2-$3") : '-';
-
 const formatSegmentName = (name) => {
     if(!name) return '일반';
-    return name.replace(' (기회 고객)', ''); // 너무 긴 이름 축약 표시
+    return name.replace(' (기회 고객)', ''); 
 }
-
 const getSegmentColor = (s) => {
+    if(!s) return '';
     if(s.includes('VIP')) return 'warning';
     if(s.includes('이탈')) return 'danger';
     if(s.includes('블랙')) return 'info';
     if(s.includes('신규')) return 'success';
     if(s.includes('확장')) return 'primary';
-    return ''; // 일반, 잠재 등
+    return ''; 
 };
 
 onMounted(fetchData);

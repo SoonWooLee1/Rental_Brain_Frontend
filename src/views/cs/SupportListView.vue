@@ -32,12 +32,6 @@
           <el-option label="제품 문의" :value="2" />
           <el-option label="계약 문의" :value="3" />
           <el-option label="기술 지원" :value="4" />
-          <el-option label="서비스 만족" :value="5" />
-          <el-option label="제품 불량" :value="6" />
-          <el-option label="제품 품질" :value="7" />
-          <el-option label="AS 지연" :value="8" />
-          <el-option label="직원 응대" :value="9" />
-          <el-option label="서비스 불만" :value="10" />
         </el-select>
 
         <el-select 
@@ -87,16 +81,15 @@
           sortable="custom" 
         />
         
-        <el-table-column 
+        <!-- <el-table-column 
             prop="createDate" 
-            label="접수일" 
-            width="120" 
+            label="접수일시" 
+            width="160" 
             align="center" 
             :formatter="dateFormatter" 
-        />
+        /> -->
 
         <el-table-column prop="customerName" label="기업명" width="150" show-overflow-tooltip />
-        
         <el-table-column prop="title" label="제목" min-width="150" show-overflow-tooltip />
 
         <el-table-column label="내용" min-width="200">
@@ -106,7 +99,6 @@
         </el-table-column>
 
         <el-table-column prop="categoryName" label="카테고리" width="120" align="center" />
-        
         <el-table-column prop="channelName" label="유입 채널" width="100" align="center" />
         
         <el-table-column prop="action" label="조치 사항" min-width="150" show-overflow-tooltip>
@@ -144,7 +136,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="createModalVisible" title="새 문의 등록" width="600px" destroy-on-close>
+    <el-dialog v-model="createModalVisible" :title="isEditMode ? '문의 내역 수정' : '새 문의 등록'" width="600px" destroy-on-close>
       <el-form :model="createForm" label-width="100px" class="create-form">
         
         <el-form-item label="기업 선택" required>
@@ -156,6 +148,7 @@
             :remote-method="searchCustomers"
             :loading="customerSearchLoading"
             style="width: 100%"
+            :disabled="isEditMode" 
           >
             <el-option
               v-for="item in customerOptions"
@@ -191,12 +184,6 @@
                 <el-option label="제품 문의" :value="2" />
                 <el-option label="계약 문의" :value="3" />
                 <el-option label="기술 지원" :value="4" />
-                <el-option label="서비스 만족" :value="5" />
-                <el-option label="제품 불량" :value="6" />
-                <el-option label="제품 품질" :value="7" />
-                <el-option label="AS 지연" :value="8" />
-                <el-option label="직원 응대" :value="9" />
-                <el-option label="서비스 불만" :value="10" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -229,7 +216,9 @@
       </el-form>
       <template #footer>
         <el-button @click="createModalVisible = false">취소</el-button>
-        <el-button type="primary" @click="submitCreate">등록</el-button>
+        <el-button type="primary" @click="submitCreate">
+             {{ isEditMode ? '수정' : '등록' }}
+        </el-button>
       </template>
     </el-dialog>
 
@@ -237,7 +226,7 @@
       <div v-if="selectedSupport">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="문의 번호">{{ selectedSupport.customerSupportCode }}</el-descriptions-item>
-          <el-descriptions-item label="접수일">{{ formatDate(selectedSupport.createDate) }}</el-descriptions-item>
+          <el-descriptions-item label="접수일시">{{ selectedSupport.createDate }}</el-descriptions-item>
           <el-descriptions-item label="기업명">{{ selectedSupport.customerName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="담당자">{{ selectedSupport.empName || '미배정' }}</el-descriptions-item>
           <el-descriptions-item label="카테고리">{{ selectedSupport.categoryName }}</el-descriptions-item>
@@ -258,7 +247,13 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="detailModalVisible = false">닫기</el-button>
+        <div class="dialog-footer-left">
+           <el-button type="danger" plain @click="handleDelete">삭제</el-button>
+        </div>
+        <div class="dialog-footer-right">
+           <el-button type="primary" @click="openEditModal">수정</el-button>
+           <el-button @click="detailModalVisible = false">닫기</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -268,8 +263,8 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 import { Search, Plus } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
-import { getSupportList, getSupportKpi, createSupport } from '@/api/customersupport';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { getSupportList, getSupportKpi, createSupport, updateSupport, deleteSupport } from '@/api/customersupport';
 import { getCustomerList } from '@/api/customerlist'; 
 
 // 상태 변수들
@@ -278,6 +273,9 @@ const supportList = ref([]);
 const kpi = ref({ total: 0, processing: 0, resolutionRate: 0 });
 const customerSearchLoading = ref(false);
 const customerOptions = ref([]); 
+
+// 수정 모드 상태
+const isEditMode = ref(false);
 
 // 검색 조건
 const search = reactive({
@@ -304,7 +302,7 @@ const createModalVisible = ref(false);
 const detailModalVisible = ref(false);
 const selectedSupport = ref(null);
 
-// 등록 폼 데이터
+// 등록/수정 폼 데이터
 const createForm = reactive({
   customerId: null,
   inCharge: '',
@@ -321,16 +319,12 @@ const createForm = reactive({
 const fetchData = async () => {
   loading.value = true;
   try {
-    // KPI 조회
     const kpiRes = await getSupportKpi();
-    if(kpiRes.data) {
-        kpi.value = kpiRes.data;
-    }
+    if(kpiRes.data) kpi.value = kpiRes.data;
 
-    // 목록 조회 파라미터
     const params = {
       page: page.currentPage,
-      amount: page.pageSize, // [수정 3] 파라미터명 amount로 통일
+      amount: page.pageSize, 
       keyword: search.keyword,
       category: search.category || null,
       status: search.status || null,
@@ -340,15 +334,10 @@ const fetchData = async () => {
 
     const res = await getSupportList(params);
     
-    // [수정 3] 데이터 바인딩 로직 개선 (CustomerList 방식과 통일)
-    // res.data.data -> res.data.contents (백엔드 DTO 확인 필요, CustomerList와 같다면 contents)
-    // 안전하게 처리하기 위해 contents가 없으면 data를 체크하거나 빈 배열 할당
     if (res.data) {
-        // 백엔드 응답이 contents 필드를 쓴다면 contents, 아니면 data
         supportList.value = res.data.contents || res.data.data || []; 
         page.totalCount = res.data.totalCount || (res.data.pageInfo ? res.data.pageInfo.total : 0);
     }
-
   } catch (error) {
     console.error('Fetch Error:', error);
     ElMessage.error('데이터를 불러오는데 실패했습니다.');
@@ -370,7 +359,7 @@ const resetSearch = () => {
 };
 
 const handleSortChange = ({ prop, order }) => {
-  if (prop === 'id') {
+  if (prop === 'customerSupportCode') { 
     sortState.sortBy = 'id';
     sortState.sortOrder = order === 'ascending' ? 'asc' : 'desc';
     fetchData();
@@ -381,6 +370,7 @@ const handlePageChange = (val) => {
   page.currentPage = val;
   fetchData();
 };
+
 const handleSizeChange = (val) => {
   page.pageSize = val;
   page.currentPage = 1;
@@ -407,8 +397,9 @@ const searchCustomers = async (query) => {
   }
 };
 
+// 등록 모달 열기
 const openCreateModal = () => {
-  // 폼 초기화
+  isEditMode.value = false;
   Object.keys(createForm).forEach(key => createForm[key] = null);
   createForm.inCharge = '';
   createForm.title = '';
@@ -418,33 +409,95 @@ const openCreateModal = () => {
   searchCustomers(''); 
 };
 
+// 상세 모달 열기
 const openDetailModal = (row) => {
   selectedSupport.value = row;
   detailModalVisible.value = true;
 };
 
+// [추가] 수정 모달 열기
+const openEditModal = () => {
+    isEditMode.value = true;
+    const item = selectedSupport.value;
+    
+    // API에 맞게 폼 데이터 매핑
+    Object.assign(createForm, {
+        customerId: null, // 수정 시 고객사 변경 막거나, 원본 데이터 필요 (화면엔 안보이지만)
+        inCharge: '', 
+        categoryId: getCategoryIdByName(item.categoryName),
+        channelId: getChannelIdByName(item.channelName),
+        title: item.title,
+        content: item.content,
+    });
+    
+    // 기업명 검색용 초기화 (선택된 기업 보이게 하려면 추가 로직 필요)
+    if(item.customerName) {
+        customerOptions.value = [{ id: item.cum_id || 0, name: item.customerName }]; 
+        createForm.customerId = item.cum_id || 0; // cum_id가 DTO에 포함되어 있어야 함
+    }
+
+    detailModalVisible.value = false;
+    createModalVisible.value = true;
+};
+
+// 헬퍼: 이름으로 ID 찾기 (간이 구현)
+const getCategoryIdByName = (name) => {
+    const map = { '가격 문의': 1, '제품 문의': 2, '계약 문의': 3, '기술 지원': 4, '서비스 만족': 5, '제품 불량': 6, '제품 품질': 7, 'AS 지연': 8, '직원 응대': 9, '서비스 불만': 10 };
+    return map[name] || null;
+};
+const getChannelIdByName = (name) => {
+    const map = { '전화': 1, '이메일': 2, '웹(채팅, 게시판)': 3, 'SNS': 4, '방문': 5, '기타': 6 };
+    return map[name] || null;
+}
+
+// 등록/수정 제출
 const submitCreate = async () => {
-  if (!createForm.customerId || !createForm.title || !createForm.content) {
-    ElMessage.warning('기업, 제목, 내용은 필수 입력 항목입니다.');
+  if (!createForm.title || !createForm.content) {
+    ElMessage.warning('제목과 내용은 필수입니다.');
     return;
   }
   try {
-    await createSupport(createForm);
-    ElMessage.success('문의가 성공적으로 등록되었습니다.');
+    if (isEditMode.value) {
+        // 수정
+        await updateSupport(selectedSupport.value.id, createForm);
+        ElMessage.success('수정되었습니다.');
+    } else {
+        // 등록
+        await createSupport(createForm);
+        ElMessage.success('등록되었습니다.');
+    }
     createModalVisible.value = false;
     fetchData(); 
   } catch (e) {
-    // 404 오류가 발생한다면 백엔드 Controller에 @PostMapping이 없는 것입니다.
-    ElMessage.error('등록 실패: ' + (e.response?.data?.message || e.message));
+    ElMessage.error('처리 실패: ' + (e.response?.data?.message || e.message));
   }
+};
+
+// [추가] 삭제 핸들러
+const handleDelete = async () => {
+    if (!selectedSupport.value) return;
+    ElMessageBox.confirm('정말 삭제하시겠습니까?', '경고', { type: 'warning' })
+    .then(async () => {
+        try {
+            await deleteSupport(selectedSupport.value.id);
+            ElMessage.success('삭제되었습니다.');
+            detailModalVisible.value = false;
+            fetchData();
+        } catch(e) {
+            ElMessage.error('삭제 실패');
+        }
+    });
 };
 
 const truncateText = (text, length) => {
   if (!text) return '';
   return text.length > length ? text.substring(0, length) + '....' : text;
 };
-const formatDate = (d) => d ? d.substring(0, 10) : '-';
-const dateFormatter = (row, col, val) => formatDate(val);
+
+// [수정] 날짜 포맷 (시간 포함)
+const dateFormatter = (row, col, val) => {
+  return val ? val : '-'; // 백엔드에서 이미 'YYYY-MM-DD HH:mm:ss'로 오면 그대로 출력
+};
 
 onMounted(fetchData);
 </script>
@@ -487,4 +540,9 @@ onMounted(fetchData);
 .detail-content-box .label { font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #303133; }
 .detail-content-box .content-text { font-size: 14px; color: #606266; line-height: 1.6; white-space: pre-wrap; }
 .mt-4 { margin-top: 16px; }
+
+/* 다이얼로그 푸터 버튼 좌우 정렬 */
+.dialog-footer-left { margin-right: auto; }
+.dialog-footer-right { display: flex; gap: 10px; }
+:deep(.el-dialog__footer) { display: flex; justify-content: space-between; }
 </style>
