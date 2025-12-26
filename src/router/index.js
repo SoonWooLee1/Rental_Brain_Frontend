@@ -38,6 +38,25 @@ const routes = [
         component: () => import('@/views/cs/FeedbackListView.vue'), // 피드백 관리
       },
 
+      {
+        path: 'cs/survey',
+        name: 'cs-survey-list',
+        component: () => import('@/views/cs/SurveyView.vue'), // 설문 관리
+        children:[
+          {
+        path: 'cs/survey/result',
+        name: 'cs-survey-result',
+        component: () => import('@/views/cs/SurveyAiResultView.vue'), // 설문 결과
+      },
+        ]
+      },
+
+      {
+        path: 'cs/survey/create',
+        name: 'cs-survey-create',
+        component: () => import('@/views/cs/SurveyCreateView.vue'), // 설문 생성
+      },
+
       // --- 고객분석 ---
       {
         path: 'analysis/summary',
@@ -59,7 +78,17 @@ const routes = [
       {
         path: 'customer/risk',
         name: 'customer-risklist',
-        component: () => import('@/views/customer/RiskListView.vue'),
+        component: () => import('@/views/customer/overdue/RiskListView.vue'),
+      },
+      {
+        path: 'customer/risks/pay/:overdueId',
+        name: 'customer-pay-overdue-detail',
+        component: () => import('@/views/customer/overdue/PayOverdueDetailView.vue'),
+      },
+      {
+        path: 'customer/risks/item/:overdueId',
+        name: 'customer-item-overdue-detail',
+        component: () => import('@/views/customer/overdue/ItemOverdueDetailView.vue'),
       },
 
       // --- 견적 ---

@@ -119,8 +119,8 @@
             <el-icon><Star /></el-icon> 피드백 관리
           </el-menu-item>
 
-          <el-menu-item index="/cs/feedbacks">
-            <el-icon><Star /></el-icon> 설문조사 관리
+          <el-menu-item index="/cs/survey">
+            <el-icon><DocumentCopy /></el-icon> 설문조사 관리
           </el-menu-item>
         </el-sub-menu>
 

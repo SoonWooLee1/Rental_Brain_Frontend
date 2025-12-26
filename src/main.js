@@ -18,6 +18,8 @@ import VueECharts from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 
+import { formatDate } from '@/utils/date'
+
 const app = createApp(App);
 const pinia = createPinia();
 pinia.use(piniaPersistedstate);

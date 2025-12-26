@@ -79,9 +79,7 @@
             <el-rate
               v-model="row.star"
               disabled
-              show-score
               text-color="#ff9900"
-              score-template="{value}"
             />
           </template>
         </el-table-column>
@@ -237,13 +235,7 @@
           <el-descriptions-item label="담당자">{{ selectedFeedback.empName || '미배정' }}</el-descriptions-item>
           <el-descriptions-item label="카테고리">{{ selectedFeedback.categoryName }}</el-descriptions-item>
           <el-descriptions-item label="채널">{{ selectedFeedback.channelName }}</el-descriptions-item>
-          <el-descriptions-item label="평점">
-            <el-rate v-model="selectedFeedback.star" disabled text-color="#ff9900" />
-          </el-descriptions-item>
-          <el-descriptions-item label="상태">
-             <el-tag :type="selectedFeedback.action ? 'success' : 'warning'">
-              {{ selectedFeedback.action ? '조치 완료' : '미조치' }}
-            </el-tag>
+          <el-descriptions-item label="평점" :span="2"> <el-rate v-model="selectedFeedback.star" disabled text-color="#ff9900" />
           </el-descriptions-item>
           <el-descriptions-item label="제목" :span="2">{{ selectedFeedback.title }}</el-descriptions-item>
         </el-descriptions>
@@ -476,15 +468,17 @@ const submitCreate = async () => {
     ElMessage.warning('제목과 내용은 필수입니다.');
     return;
   }
-
+// [수정] 백엔드 DTO(cumId)와 맞추기 위해 데이터 변환
+  const payload = {
+      ...createForm,
+      cumId: createForm.customerId // customerId 값을 cumId에 담아 전송
+  };
   try {
     if (isEditMode.value) {
-        // 수정
-        await updateFeedback(selectedFeedback.value.id, createForm);
+        await updateFeedback(selectedFeedback.value.id, payload);
         ElMessage.success('수정되었습니다.');
     } else {
-        // 등록
-        await createFeedback(createForm);
+        await createFeedback(payload);
         ElMessage.success('등록되었습니다.');
     }
     createModalVisible.value = false;

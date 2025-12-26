@@ -6,7 +6,7 @@
       세그먼트 데이터가 없습니다.
     </div>
 
-    <div v-else class="segment-wrap">
+    <div v-else :class="['segment-wrap', { 'no-mini': !showMiniList }]">
       <v-chart :option="option" autoresize class="segment-chart" />
 
       <div v-if="showMiniList" class="mini-list">
@@ -145,7 +145,7 @@ const option = computed(() => {
 </script>
 
 <style scoped>
-.segment-card { width: 100%; }
+.segment-card { width: 100%; align-items: center; }
 
 .card-title {
   font-size: 14px;
@@ -154,18 +154,26 @@ const option = computed(() => {
   margin-bottom: 12px;
 }
 
+
 .segment-wrap {
   display: grid;
   grid-template-columns: 1fr 180px;
   gap: 12px;
   align-items: center;
-  height: 220px;
+  min-height: 260px;
 }
 
 /* ✅ 범례까지 포함되는 echarts 전체 높이 */
 .segment-chart {
   width: 100%;
-  height: 220px;
+  height: 260px;
+}
+
+/* ✅ mini-list 없을 때: 차트를 카드 정중앙으로 */
+.segment-wrap.no-mini {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .empty {
@@ -183,10 +191,14 @@ const option = computed(() => {
 
 /* ✅ 오른쪽 리스트도 같은 높이에서 가운데 정렬 */
 .mini-list {
-  height: 220px;
+  max-height: 260px;
+  overflow: auto;
+
+  padding-left: 12px;
+  border-left: 1px solid #e5e7eb;
+
   display: flex;
   flex-direction: column;
-  justify-content: center;  /* ✅ 세로 가운데 */
   gap: 8px;
 }
 
@@ -208,5 +220,13 @@ const option = computed(() => {
 @media (max-width: 900px) {
   .segment-wrap { grid-template-columns: 1fr; height: auto; }
   .segment-chart { height: 260px; }
+}
+.mini-list::-webkit-scrollbar { width: 6px; }
+.mini-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 999px; }
+
+
+/* 중앙정렬 모드에서는 차트 폭을 적당히 제한 (너무 커져서 한쪽으로 치우치는 느낌 방지) */
+.segment-wrap.no-mini .segment-chart {
+  width: min(520px, 100%);
 }
 </style>
