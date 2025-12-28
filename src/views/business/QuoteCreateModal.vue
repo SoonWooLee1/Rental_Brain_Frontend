@@ -13,7 +13,7 @@
       <el-form-item label="상담사" required>
         <el-input 
           v-model="form.quoteCounselor" 
-          placeholder="상담사 이름을 입력하세요 (예: 박영희)" 
+          placeholder="상담사 이름을 입력하세요" 
         />
       </el-form-item>
       
@@ -56,20 +56,15 @@
           style="width: 100%"
           @select="handleSelectCustomer"
           :trigger-on-focus="false"
-          :disabled="isEditMode"
         >
           <template #default="{ item }">
             <div class="customer-item">
-              <span class="name">{{ item.customerName }}</span>
-              <span class="info">{{ item.customerInCharge || '담당자미정' }}</span>
+              <span class="name">{{ item.value }}</span> <span class="sub-text" v-if="item.ceo">({{ item.ceo }})</span>
             </div>
           </template>
         </el-autocomplete>
       </el-form-item>
 
-      <el-form-item label="담당자">
-        <el-input v-model="form.customerInCharge" placeholder="고객사 담당자 이름" />
-      </el-form-item>
       <el-form-item label="연락처">
         <el-input v-model="form.customerCallNum" placeholder="010-0000-0000" />
       </el-form-item>
@@ -106,7 +101,7 @@
 import { ref, reactive, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { createQuote, updateQuote } from '@/api/quote';
-import { getCustomerList } from '@/api/customerlist';
+import { getCustomerList } from '@/api/customerlist'; // 고객 목록 API import
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -118,7 +113,7 @@ const emit = defineEmits(['update:modelValue', 'close', 'refresh']);
 const loading = ref(false);
 const formRef = ref(null);
 
-const isEditMode = computed(() => !!props.editData);
+const isEditMode = computed(() => !!props.editData && Object.keys(props.editData).length > 0);
 
 const initForm = {
   quoteId: null,
@@ -128,7 +123,7 @@ const initForm = {
   quoteProcessingTime: 10,
   customerName: '',
   quoteCumId: null, 
-  customerInCharge: '',
+  customerInCharge: '', // DB 호환용 (사용 안함)
   customerCallNum: '',
   quoteSummary: '',
   quoteContent: '',
@@ -136,7 +131,6 @@ const initForm = {
 
 const form = reactive({ ...initForm });
 
-// 오늘 날짜 세팅
 const setToday = () => {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
@@ -144,70 +138,80 @@ const setToday = () => {
     form.quoteCounselingDate = localIso;
 };
 
-// 모달 초기화
+// 모달이 열릴 때 초기화 및 데이터 로드
 watch(() => props.modelValue, (val) => {
     if (val) {
         if (props.editData) {
+            // 수정 모드: 데이터 매핑
             const data = props.editData;
-            form.quoteId = data.quoteId ?? data.id;
-            form.quoteCounselor = data.quoteCounselor;
-            form.quoteChannelId = data.quoteChannelId;
-            form.quoteCounselingDate = data.quoteCounselingDate 
-                ? data.quoteCounselingDate.replace(' ', 'T') 
-                : '';
-            form.quoteProcessingTime = data.quoteProcessingTime;
+            form.quoteId = data.id || data.quoteId;
+            form.quoteCounselor = data.counselor || data.quoteCounselor;
+            form.quoteChannelId = data.channelId || data.quoteChannelId || 1;
+            
+            form.quoteCounselingDate = data.counselingDate 
+                ? data.counselingDate.replace(' ', 'T') 
+                : (data.quoteCounselingDate ? data.quoteCounselingDate.replace(' ', 'T') : '');
+                
+            form.quoteProcessingTime = data.processingTime || data.quoteProcessingTime || 10;
             form.customerName = data.customerName;
-            form.quoteCumId = data.quoteCumId;
-            form.customerInCharge = data.customerInCharge;
-            form.customerCallNum = data.customerCallNum;
-            form.quoteSummary = data.quoteSummary;
-            form.quoteContent = data.quoteContent;
+            form.quoteCumId = data.cumId || data.quoteCumId;
+            form.customerCallNum = data.customerPhone || data.customerCallNum || '';
+            form.quoteSummary = data.summary || data.quoteSummary;
+            form.quoteContent = data.content || data.quoteContent;
         } else {
+            // 등록 모드: 초기화
             Object.assign(form, initForm);
             setToday();
         }
     }
 });
 
-// [중요 수정] 고객 검색 로직
+// 기업 검색 로직 (Autocomplete)
 const querySearchCustomer = async (queryString, cb) => {
   if (!queryString) {
     cb([]);
     return;
   }
   try {
+    // API 호출: 검색어를 파라미터로 전달
     const res = await getCustomerList({ 
         customerName: queryString, 
         page: 1, 
         size: 20 
     });
-    const dataList = res.data.contents || [];
     
-    // [핵심] el-autocomplete는 각 객체의 'value' 속성을 화면에 표시합니다.
-    // 따라서 API 결과에 value 속성을 추가해서 매핑해야 합니다.
+    // API 응답 구조에 따라 데이터 추출 (contents 또는 data)
+    const dataList = res.data?.contents || res.data || [];
+    
+    // Autocomplete 표시에 필요한 데이터 매핑
     const results = dataList.map(item => ({
       ...item,
-      value: item.customerName // 목록에 표시될 텍스트 지정
+      // [중요] value 속성에 기업명을 넣어야 드롭다운 및 선택 시 input에 표시됨
+      value: item.customerName ? String(item.customerName) : '', 
+      ceo: item.ceoName || item.ceo,
+      phone: item.customerCallNum || item.customerPhone // 연락처 필드 매핑
     }));
     
     cb(results);
   } catch (e) {
-    console.error(e);
+    console.error('기업 검색 실패:', e);
     cb([]);
   }
 };
 
+// 기업 선택 시 처리 핸들러
 const handleSelectCustomer = (item) => {
-  form.customerName = item.customerName;
-  form.quoteCumId = item.customerId;
-  form.customerInCharge = item.customerInCharge || '';
-  form.customerCallNum = item.customerCallNum || '';
+  // form.customerName은 v-model에 의해 자동 업데이트 되므로 여기서 수동 설정하지 않음 (경고 방지)
+  
+  // 1. 기업 ID 설정 (백엔드 전송용)
+  form.quoteCumId = item.customerId || item.id; 
+  
+  // 2. 연락처 자동 입력
+  form.customerCallNum = item.phone || item.customerCallNum || '';
 };
 
 const handleSubmit = async () => {
   if (!form.quoteCounselor) return ElMessage.warning('상담사를 입력해주세요.');
-  if (!form.quoteChannelId) return ElMessage.warning('상담 유형을 선택해주세요.');
-  if (!form.quoteCounselingDate) return ElMessage.warning('상담 일시를 선택해주세요.');
   if (!form.customerName) return ElMessage.warning('기업명을 입력해주세요.');
   if (!form.quoteSummary) return ElMessage.warning('요약 제목을 입력해주세요.');
 
@@ -225,8 +229,7 @@ const handleSubmit = async () => {
   } catch (e) {
     console.error(e);
     const action = isEditMode.value ? '수정' : '등록';
-    const errorMsg = e.response?.data?.message || `${action} 중 오류가 발생했습니다.`;
-    ElMessage.error(errorMsg);
+    ElMessage.error(`${action} 중 오류가 발생했습니다.`);
   } finally {
     loading.value = false;
   }
@@ -239,12 +242,26 @@ const handleClose = () => {
 </script>
 
 <style scoped>
-.section-title { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 12px; margin-top: 4px; }
+.section-title { 
+    font-size: 14px; 
+    font-weight: 700; 
+    color: #333; 
+    margin-bottom: 12px; 
+    margin-top: 4px;
+    border-left: 4px solid #409EFF; 
+    padding-left: 8px;
+}
 .unit { margin-left: 8px; color: #666; font-size: 13px; }
 .dialog-footer { display: flex; justify-content: flex-end; }
 
 /* 검색 결과 아이템 스타일 */
-.customer-item { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.customer-item { 
+    display: flex; 
+    justify-content: space-between;
+    align-items: center; 
+    width: 100%; 
+    padding: 4px 0; 
+}
 .name { font-weight: bold; color: #333; }
-.info { font-size: 12px; color: #999; margin-left: 10px; }
+.sub-text { font-size: 12px; color: #999; margin-left: 8px; }
 </style>

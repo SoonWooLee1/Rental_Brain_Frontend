@@ -68,7 +68,7 @@
             >
                 <el-option label="전체(통합)" value="ALL" />
                 <el-option label="기업명" value="customerName" />
-                <el-option label="담당자" value="customerInCharge" />
+                <!-- <el-option label="담당자" value="customerInCharge" /> -->
                 <el-option label="연락처" value="customerCallNum" />
                 <el-option label="상담사" value="quoteCounselor" />
                 <el-option label="요약" value="quoteSummary" />
@@ -154,7 +154,7 @@
     <QuoteCreateModal
       v-if="isCreateModalOpen"
       v-model="isCreateModalOpen"
-      @close="closeCreateModal"
+      :edit-data="editingQuote"  @close="closeCreateModal"
       @refresh="fetchData"
     />
 
@@ -164,6 +164,7 @@
         :quote-id="selectedQuoteId"
         @close="closeDetailModal"
         @refresh="fetchData"
+        @request-edit="handleEditRequest" 
       />
   </div>
 </template>
