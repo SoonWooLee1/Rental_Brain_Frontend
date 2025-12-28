@@ -1,6 +1,8 @@
 <template>
-  <div class="chart-card">
-    <div class="card-title">고객 세그먼트</div>
+  <BaseCard class="chart-card">
+    <template #header>
+      <h3 class="card-title">고객 세그먼트</h3>
+    </template>
 
     <div v-if="loading" class="chart-placeholder">
       <div class="hint">불러오는 중...</div>
@@ -16,13 +18,14 @@
     </div>
 
     <v-chart v-else :option="option" autoresize class="chart" />
-  </div>
+  </BaseCard>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import BaseCard from "@/components/common/BaseCard.vue";
 import VChart from "vue-echarts";
 import { use } from "echarts/core";
 import { BarChart } from "echarts/charts";
@@ -50,7 +53,9 @@ const month = computed(() => {
 
 const hasData = computed(() => {
   if (!Array.isArray(rows.value) || rows.value.length === 0) return false;
-  return rows.value.some((r) => (Number(r.customerCount) || 0) > 0 || (Number(r.totalTradeAmount) || 0) > 0);
+  return rows.value.some(
+    (r) => (Number(r.customerCount) || 0) > 0 || (Number(r.totalTradeAmount) || 0) > 0
+  );
 });
 
 // ✅ 원(₩) → "n억 m만원" 자동 포맷
@@ -77,10 +82,10 @@ const option = computed(() => {
       formatter: (params) => {
         return params
           .map((p) => {
-            if (p.seriesName.includes("매출")) {
+            if (String(p.seriesName).includes("매출")) {
               return `${p.marker}${p.seriesName}: ${fmtMoneyAuto(p.value)}`;
             }
-            return `${p.marker}${p.seriesName}: ${(Number(p.value) || 0).toLocaleString()}명`;
+            return `${p.marker}${p.seriesName}: ${(Number(p.value) || 0).toLocaleString()}개사`;
           })
           .join("<br/>");
       },
@@ -97,34 +102,16 @@ const option = computed(() => {
         type: "value",
         name: "매출(억)",
         axisLabel: {
-          formatter: (v) => `${Math.floor((Number(v) || 0) / 100000000).toLocaleString()}`, // 원 → 억 (소수점 제거)
+          formatter: (v) =>
+            `${Math.floor((Number(v) || 0) / 100000000).toLocaleString()}`, // 원 → 억
         },
       },
     ],
 
     series: [
-      {
-        name: "고객수",
-        type: "bar",
-        yAxisIndex: 0,
-        data: customerCounts,
-        barMaxWidth: 26,
-      },
-      {
-        name: "총매출",
-        type: "bar",
-        yAxisIndex: 1,
-        data: totalSales,
-        barMaxWidth: 26,
-      },
-      // ✅ 평균매출: line → bar 로 변경
-      {
-        name: "평균매출",
-        type: "bar",
-        yAxisIndex: 1,
-        data: avgSales,
-        barMaxWidth: 26,
-      },
+      { name: "고객수", type: "bar", yAxisIndex: 0, data: customerCounts, barMaxWidth: 26 },
+      { name: "총매출", type: "bar", yAxisIndex: 1, data: totalSales, barMaxWidth: 26 },
+      { name: "평균매출", type: "bar", yAxisIndex: 1, data: avgSales, barMaxWidth: 26 },
     ],
   };
 });
@@ -148,19 +135,16 @@ watch(month, fetchChart);
 </script>
 
 <style scoped>
+/* ✅ BaseCard가 외형 담당. 여기선 레이아웃만 */
 .chart-card {
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  width: 100%;
 }
 
 .card-title {
+  margin: 0;
   font-size: 14px;
   font-weight: 900;
   color: #111827;
-  margin-bottom: 12px;
 }
 
 .chart {
@@ -189,6 +173,6 @@ watch(month, fetchChart);
 .error {
   color: #ef4444;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
 }
 </style>

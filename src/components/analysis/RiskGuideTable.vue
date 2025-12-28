@@ -1,35 +1,39 @@
 <template>
-  <div class="card">
-    <table class="guide-table">
-      <thead>
-        <tr>
-          <th>단계</th>
-          <th>조건</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><span class="badge ok">정상</span></td>
-          <td>≤ 10%</td>
-        </tr>
-        <tr>
-          <td><span class="badge warn">주의</span></td>
-          <td>10% ~ 15%</td>
-        </tr>
-        <tr>
-          <td><span class="badge alert">경고</span></td>
-          <td>15% ~ 20%</td>
-        </tr>
-        <tr>
-          <td><span class="badge danger">위험</span></td>
-          <td>≥ 20%</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <BaseCard>
+    <div class="card">
+      <table class="guide-table">
+        <thead>
+          <tr>
+            <th>단계</th>
+            <th>조건</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge ok">정상</span></td>
+            <td>≤ 10%</td>
+          </tr>
+          <tr>
+            <td><span class="badge warn">주의</span></td>
+            <td>10% ~ 15%</td>
+          </tr>
+          <tr>
+            <td><span class="badge alert">경고</span></td>
+            <td>15% ~ 20%</td>
+          </tr>
+          <tr>
+            <td><span class="badge danger">위험</span></td>
+            <td>≥ 20%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </BaseCard>
 </template>
 
 <script setup>
+import BaseCard from '../common/BaseCard.vue';
+
 const props = defineProps({
   showTitle: { type: Boolean, default: true },
 });

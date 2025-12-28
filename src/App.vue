@@ -10,6 +10,7 @@
 
 <style>
 body {
+    color: #111 !important;
     margin: 0;
     background: #f7f9fc;
     font-family: 'Inter', 'Pretendard', sans-serif;

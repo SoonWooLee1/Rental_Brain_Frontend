@@ -9,7 +9,6 @@
     <div v-loading="loading" class="wrap">
 
 
-      <!-- 상단 요약 영역 -->
       <div class="top">
         <div class="left">
           <div class="code">{{ detail?.quoteCode || '-' }}</div>
@@ -30,7 +29,6 @@
 
       <el-divider />
 
-      <!-- 본문 -->
       <div class="section">
         <div class="section-title">요약</div>
         <div class="text">{{ detail?.quoteSummary || '-' }}</div>
@@ -43,7 +41,6 @@
 
       <el-divider />
 
-      <!-- 고객 정보 -->
       <div class="section-title">고객 정보</div>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="기업명">
@@ -75,7 +72,6 @@
 
       <el-divider />
 
-      <!-- (선택) 내부 식별자 -->
       <div class="meta">
         <span>quoteId: {{ detail?.quoteId ?? '-' }}</span>
         <span class="dot">•</span>
@@ -86,7 +82,11 @@
     </div>
 
     <template #footer>
-      <el-button @click="handleClose">닫기</el-button>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <el-button type="primary" @click="handleEditRequest">수정</el-button>
+        <el-button type="danger" @click="handleDelete" :loading="loading">삭제</el-button>
+        <el-button @click="handleClose">닫기</el-button>
+      </div>
     </template>
   </el-dialog>
 </template>
@@ -94,14 +94,15 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { getQuoteDetail } from '@/api/quote';
+import { getQuoteDetail, deleteQuote } from '@/api/quote'; // [수정] deleteQuote 추가
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   quoteId: { type: [Number, String], required: true },
 });
 
-const emit = defineEmits(['update:modelValue', 'close']);
+// [수정] request-edit 추가
+const emit = defineEmits(['update:modelValue', 'close', 'refresh', 'request-edit']);
 
 const loading = ref(false);
 const detail = ref(null);
@@ -135,6 +136,31 @@ async function fetchDetail() {
     loading.value = false;
   }
 }
+
+// 수정 요청
+const handleEditRequest = () => {
+  if (!detail.value) return;
+  // 현재 창 닫고, 부모에게 수정할 데이터를 보냄
+  emit('update:modelValue', false); 
+  emit('request-edit', detail.value);
+};
+
+// 삭제 처리
+const handleDelete = async () => {
+  if (!confirm('정말로 이 상담 내역을 삭제하시겠습니까?')) return;
+  try {
+    loading.value = true;
+    await deleteQuote(props.quoteId); // DELETE /quote/delete/{id}
+    ElMessage.success('삭제되었습니다.');
+    emit('refresh'); // 목록 갱신
+    handleClose();
+  } catch (e) {
+    console.error(e);
+    ElMessage.error('삭제 중 오류가 발생했습니다.');
+  } finally {
+    loading.value = false;
+  }
+};
 
 // ✅ immediate로 "처음 열릴 때"도 호출되게
 watch(
@@ -170,13 +196,10 @@ const handleClose = () => {
 .right { text-align:right; }
 .right .label { font-size:12px; color:#6b7280; }
 .right .value { font-size:14px; font-weight:700; color:#111827; margin-top:4px; }
-
 .section { margin-bottom:14px; }
 .section-title { font-size:13px; font-weight:700; color:#111827; margin-bottom:6px; }
 .text { font-size:13px; color:#374151; line-height:1.6; }
 .text.pre { white-space:pre-wrap; }
-
-.meta { font-size:12px; color:#9ca3af; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 a { color:#2563eb; text-decoration:none; }
 a:hover { text-decoration:underline; }
 </style>

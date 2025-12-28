@@ -44,4 +44,28 @@ export const getDashboardRecommendations = () => {
   return api.get("/dashboard/recommendations");
 };
 
+/**
+ * AI 인사이트(추천/요약) 조회
+ * - month(YYYY-MM) 옵션을 주면 해당 월 기준으로 조회
+ */
+export const getDashboardAiInsight = (month) => {
+  return api.get("/dashboard/recommendations", {
+    params: month ? { month } : {},
+  });
+};
 
+/**
+ * 만족도(별점)별 고객 목록 조회
+ *
+ * @param {number} star - 만족도 (1~5)
+ * @param {number} page - 페이지 번호 (1-base)
+ * @param {number} size - 페이지 사이즈
+ */
+export const getCustomersBySatisfaction = (star, page = 1, size = 10) => {
+  return api.get(
+    `/customerSummaryAnalysis/satisfaction/${star}/customers`,
+    {
+      params: { page, size },
+    }
+  );
+};

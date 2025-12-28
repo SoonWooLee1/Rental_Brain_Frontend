@@ -109,7 +109,11 @@ const routes = [
         name: 'contract-detail',
         component: () => import('@/views/contract/ContractDetailView.vue'),
       },
-
+      {
+        path: '/contracts/new',
+        name: 'ContractCreate',
+        component: () => import('@/views/contract/NewContractPage.vue')
+      },
       // --- 캠페인 ---
       {
         path: 'campaign/promotions',

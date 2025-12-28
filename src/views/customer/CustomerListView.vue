@@ -118,7 +118,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="contractCount" label="계약 수" width="80" align="center" />
-        <el-table-column label="액션" width="100" align="center">
+        <el-table-column label="관리" width="100" align="center">
           <template #default="{ row }">
             <el-button size="small" @click="goDetail(row.id)">상세보기</el-button>
           </template>

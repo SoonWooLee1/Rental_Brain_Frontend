@@ -1,6 +1,5 @@
 <template>
   <div class="page-container">
-    <!-- 헤더 -->
     <div class="header-row">
       <div class="title-area">
         <h2 class="page-title">고객 상담 내역</h2>
@@ -12,8 +11,6 @@
       </el-button>
     </div>
 
-    <!-- KPI -->
-    <!-- 전체 상담 수 -->
     <div class="kpi-wrapper">
         <div class="kpi-box">
             <span class="kpi-title">전체 상담</span>
@@ -21,14 +18,12 @@
             <span class="kpi-desc">전체 견적기준</span>
         </div>
 
-        <!-- 금일 완료 수 -->
         <div class="kpi-box">
             <span class="kpi-title">오늘 완료</span>
             <span class="kpi-count highlight">{{ kpi.todayCount?.toLocaleString() || 0 }}건</span>
             <span class="kpi-desc">오늘 처리 완료된 상담</span>
         </div>
 
-        <!-- 전체 평균 처리 시간 -->
         <div class="kpi-box">
             <span class="kpi-title">평균 처리시간</span>
 
@@ -79,7 +74,6 @@
                 <el-option label="요약" value="quoteSummary" />
         </el-select>
 
-        <!-- 유형(채널) -->
         <el-select
             v-model="quoteChannelId"
             placeholder="전체 유형"
@@ -101,7 +95,6 @@
       </div>
     </div>
 
-    <!-- 테이블 -->
     <el-card shadow="never" class="table-card">
       <el-table :data="quoteList" style="width: 100%" v-loading="loading">
         <el-table-column prop="quoteCode" label="ID" width="120" align="center" />
@@ -157,11 +150,20 @@
         />
       </div>
     </el-card>
-          <QuoteDetailModal
+
+    <QuoteCreateModal
+      v-if="isCreateModalOpen"
+      v-model="isCreateModalOpen"
+      @close="closeCreateModal"
+      @refresh="fetchData"
+    />
+
+    <QuoteDetailModal
         v-if="isDetailModalOpen && selectedQuoteId"
         v-model="isDetailModalOpen"
         :quote-id="selectedQuoteId"
         @close="closeDetailModal"
+        @refresh="fetchData"
       />
   </div>
 </template>
@@ -174,6 +176,8 @@ import { Search, Plus } from '@element-plus/icons-vue';
 
 import { getQuoteList, getQuoteKpi } from '@/api/quote';
 import QuoteDetailModal from './QuoteDetailModal.vue';
+// 등록 모달 import
+import QuoteCreateModal from './QuoteCreateModal.vue';
 
 const router = useRouter();
 
@@ -186,6 +190,11 @@ const currentPage = ref(1);
 // 모달 열고 닫는것
 const isDetailModalOpen = ref(false);
 const selectedQuoteId = ref(null);
+
+// 등록 모달 상태
+const isCreateModalOpen = ref(false);
+// 수정할 데이터를 담을 변수
+const editingQuote = ref(null);
 
 // 검색/필터
 const keyword = ref('');
@@ -255,9 +264,27 @@ const handlePageChange = (page) => {
 };
 
 const handleCreate = () => {
-  ElMessage.info('상담 추가(등록) 화면/모달은 다음 단계에서 연결하자!');
+  // 모달 열기 로직 연결
+  // ElMessage.info('상담 추가(등록) 화면/모달은 다음 단계에서 연결하자!');
+  openCreateModal();
 };
 
+// 등록 모달 열기/닫기 함수
+const openCreateModal = () => {
+  editingQuote.value = null; // null이면 등록 모드
+  isCreateModalOpen.value = true;
+};
+
+// 수정 요청 처리 (DetailModal에서 이벤트 발생 시 호출됨)
+const handleEditRequest = (data) => {
+  editingQuote.value = data; // 수정할 데이터 주입
+  isCreateModalOpen.value = true; // 모달 열기 (수정 모드)
+};
+
+const closeCreateModal = () => {
+  isCreateModalOpen.value = false;
+  editingQuote.value = null; // 닫을 때 데이터 초기화
+};
 
 // 상세 조회 모달 띄우기
 const openDetailModal = (row) => {
@@ -343,6 +370,4 @@ onMounted(fetchData);
 .date-text { font-weight: 600; }
 .sub-text { color:#9ca3af; font-size: 12px; margin-top: 2px; }
 .kpi-dual { display: flex; align-items: center; justify-content: space-between; margin-top: 8px;}
-
-
 </style>

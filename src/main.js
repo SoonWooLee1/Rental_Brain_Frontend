@@ -17,6 +17,7 @@ import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 import VueECharts from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
+import { useAuthStore } from './store/auth.store';
 
 import { formatDate } from '@/utils/date'
 

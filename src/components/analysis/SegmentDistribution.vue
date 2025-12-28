@@ -1,85 +1,141 @@
 <template>
-  <div class="segment-card">
-    <div class="card-title">{{ title }}</div>
-
-    <div v-if="!hasData" class="empty">
-      세그먼트 데이터가 없습니다.
-    </div>
-
-    <div v-else :class="['segment-wrap', { 'no-mini': !showMiniList }]">
-      <v-chart :option="option" autoresize class="segment-chart" />
-
-      <div v-if="showMiniList" class="mini-list">
-        <div class="mini-total" v-if="total !== null && total !== undefined">
-          <span class="t-label">전체</span>
-          <span class="t-value">{{ fmt(total) }}개사</span>
-        </div>
-
-        <div
-          v-for="s in segments"
-          :key="s.segmentId ?? s.segmentName"
-          class="mini-item"
-        >
-          <span class="name">{{ s.segmentName ?? s.name ?? 'Unknown' }}</span>
-          <span class="pct">{{ round1(getPercent(s)) }}%</span>
-        </div>
+  <BaseCard class="segdist-card">
+    <!-- ✅ 헤더: 좌측 타이틀 / 우측 전체 배지 (정렬 보장 래퍼) -->
+    <template #header>
+      <div class="card-head">
+        <h3 class="card-title">{{ title }}</h3>
+        <span class="meta-badge">전체 {{ fmt(total) }}개사</span>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <div v-if="loading" class="empty">불러오는 중...</div>
+    <div v-else-if="error" class="empty">{{ error }}</div>
+    <div v-else-if="!hasData" class="empty">세그먼트 데이터가 없습니다.</div>
+
+    <v-chart v-else :option="option" autoresize class="chart chart-md" />
+  </BaseCard>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import VChart from "vue-echarts";
 import { use } from "echarts/core";
 import { PieChart } from "echarts/charts";
 import { TooltipComponent, LegendComponent } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 
+import { getSegmentDistribution } from "@/api/customeranalysis";
+import BaseCard from "@/components/common/BaseCard.vue";
+
 use([PieChart, TooltipComponent, LegendComponent, CanvasRenderer]);
+
+const loading = ref(false);
+const error = ref("");
+const localSegments = ref([]);
+const localTotal = ref(0);
+
+/* ✅ 모바일 판단 */
+const isMobile = ref(false);
+const setIsMobile = () => (isMobile.value = window.innerWidth <= 900);
 
 const props = defineProps({
   title: { type: String, default: "고객 세그먼트 분석" },
   segments: { type: Array, default: () => [] },
   total: { type: [Number, String, null], default: null },
-  showMiniList: { type: Boolean, default: true },
 });
 
-const fmt = (n) => (Number(n) || 0).toLocaleString();
-const round1 = (n) => (Math.round((Number(n) || 0) * 10) / 10).toFixed(1);
+const segments = computed(() =>
+  props.segments?.length ? props.segments : localSegments.value
+);
+const total = computed(() =>
+  props.total != null ? props.total : localTotal.value
+);
 
-/** ✅ 다양한 필드명 대응 */
+const fmt = (n) => (Number(n) || 0).toLocaleString();
+
+/** 다양한 필드명 대응 */
 const getCount = (s) =>
   Number(
     s?.count ??
-    s?.customerCount ??
-    s?.segmentCount ??
-    s?.customer_count ??
-    s?.segment_count ??
-    0
+      s?.customerCount ??
+      s?.segmentCount ??
+      s?.customer_count ??
+      s?.segment_count ??
+      0
   ) || 0;
 
 const getName = (s) => s?.segmentName ?? s?.name ?? "Unknown";
 
-/** percent도 여러 키 대응, 없으면 0 */
-const getPercent = (s) =>
-  Number(
-    s?.countPercent ??
-    s?.percent ??
-    s?.ratio ??
-    0
-  ) || 0;
-
 const hasData = computed(() => {
-  if (!Array.isArray(props.segments) || props.segments.length === 0) return false;
-  return props.segments.some((s) => getCount(s) > 0);
+  if (!Array.isArray(segments.value) || segments.value.length === 0) return false;
+  return segments.value.some((s) => getCount(s) > 0);
+});
+
+const fetchData = async () => {
+  if (props.segments?.length) return;
+
+  loading.value = true;
+  error.value = "";
+  try {
+    const res = await getSegmentDistribution();
+    localSegments.value = res.data?.segments ?? [];
+    localTotal.value = res.data?.totalCustomerCount ?? 0;
+  } catch (e) {
+    error.value = e?.message ?? "세그먼트 데이터를 불러오지 못했습니다.";
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  setIsMobile();
+  window.addEventListener("resize", setIsMobile);
+  fetchData();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", setIsMobile);
 });
 
 const option = computed(() => {
-  const data = (props.segments || []).map((s) => ({
-    value: getCount(s),
-    name: getName(s),
-  }));
+  const data = (segments.value || [])
+    .map((s) => ({ value: getCount(s), name: getName(s) }))
+    .filter((d) => d.value > 0);
+
+  // ✅ 모바일이면 legend를 아래로, 데스크탑이면 오른쪽 세로
+  const legend = isMobile.value
+    ? {
+        bottom: 0,
+        top: "auto",
+        left: "center",
+        orient: "horizontal",
+        type: "scroll",
+        icon: "roundRect",
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 10,
+        pageIconSize: 10,
+        pageTextStyle: { fontSize: 11 },
+        textStyle: { fontSize: 11, color: "#374151" },
+      }
+    : {
+        top: "middle",
+        right: 8,
+        orient: "vertical",
+        type: "scroll",
+        icon: "roundRect",
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 10,
+        pageIconSize: 10,
+        pageTextStyle: { fontSize: 11 },
+        textStyle: { fontSize: 11, color: "#374151" },
+      };
+
+  // ✅ 모바일이면 아래 legend 공간 확보
+  const grid = isMobile.value
+    ? { left: 0, right: 0, top: 0, bottom: 56, containLabel: true }
+    : { left: 0, right: 0, top: 0, bottom: 0, containLabel: true };
 
   return {
     tooltip: {
@@ -88,55 +144,33 @@ const option = computed(() => {
         `${name}<br/>${fmt(value)}개사 (${percent}%)`,
     },
 
-    // ✅ 범례를 카드 맨 아래에 “고정” + 겹침 방지
-    legend: {
-      bottom: 4,
-      left: "center",
-      type: "scroll",          // ✅ 항목 많으면 스크롤 처리(줄바꿈/겹침 방지)
-      orient: "horizontal",
-      icon: "roundRect",
-      itemWidth: 10,
-      itemHeight: 10,
-      pageIconSize: 10,
-      pageTextStyle: { fontSize: 11 },
-      textStyle: { fontSize: 11 },
-    },
-
-    // ✅ 범례가 차트 영역을 안 먹게 padding(=grid) 잡아주기
-    grid: {
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 32, // legend 높이만큼 비워두기
-      containLabel: true,
-    },
+    legend,
+    grid,
 
     series: [
       {
         type: "pie",
         radius: ["58%", "82%"],
 
-        // ✅ 차트 중심을 “위로” 살짝 올려서 가운데 정렬되게
-        center: props.showMiniList ? ["40%", "44%"] : ["50%", "44%"],
+        // ✅ 모바일은 정중앙(legend 아래), 데스크탑은 legend 때문에 왼쪽 치우치기
+        center: isMobile.value ? ["50%", "45%"] : ["35%", "50%"],
 
         avoidLabelOverlap: true,
+label: {
+  show: true,
+  formatter: (p) => `${p.percent}%`,
+  fontSize: 12,
+  fontWeight: 800,
+  color: "#374151",
+},
+labelLine: {
+  show: false,
+},
+        labelLine: { show: true, length: 10, length2: 6 },
 
-        // ✅ 라벨이 너무 길어서 카드 밖으로 튀는 거 방지
-        label: {
-          show: true,
-          formatter: (p) => {
-            const n = p.name || "";
-            return n.length > 8 ? n.slice(0, 8) + "…" : n; // ✅ 길면 말줄임
-          },
-          fontSize: 11,
-        },
-        labelLine: {
-          show: true,
-          length: 10,
-          length2: 6,
-        },
-
+        // (원하면 hover를 더 티나게 하려면 여기 emphasis/itemStyle 강화 가능)
         emphasis: { scale: true, scaleSize: 6 },
+
         data,
       },
     ],
@@ -145,35 +179,49 @@ const option = computed(() => {
 </script>
 
 <style scoped>
-.segment-card { width: 100%; align-items: center; }
+.segdist-card {
+  width: 100%;
+}
+
+/* ✅ 헤더 정렬 보장 */
+.card-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
 
 .card-title {
+  margin: 0;
   font-size: 14px;
   font-weight: 900;
   color: #111827;
-  margin-bottom: 12px;
 }
 
-
-.segment-wrap {
-  display: grid;
-  grid-template-columns: 1fr 180px;
-  gap: 12px;
-  align-items: center;
-  min-height: 260px;
+/* ✅ 우측 상단 총합 배지 */
+.meta-badge {
+  font-size: 12px;
+  font-weight: 800;
+  color: #374151;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
-/* ✅ 범례까지 포함되는 echarts 전체 높이 */
-.segment-chart {
+/* ✅ 차트 규격 통일 */
+.chart-md {
   width: 100%;
   height: 260px;
 }
 
-/* ✅ mini-list 없을 때: 차트를 카드 정중앙으로 */
-.segment-wrap.no-mini {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* 모바일: legend 아래로 내려가면 차트 높이 조금 확보 */
+@media (max-width: 900px) {
+  .chart-md {
+    height: 320px;
+  }
 }
 
 .empty {
@@ -187,46 +235,5 @@ const option = computed(() => {
   color: #9ca3af;
   font-size: 12px;
   font-weight: 700;
-}
-
-/* ✅ 오른쪽 리스트도 같은 높이에서 가운데 정렬 */
-.mini-list {
-  max-height: 260px;
-  overflow: auto;
-
-  padding-left: 12px;
-  border-left: 1px solid #e5e7eb;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mini-total,
-.mini-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #f9fafb;
-  border: 1px solid #f3f4f6;
-}
-
-.t-label { color: #6b7280; font-size: 12px; font-weight: 800; }
-.t-value { font-weight: 900; color: #111827; font-size: 12px; }
-.name { font-size: 12px; color: #374151; font-weight: 800; }
-.pct { font-size: 12px; font-weight: 900; color: #111827; }
-
-@media (max-width: 900px) {
-  .segment-wrap { grid-template-columns: 1fr; height: auto; }
-  .segment-chart { height: 260px; }
-}
-.mini-list::-webkit-scrollbar { width: 6px; }
-.mini-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 999px; }
-
-
-/* 중앙정렬 모드에서는 차트 폭을 적당히 제한 (너무 커져서 한쪽으로 치우치는 느낌 방지) */
-.segment-wrap.no-mini .segment-chart {
-  width: min(520px, 100%);
 }
 </style>

@@ -93,6 +93,7 @@ const login = async () => {
       data.name,
       data.roles,
       data.dept,
+      data.positionId,
       data.accessToken
     );
     toastStore.showToast('로그인 되었습니다 :' + ' ' + authStore.employeeCode + ' ' + authStore.name);
@@ -107,7 +108,7 @@ const login = async () => {
 
 </script>
 
-<style>
+<style scoped>
 .login-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #eff6ff, #ffffff, #eef2ff);

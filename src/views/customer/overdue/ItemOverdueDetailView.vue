@@ -20,11 +20,13 @@ const editCount = ref(0)
 const fetchDetail = async () => {
     loading.value = true
     try {
-        const { data } = await axios.get( `/customers/overdues/item/${overdueId}` )
+        const { data } = await axios.get(`/customers/overdues/item/${overdueId}`)
         detail.value = data.detail ?? null
         items.value = data.items ?? []
         editCount.value = data.detail?.count ?? 0
-    } finally { loading.value = false }
+    } finally {
+        loading.value = false
+    }
 }
 
 /* 날짜 포맷 */
@@ -33,8 +35,8 @@ const formatDate = (date) => {
     return new Date(date).toISOString().slice(0, 10)
 }
 
-/* 수정 가능 여부 */
-const editable = computed(() => false)
+/* 수정 가능 여부: 미해결(P)만 가능 */
+const editable = computed(() => detail.value?.status === 'P')
 
 /* 수량 저장 */
 const saveCount = async () => {
@@ -43,19 +45,25 @@ const saveCount = async () => {
         return
     }
 
+    const isResolve = editCount.value === 0
+
     await ElMessageBox.confirm(
-        editCount.value === 0
-        ? '수량이 0입니다. 연체를 해결 처리하시겠습니까?'
+        isResolve
+        ? '수량이 0입니다. 제품 연체를 해결 처리하시겠습니까?'
         : '연체 수량을 수정하시겠습니까?',
-        '연체 수정',
+        '제품 연체 수정',
         { type: 'warning' }
     )
 
     await axios.put(`/customers/overdues/item/${overdueId}`, {
-        count: editCount.value
+        count: editCount.value,
+        resolved: isResolve
     })
 
-    ElMessage.success('연체 정보가 수정되었습니다.')
+    ElMessage.success(
+        isResolve ? '제품 연체가 해결 처리되었습니다.' : '연체 수량이 수정되었습니다.'
+    )
+
     fetchDetail()
 }
 
@@ -63,27 +71,30 @@ onMounted(fetchDetail)
 </script>
 
 <template>
-  <div class="detail-page" v-loading="loading">
-    <!-- 헤더 -->
-    <div class="header">
-      <h2>제품 연체 상세</h2>
-      <el-button @click="router.back()">목록으로</el-button>
+    <div class="detail-page" v-loading="loading">
+        <!-- 헤더 -->
+        <div class="header">
+        <h2>제품 연체 상세</h2>
+        <el-button @click="router.back()">목록으로</el-button>
     </div>
 
     <!-- 요약 -->
     <div class="summary">
-      <div class="summary-left">
-        <h3>{{ detail?.itemOverdueCode }}</h3>
-        <StatusBadge :status="detail?.status" />
-      </div>
+        <div class="summary-left">
+            <h3>{{ detail?.itemOverdueCode }}</h3>
+            <StatusBadge :status="detail?.status" />
+        </div>
 
+        <el-button
+            v-if="editable"
+            type="primary"
+            @click="saveCount" >
+            수정 저장
+        </el-button>
     </div>
 
     <!-- 기본 정보 -->
-    <el-descriptions
-        :column="2"
-        border
-        class="desc-box" >
+    <el-descriptions :column="2" border class="desc-box">
         <el-descriptions-item label="기업명">
             {{ detail?.customerName }}
         </el-descriptions-item>
@@ -110,25 +121,29 @@ onMounted(fetchDetail)
 
         <!-- 연체 수량 -->
         <el-descriptions-item label="연체 수량">
-            
-            <span>{{ detail?.count }}개</span>
+            <el-input-number
+            v-if="editable"
+            v-model="editCount"
+            :min="0" />
+        <span v-else>{{ detail?.count }}개</span>
         </el-descriptions-item>
 
         <el-descriptions-item label="상태">
             <StatusBadge :status="detail?.status" />
         </el-descriptions-item>
-        </el-descriptions>
+    </el-descriptions>
 
-        <!-- 연체 제품 목록 -->
-        <h3 class="section-title">연체된 제품 목록</h3>
+    <!-- 연체 제품 목록 -->
+    <h3 class="section-title">연체된 제품 목록</h3>
 
-        <el-table :data="items">
+    <el-table :data="items">
         <el-table-column prop="itemCode" label="제품 코드" />
         <el-table-column prop="itemName" label="제품명" />
         <el-table-column prop="itemStatus" label="상태" />
-        </el-table>
+    </el-table>
     </div>
 </template>
+
 
 <style scoped>
 .detail-page { padding: 24px; }

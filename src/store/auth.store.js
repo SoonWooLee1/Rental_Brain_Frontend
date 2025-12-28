@@ -10,14 +10,17 @@ export const useAuthStore = defineStore(
     const token = ref('');
     const name = ref('');
     const dept = ref('');
+    const positionId = ref('');
 
-    const setUserInfo = (getId, getEmployeeCode, getEmpId, getName, getAuth, getDept, getToken) => {
+
+    const setUserInfo = (getId, getEmployeeCode, getEmpId, getName, getAuth, getDept, getPositionId, getToken) => {
       id.value = getId
       employeeCode.value = getEmployeeCode
       empId.value = getEmpId
       name.value = getName
       auth.value = getAuth
       dept.value = getDept
+      positionId.value = getPositionId
       token.value = getToken
     }
 
@@ -28,9 +31,10 @@ export const useAuthStore = defineStore(
       name.value = ''
       auth.value = []
       dept.value = ''
+      positionId.value = ''
       token.value = ''
     }
-    return { id, employeeCode, empId, name, auth, token, dept ,setUserInfo, logout };
+    return { id, employeeCode, empId, name, auth, token, dept, positionId ,setUserInfo, logout };
   },
   {
     persist: {

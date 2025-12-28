@@ -1,6 +1,8 @@
 <template>
-  <div class="card">
-    <div class="card-title">{{ title }}</div>
+  <BaseCard class="trend-card">
+    <template #header>
+      <h3 class="card-title">{{ title }}</h3>
+    </template>
 
     <div v-if="loading" class="chart-placeholder">
       <div class="hint">불러오는 중...</div>
@@ -16,13 +18,14 @@
     </div>
 
     <v-chart v-else :option="option" autoresize class="chart" />
-  </div>
+  </BaseCard>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import BaseCard from "@/components/common/BaseCard.vue";
 import VChart from "vue-echarts";
 import { use } from "echarts/core";
 import { LineChart } from "echarts/charts";
@@ -51,7 +54,9 @@ const year = computed(() => {
   return Number.isNaN(y) ? 2025 : y;
 });
 
-const monthLabels = computed(() => Array.from({ length: 12 }, (_, i) => `${i + 1}월`));
+const monthLabels = computed(() =>
+  Array.from({ length: 12 }, (_, i) => `${i + 1}월`)
+);
 
 /**
  * ✅ 백엔드 응답
@@ -95,15 +100,26 @@ const option = computed(() => {
 
   return {
     tooltip: { trigger: "axis" },
-    legend: { bottom: 0, icon: "circle", itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 12 } },
+    legend: {
+      bottom: 0,
+      icon: "circle",
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: { fontSize: 12 },
+    },
     grid: { left: 45, right: 20, top: 40, bottom: 55 },
-    xAxis: { type: "category", boundaryGap: false, data: monthLabels.value, axisTick: { alignWithLabel: true } },
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: monthLabels.value,
+      axisTick: { alignWithLabel: true },
+    },
     yAxis: { type: "value", min: 0, splitLine: { lineStyle: { type: "dashed" } } },
     series: [
-      { name: "견적상담", type: "line", smooth: true, data: s.quote,   symbol: "circle", symbolSize: 8 },
-      { name: "문의",     type: "line", smooth: true, data: s.support, symbol: "circle", symbolSize: 8 },
-      { name: "만족도",   type: "line", smooth: true, data: s.feedback, symbol: "circle", symbolSize: 8 },
-      { name: "설문조사", type: "line", smooth: true, data: s.survey,  symbol: "circle", symbolSize: 8 },
+      { name: "견적상담", type: "line", smooth: true, data: s.quote, symbol: "circle", symbolSize: 8 },
+      { name: "문의", type: "line", smooth: true, data: s.support, symbol: "circle", symbolSize: 8 },
+      { name: "만족도", type: "line", smooth: true, data: s.feedback, symbol: "circle", symbolSize: 8 },
+      { name: "설문조사", type: "line", smooth: true, data: s.survey, symbol: "circle", symbolSize: 8 },
     ],
   };
 });
@@ -126,20 +142,22 @@ watch(year, fetchTrend);
 </script>
 
 <style scoped>
-.card {
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+.trend-card {
+  width: 100%;
 }
+
 .card-title {
+  margin: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 900;
   color: #111827;
-  margin-bottom: 12px;
 }
-.chart { width: 100%; height: 320px; }
+
+.chart {
+  width: 100%;
+  height: 320px;
+}
+
 .chart-placeholder {
   height: 320px;
   border: 1px dashed #e5e7eb;
@@ -151,6 +169,16 @@ watch(year, fetchTrend);
   justify-content: center;
   background: #fafafa;
 }
-.hint { color: #6b7280; font-size: 13px; font-weight: 700; }
-.error { color: #ef4444; font-size: 12px; }
+
+.hint {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 800;
+}
 </style>

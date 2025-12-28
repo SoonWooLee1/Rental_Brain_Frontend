@@ -1,25 +1,29 @@
 <template>
-  <div class="card ai-card">
-    <!-- 헤더 -->
-    <div class="ai-head">
-      <div class="ai-title-area">
-        <div class="ai-title">AI 견적 인사이트</div>
-        <div class="ai-subtitle">월별 견적 데이터를 기반으로 성공·실패 요인과 키워드를 요약합니다.</div>
-      </div>
+  <BaseCard class="ai-card">
+    <!-- ✅ BaseCard 헤더 -->
+    <template #header>
+      <div class="ai-head">
+        <div class="ai-title-area">
+          <div class="ai-title">AI 응대 인사이트</div>
+          <div class="ai-subtitle">
+            월별 고객 응대 데이터를 기반으로 성공·실패 요인과 키워드를 요약합니다.
+          </div>
+        </div>
 
-      <div class="ai-controls">
-        <input type="month" v-model="month" class="ctrl-month" />
-        <input class="ctrl-num" type="number" v-model.number="windowDays" min="1" max="365" />
-        <input class="ctrl-num" type="number" v-model.number="sampleEach" min="5" max="200" />
-        <button class="ctrl-btn" @click="analyze" :disabled="loading">
-          {{ loading ? "분석 중..." : "AI 분석" }}
-        </button>
+        <div class="ai-controls">
+          <input type="month" v-model="month" class="ctrl-month" />
+          <input class="ctrl-num" type="number" v-model.number="windowDays" min="1" max="365" />
+          <input class="ctrl-num" type="number" v-model.number="sampleEach" min="5" max="200" />
+          <button class="ctrl-btn" @click="analyze" :disabled="loading">
+            {{ loading ? "분석 중..." : "AI 분석" }}
+          </button>
+        </div>
       </div>
-    </div>
+    </template>
 
     <div v-if="error" class="ai-error">{{ error }}</div>
 
-    <!-- 4개 카드 -->
+    <!-- 4개 미니 카드 -->
     <div v-if="result" class="ai-grid">
       <InsightTopListCard title="✅ 성공 요인 TOP3" tone="success" :items="result.successFactorsTop3" />
       <InsightTopListCard title="❌ 실패 요인 TOP3" tone="danger" :items="result.failFactorsTop3" />
@@ -38,13 +42,14 @@
     <div v-if="!result && !loading" class="ai-hint">
       월을 선택하고 <b>AI 분석</b>을 눌러 결과를 확인하세요.
     </div>
-  </div>
+  </BaseCard>
 </template>
 
 <script setup>
 import { ref } from "vue";
+import BaseCard from "@/components/common/BaseCard.vue";
 import InsightTopListCard from "@/components/analysis/InsightTopListCard.vue";
-import { getQuoteAnalyze } from "@/api/customeranalysis"; // ✅ 너희 API 모듈에 추가한 함수
+import { getQuoteAnalyze } from "@/api/customeranalysis";
 
 const month = ref(new Date().toISOString().slice(0, 7));
 const windowDays = ref(60);
@@ -70,28 +75,24 @@ const analyze = async () => {
 </script>
 
 <style scoped>
-/* ✅ CustomerSupportAnalysisView.vue의 .card 스타일을 그대로 따라감 */
-.card.ai-card {
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  margin-top: 16px;
+/* ✅ 바깥 카드 외형은 BaseCard가 담당
+   - 여기서는 레이아웃만 관리 */
+.ai-card {
+  width: 100%;
 }
 
-/* 헤더 */
+/* 헤더(슬롯 내부) */
 .ai-head {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 16px;
-  margin-bottom: 14px;
 }
 
 .ai-title {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 900; /* ✅ 통일: 900 */
   color: #111827;
 }
 
@@ -99,7 +100,7 @@ const analyze = async () => {
   margin-top: 6px;
   color: #6b7280;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* 컨트롤 */
@@ -113,24 +114,26 @@ const analyze = async () => {
 .ctrl-month,
 .ctrl-num {
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 6px 8px;
+  border-radius: 10px; /* ✅ 프로젝트 토글/인풋과 통일 */
+  padding: 8px 10px;
   background: #fff;
   font-size: 12px;
+  font-weight: 700;
 }
 
 .ctrl-num {
-  width: 80px;
+  width: 90px;
 }
 
 .ctrl-btn {
   border: 1px solid #111827;
   background: #111827;
   color: #fff;
-  border-radius: 8px;
-  padding: 7px 12px;
+  border-radius: 10px;
+  padding: 8px 12px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
+  cursor: pointer;
 }
 .ctrl-btn:disabled {
   opacity: 0.6;
@@ -140,7 +143,7 @@ const analyze = async () => {
 /* 그리드 */
 .ai-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-top: 10px;
 }
@@ -149,12 +152,12 @@ const analyze = async () => {
 .ai-notes {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid #f1f1f1;
+  border-top: 1px solid #eef2f7;
 }
 
 .notes-title {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
   color: #111827;
   margin-bottom: 10px;
 }
@@ -165,7 +168,6 @@ const analyze = async () => {
   color: #374151;
   font-size: 12px;
 }
-
 .notes-list li {
   margin-bottom: 6px;
   line-height: 1.35;
@@ -175,17 +177,18 @@ const analyze = async () => {
   margin-top: 10px;
   font-size: 12px;
   color: #6b7280;
+  font-weight: 700;
 }
 
 .ai-error {
   margin: 10px 0;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff1f2;
   border: 1px solid #fecdd3;
   color: #9f1239;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* 반응형 */

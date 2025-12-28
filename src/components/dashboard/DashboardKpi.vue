@@ -13,11 +13,17 @@
         </button>
       </div>
     </div>
-    
-    <div class="kpi-grid">
 
-      <!-- 1) 납부 연체 -->
-      <article class="kpi-card">
+    <div class="kpi-grid">
+      <!-- 1) 납부 연체 -> 연체관리 탭 -->
+      <article
+        class="kpi-card clickable"
+        role="button"
+        tabindex="0"
+        @click="goTo('overdue')"
+        @keydown.enter.prevent="goTo('overdue')"
+        @keydown.space.prevent="goTo('overdue')"
+      >
         <div class="top">
           <p class="label">납부 연체</p>
           <span class="meta">진행 중</span>
@@ -29,8 +35,15 @@
         <p class="hint">수금 리스크 모니터링</p>
       </article>
 
-      <!-- 2) 향후 60일 만료 예정 계약 -->
-      <article class="kpi-card">
+      <!-- 2) 향후 60일 만료 예정 계약 -> 계약(결재) 탭 -->
+      <article
+        class="kpi-card clickable"
+        role="button"
+        tabindex="0"
+        @click="goTo('contractPay')"
+        @keydown.enter.prevent="goTo('contractPay')"
+        @keydown.space.prevent="goTo('contractPay')"
+      >
         <div class="top">
           <p class="label">만료 예정 계약</p>
           <span class="meta">향후 60일</span>
@@ -42,10 +55,15 @@
         <p class="hint">재계약/연장 우선 대상</p>
       </article>
 
-
-
-      <!-- 3) 문의 대기 -->
-      <article class="kpi-card">
+      <!-- 3) 문의 대기 -> 문의 관리 탭 -->
+      <article
+        class="kpi-card clickable"
+        role="button"
+        tabindex="0"
+        @click="goTo('inquiry')"
+        @keydown.enter.prevent="goTo('inquiry')"
+        @keydown.space.prevent="goTo('inquiry')"
+      >
         <div class="top">
           <p class="label">문의 대기</p>
           <span class="meta">대기 상태</span>
@@ -57,8 +75,15 @@
         <p class="hint">응대 병목 확인</p>
       </article>
 
-      <!-- 4) 이번 달 매출 -->
-      <article class="kpi-card">
+      <!-- 4) 이번 달 매출 -> 계약(결재) 탭 -->
+      <article
+        class="kpi-card clickable"
+        role="button"
+        tabindex="0"
+        @click="goTo('contractPay')"
+        @keydown.enter.prevent="goTo('contractPay')"
+        @keydown.space.prevent="goTo('contractPay')"
+      >
         <div class="top">
           <p class="label">이번 달 매출</p>
           <span class="meta">MoM</span>
@@ -88,8 +113,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
-import { getDashboardKpi } from "@/api/dashboard"; // ✅ dashboard.js에 이 함수가 있어야 함
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { getDashboardKpi } from "@/api/dashboard"; 
+
+const router = useRouter();
+
+function goTo(key) {
+  const map = {
+
+    overdue: {
+      name: "customer-risklist", 
+    },
+
+    contractPay: {
+      name: "contract-list", 
+
+    },
+
+    inquiry: {
+      name: "cs-support-list",
+    },
+  };
+
+  const target = map[key];
+  if (!target) return;
+
+  router.push(target);
+}
 
 // 필요하면 props로 month를 받아서 대시보드 기간 조회도 가능
 const props = defineProps({
@@ -141,7 +192,6 @@ const fmtInt = (n) => (Number.isFinite(n) ? n.toLocaleString("ko-KR") : "0");
 
 const fmtKRW = (n) => {
   const v = Number(n ?? 0);
-  // 너무 큰 숫자는 억/만 단위로 줄여도 되는데, 일단 KRW 표기만
   return "₩" + (Number.isFinite(v) ? v.toLocaleString("ko-KR") : "0");
 };
 
@@ -301,20 +351,57 @@ const momClass = (p) => {
   animation: shimmer 1.2s ease-in-out infinite;
 }
 
-.w60 { width: 60px; }
-.w80 { width: 80px; }
-.w100 { width: 110px; }
+.w60 {
+  width: 60px;
+}
+.w80 {
+  width: 80px;
+}
+.w100 {
+  width: 110px;
+}
 
 @keyframes shimmer {
-  0% { background-position: 100% 0; }
-  100% { background-position: 0 0; }
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* ✅ Hover 애니메이션 + 클릭 가능 스타일 */
+.kpi-card.clickable {
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  will-change: transform;
+}
+
+.kpi-card.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.1);
+  border-color: #dbeafe;
+}
+
+.kpi-card.clickable:active {
+  transform: translateY(-1px) scale(0.99);
+  box-shadow: 0 6px 14px rgba(17, 24, 39, 0.08);
+}
+
+.kpi-card.clickable:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
 }
 
 /* 반응형 */
 @media (max-width: 1200px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 @media (max-width: 640px) {
-  .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

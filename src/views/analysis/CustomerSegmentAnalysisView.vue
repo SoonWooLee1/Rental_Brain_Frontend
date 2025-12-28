@@ -9,7 +9,6 @@
         </p>
       </div>
 
-      <!-- ✅ 토글 + 선택월 -->
       <div class="header-actions">
         <div class="seg-toggle">
           <button class="seg-btn" :class="{ active: mode === 'this' }" @click="setThisMonth">
@@ -32,9 +31,16 @@
       </div>
     </div>
 
+    <!-- =========================
+         KPI Summary
+    ========================== -->
+
+        <!-- ✅ 한 줄 요약 -->
+    <AnalysisSummary :text="segmentSummary.text" :tone="segmentSummary.tone" />
+
     <div class="grid-2">
-      <!-- (1) 이탈 위험 고객 비중 -->
-      <div class="card">
+      <!-- 이탈 위험 고객 비중 -->
+      <div class="card clickable" @click="openRiskSegmentModal">
         <div class="kpi-head">
           <div class="icon warn">⚠️</div>
           <div>
@@ -49,14 +55,15 @@
 
         <div class="kpi-sub">
           <span :class="(risk?.momDiffRate ?? 0) <= 0 ? 'up' : 'down'">
-            전월 대비 {{ (risk?.momDiffRate ?? 0) >= 0 ? "+" : "" }}{{ round1(risk?.momDiffRate) }}%p
+            전월 대비
+            {{ (risk?.momDiffRate ?? 0) >= 0 ? "+" : "" }}{{ round1(risk?.momDiffRate) }}%p
             {{ (risk?.momDiffRate ?? 0) <= 0 ? "(위험 고객 감소 중)" : "(위험 고객 증가 중)" }}
           </span>
         </div>
       </div>
 
-      <!-- (2) 이탈 위험 사유 분포 -->
-      <div class="card">
+      <!-- 이탈 위험 사유 분포 -->
+      <div class="card clickable" @click="openRiskReasonModal()">
         <div class="kpi-head">
           <div class="icon purple">△</div>
           <div>
@@ -66,7 +73,12 @@
         </div>
 
         <div class="reason-list">
-          <div v-for="r in reasons" :key="r.reasonCode" class="reason-row">
+          <div
+            v-for="r in reasons"
+            :key="r.reasonCode"
+            class="reason-row clickable-row"
+            @click.stop="openRiskReasonModal(r.reasonCode)"
+          >
             <span class="reason-label">{{ reasonLabel(r.reasonCode) }}</span>
             <span class="reason-value">{{ round1(r.ratio) }}%</span>
           </div>
@@ -74,8 +86,37 @@
       </div>
     </div>
 
+    <!-- =========================
+         Insight Charts
+         ⚠️ 내부 컴포넌트가 카드 역할
+    ========================== -->
+    <div class="grid-2 insight-charts">
+      <RiskMonthlyRate />
+      <SegmentDistribution />
+    </div>
+
+    <!-- =========================
+         Detail Analysis
+    ========================== -->
     <SegmentAnalysisChart />
     <CustomerSegmentDetailCard />
+
+    <!-- =========================
+         Modals
+    ========================== -->
+    <SegmentCustomersModal
+      :open="segModalOpen"
+      :segmentId="segModalSegmentId"
+      @close="segModalOpen = false"
+    />
+
+    <RiskReasonCustomersModal
+      :open="reasonModalOpen"
+      :month="month"
+      :defaultReasonCode="selectedReasonCode"
+      :reasons="reasons"
+      @close="reasonModalOpen = false"
+    />
   </div>
 </template>
 
@@ -83,11 +124,57 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getRiskKpi, getRiskReasonKpi } from "@/api/customeranalysis";
+
 import SegmentAnalysisChart from "@/components/analysis/SegmentAnalysisChart.vue";
 import CustomerSegmentDetailCard from "@/components/analysis/CustomerSegmentDetailCard.vue";
+import SegmentDistribution from "@/components/analysis/SegmentDistribution.vue";
+import RiskMonthlyRate from "@/components/analysis/RiskMonthlyRate.vue";
+
+import SegmentCustomersModal from "@/components/analysis/SegmentCustomersModal.vue";
+import RiskReasonCustomersModal from "@/components/analysis/RiskReasonCustomersModal.vue";
+import AnalysisSummary from "@/components/analysis/AnalysisSummary.vue";
 
 const route = useRoute();
 const router = useRouter();
+
+// 한줄평
+
+/* =========================
+   One-line summary (front-only)
+========================= */
+const segmentSummary = computed(() => {
+  const r = risk.value;
+  if (!r) return { text: "세그먼트 지표를 불러오는 중입니다.", tone: "neutral", icon: "ℹ️" };
+
+  const riskRate = Number(r?.riskRate ?? r?.rate ?? 0);
+  const momP = Number(r?.momDiffRate ?? r?.momDiffP ?? 0);
+  const riskCnt = Number(r?.riskCustomerCount ?? r?.customerCount ?? 0);
+
+  if (riskRate >= 8 || momP >= 3) {
+    return {
+      text: `이탈 위험 고객 비중 ${round1(riskRate)}%(${fmt(riskCnt)}명/개사)로 증가 중입니다. 우선순위 케어 액션이 필요합니다.`,
+      tone: "danger",
+      icon: "🔴",
+    };
+  }
+
+  if (riskRate >= 4) {
+    return {
+      text: `이탈 위험 고객 ${round1(riskRate)}%가 감지됩니다. 조기 케어/재계약 유도 액션을 추천합니다.`,
+      tone: "warn",
+      icon: "🟡",
+    };
+  }
+
+  return {
+    text: `현재 리스크 세그먼트 비중은 낮고, 고객 분포는 전반적으로 안정적입니다.`,
+    tone: "good",
+    icon: "🟢",
+  };
+});
+
+
+
 
 /* =========================
    Month (route.query.month)
@@ -105,8 +192,32 @@ const pickedMonth = ref("");
 const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 const addMonths = (baseYM, diff) => {
   const [y, m] = String(baseYM).split("-").map(Number);
-  const d = new Date(y, (m - 1) + diff, 1);
+  const d = new Date(y, m - 1 + diff, 1);
   return ym(d);
+};
+
+const RISK_SEGMENT_ID = 4; // 이탈 위험 고객
+
+/* =========================
+   KPI1: 이탈 위험 고객 리스트(세그먼트 4) 모달
+========================= */
+const segModalOpen = ref(false);
+const segModalSegmentId = ref(RISK_SEGMENT_ID);
+
+const openRiskSegmentModal = () => {
+  segModalSegmentId.value = RISK_SEGMENT_ID;
+  segModalOpen.value = true;
+};
+
+/* =========================
+   KPI2: 이탈 사유별 고객 리스트 모달
+========================= */
+const reasonModalOpen = ref(false);
+const selectedReasonCode = ref("OVERDUE");
+
+const openRiskReasonModal = (code = "OVERDUE") => {
+  selectedReasonCode.value = code;
+  reasonModalOpen.value = true;
 };
 
 const setMonthQuery = (m) => {
@@ -389,5 +500,112 @@ const reasonLabel = (code) => {
   .header-actions {
     justify-content: flex-start;
   }
+}
+
+/* 2열 그리드 (분석 차트용) */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* 이 섹션만 살짝 여백 */
+.insight-charts {
+  margin-top: 16px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+
+/* ===== Analysis one-line summary ===== */
+.analysis-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+.analysis-summary .icon {
+  font-size: 14px;
+}
+.analysis-summary.tone-good {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+.analysis-summary.tone-warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.analysis-summary.tone-danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+/*  한줄평 */
+.kpi-card,
+.card.kpi-card {
+  cursor: pointer;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    border-color 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.kpi-card:hover,
+.card.kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-card:active,
+.card.kpi-card:active {
+  transform: translateY(-1px);
+}
+
+.kpi-card:focus-visible,
+.card.kpi-card:focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 2px;
+}
+/* ===== KPI card hover (fix) ===== */
+.card.clickable {
+  cursor: pointer;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    border-color 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.card.clickable:hover {
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+.card.clickable:active {
+  transform: translateY(-1px);
+}
+
+.card.clickable:focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 2px;
 }
 </style>

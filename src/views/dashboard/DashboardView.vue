@@ -1,79 +1,188 @@
 <template>
   <div class="page-container">
     <div class="dashboard-grid">
-      <!-- KPI 카드 -->
-      <div class="row-full">
+      <!-- 1단: KPI -->
+      <section class="row-full">
         <DashboardKpi />
-      </div>
-      
-        <!-- 3열 -->
-        <div class="row-3">
-          <PriorityAlert />
-          <AiInsight />
-          <ProductStatusChart />
+      </section>
+
+      <!-- 2단: SNAPSHOT (3열) -->
+      <section class="grid-3 snapshot-row">
+        
+        <div
+          class="panel clickable"
+          role="button"
+          tabindex="0"
+          @click="goTo('segment')"
+          @keydown.enter.prevent="goTo('segment')"
+          @keydown.space.prevent="goTo('segment')"
+        >
+          <SegmentDistribution />
         </div>
 
-      
-      <!-- 2열 -->
-      <div class="row-2">
-        <SegmentAnalysisChart />
+        <div
+          class="panel clickable"
+          role="button"
+          tabindex="0"
+          @click="goTo('acquisition')"
+          @keydown.enter.prevent="goTo('acquisition')"
+          @keydown.space.prevent="goTo('acquisition')"
+          >
           <QuarterCustomerChart />
+        </div>
+        <div
+          class="panel clickable"
+          role="button"
+          tabindex="0"
+          @click="goTo('product')"
+          @keydown.enter.prevent="goTo('product')"
+          @keydown.space.prevent="goTo('product')"
+        >
+          <ProductStatusChart />
+        </div>
+      </section>
 
-      </div>
+      <!-- 3단: WORKBENCH (2열) -->
+      <section class="grid-2 workbench-row">
+        <div
+          class="panel clickable"
+          role="button"
+          tabindex="0"
+          @click="goTo('segment')"
+          @keydown.enter.prevent="goTo('segment')"
+          @keydown.space.prevent="goTo('segment')"
+        >
+          <SegmentAnalysisChart />
+        </div>
+        <div>
+          <CampaignWorkbenchMock />
+        </div>
+
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useRouter } from "vue-router";
+
 import DashboardKpi from "@/components/dashboard/DashboardKpi.vue";
-import SegmentAnalysisChart from "@/components/analysis/SegmentAnalysisChart.vue";
-import PriorityAlert from "@/components/dashboard/PriorityAlert.vue";
-import QuarterCustomerChart from "@/components/dashboard/QuarterCustomerChart.vue";
 import AiInsight from "@/components/dashboard/AiInsight.vue";
+
 import ProductStatusChart from "@/components/dashboard/ProductStatusChart.vue";
+import SegmentAnalysisChart from "@/components/analysis/SegmentAnalysisChart.vue";
+import QuarterCustomerChart from "@/components/dashboard/QuarterCustomerChart.vue";
+
+import SegmentDistribution from "@/components/analysis/SegmentDistribution.vue";
+import CampaignWorkbenchMock from "@/components/dashboard/CampaignWorkbenchMock.vue";
+
+const router = useRouter();
+
+function goTo(key) {
+  const map = {
+    overdue: { name: "customer-risklist" },
+    insight: { name: "promotion-list" },      // 캠페인/프로모션 관리
+    product: { name: "asset-list" },          // 자산/제품
+    segment: { name: "analysis-summary" },    // 고객분석 요약
+    acquisition: { name: "~~" },              // 유입 탭(미정)
+  };
+
+  const target = map[key];
+  if (!target) return;
+  router.push(target);
+}
 </script>
 
 <style scoped>
-/* 고객분석 페이지와 동일한 컨테이너 톤 */
 .page-container {
-  padding: 24px;              /* 20 -> 24 */
-  max-width: 1440px;          /* 1400 -> 1440 (스크린샷 느낌) */
+  padding: 24px;
+  max-width: 1440px;
   margin: 0 auto;
 
-  display: flex;              /* ✅ 섹션 간 간격 통일 */
+  display: flex;
   flex-direction: column;
-  gap: 20px;                  /* ✅ 전체 세로 간격 기준 */
+  gap: 20px;
 }
 
 .dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 16px; /* 고객분석(15~16) 톤 */
+  gap: 16px;
 }
 
 .row-full {
   width: 100%;
 }
 
-.row-2 {
+/* =========================
+   ✅ 그리드 클래스 분리
+========================= */
+
+/* 2단: 3열 (균등) */
+.grid-3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* 3단: 2열 (워크벤치가 더 넓게) */
+.grid-2 {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 16px;
+  align-items: stretch;
 }
 
-.row-3 {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 16px;
+/* 패널이 row 높이를 꽉 채우도록 */
+.panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
 }
 
-/* 반응형 */
+.panel > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* 클릭 공통 */
+.clickable {
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+  will-change: transform;
+  border-radius: 14px;
+}
+
+.clickable:hover {
+  transform: translateY(-3px);
+  filter: drop-shadow(0 10px 24px rgba(17, 24, 39, 0.10));
+}
+
+.clickable:active {
+  transform: translateY(-1px) scale(0.99);
+  filter: drop-shadow(0 6px 14px rgba(17, 24, 39, 0.08));
+}
+
+.clickable:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
+}
+
+/* 섹션 간 간격 */
+.snapshot-row { margin-top: 2px; }
+.workbench-row { margin-top: 6px; }
+
+/* =========================
+   Responsive
+========================= */
 @media (max-width: 1200px) {
-  .row-2 { grid-template-columns: 1fr; }
-  .row-3 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 992px) {
-  .row-3 { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: 1fr; }
 }
 </style>
+
