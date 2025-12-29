@@ -13,13 +13,13 @@
         
         <template v-if="isEditMode">
           <el-select v-model="editForm.segmentName" placeholder="세그먼트 선택" class="ml-2" style="width: 220px;">
-            <el-option label="잠재 고객" value="잠재 고객" />
-            <el-option label="신규 고객" value="신규 고객" />
-            <el-option label="일반 고객" value="일반 고객" />
-            <el-option label="이탈 위험 고객" value="이탈 위험 고객" />
-            <el-option label="VIP 고객" value="VIP 고객" />
-            <el-option label="블랙리스트 고객" value="블랙리스트 고객" />
-            <el-option label="확장 의사 고객" value="확장 의사 고객" />
+            <el-option label="잠재 고객" value="1" />
+            <el-option label="신규 고객" value="2" />
+            <el-option label="일반 고객" value="3" />
+            <el-option label="이탈 위험 고객" value="4" />
+            <el-option label="VIP 고객" value="5" />
+            <el-option label="블랙리스트 고객" value="6" />
+            <el-option label="확장 의사 고객" value="7" />
           </el-select>
         </template>
         <template v-else>
