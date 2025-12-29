@@ -7,7 +7,6 @@
     @close="handleClose"
   >
     <el-form :model="form" label-width="100px" ref="formRef">
-      
       <div class="section-title">기본 정보</div>
       
       <el-form-item label="상담사" required>
@@ -19,12 +18,12 @@
       
       <el-form-item label="상담 유형" required>
         <el-select v-model="form.quoteChannelId" placeholder="유형 선택" style="width: 100%">
-           <el-option label="전화" :value="1" />
-           <el-option label="이메일" :value="2" />
-           <el-option label="웹(채팅, 게시판)" :value="3" />
-           <el-option label="SNS" :value="4" />
-           <el-option label="방문" :value="5" />
-           <el-option label="기타" :value="6" />
+            <el-option label="전화" :value="1" />
+            <el-option label="이메일" :value="2" />
+            <el-option label="웹(채팅, 게시판)" :value="3" />
+            <el-option label="SNS" :value="4" />
+            <el-option label="방문" :value="5" />
+            <el-option label="기타" :value="6" />
         </el-select>
       </el-form-item>
 
@@ -55,11 +54,13 @@
           placeholder="기업명을 입력하면 자동 검색됩니다"
           style="width: 100%"
           @select="handleSelectCustomer"
+          @input="handleInputChange"
           :trigger-on-focus="false"
         >
           <template #default="{ item }">
             <div class="customer-item">
-              <span class="name">{{ item.value }}</span> <span class="sub-text" v-if="item.ceo">({{ item.ceo }})</span>
+              <span class="name">{{ item.value }}</span> 
+              <span class="sub-text" v-if="item.ceo">({{ item.ceo }})</span>
             </div>
           </template>
         </el-autocomplete>
@@ -101,7 +102,7 @@
 import { ref, reactive, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { createQuote, updateQuote } from '@/api/quote';
-import { getCustomerList } from '@/api/customerlist'; // 고객 목록 API import
+import { getCustomerList } from '@/api/customerlist';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -123,7 +124,6 @@ const initForm = {
   quoteProcessingTime: 10,
   customerName: '',
   quoteCumId: null, 
-  customerInCharge: '', // DB 호환용 (사용 안함)
   customerCallNum: '',
   quoteSummary: '',
   quoteContent: '',
@@ -138,60 +138,73 @@ const setToday = () => {
     form.quoteCounselingDate = localIso;
 };
 
-// 모달이 열릴 때 초기화 및 데이터 로드
-watch(() => props.modelValue, (val) => {
-    if (val) {
-        if (props.editData) {
-            // 수정 모드: 데이터 매핑
-            const data = props.editData;
-            form.quoteId = data.id || data.quoteId;
-            form.quoteCounselor = data.counselor || data.quoteCounselor;
-            form.quoteChannelId = data.channelId || data.quoteChannelId || 1;
-            
-            form.quoteCounselingDate = data.counselingDate 
-                ? data.counselingDate.replace(' ', 'T') 
-                : (data.quoteCounselingDate ? data.quoteCounselingDate.replace(' ', 'T') : '');
-                
-            form.quoteProcessingTime = data.processingTime || data.quoteProcessingTime || 10;
-            form.customerName = data.customerName;
-            form.quoteCumId = data.cumId || data.quoteCumId;
-            form.customerCallNum = data.customerPhone || data.customerCallNum || '';
-            form.quoteSummary = data.summary || data.quoteSummary;
-            form.quoteContent = data.content || data.quoteContent;
-        } else {
-            // 등록 모드: 초기화
-            Object.assign(form, initForm);
-            setToday();
-        }
-    }
-});
+// 데이터 매핑 함수 분리
+const mapDataToForm = () => {
+    if (isEditMode.value && props.editData) {
+        const data = props.editData;
+        console.log("수정 데이터 로드:", data); // 디버깅용 로그
 
-// 기업 검색 로직 (Autocomplete)
+        // ID 매핑 강화 (다양한 필드명 대응)
+        form.quoteId = data.quoteId || data.id || data.quote_id; 
+        
+        // 데이터가 잘 들어왔는지 확인
+        if (!form.quoteId) {
+            console.error("quoteId를 찾을 수 없습니다! 데이터 구조를 확인하세요:", data);
+        }
+
+        form.quoteCounselor = data.counselor || data.quoteCounselor;
+        form.quoteChannelId = data.channelId || data.quoteChannelId || 1;
+        
+        form.quoteCounselingDate = data.counselingDate 
+            ? data.counselingDate.replace(' ', 'T') 
+            : (data.quoteCounselingDate ? data.quoteCounselingDate.replace(' ', 'T') : '');
+            
+        form.quoteProcessingTime = data.processingTime || data.quoteProcessingTime || 10;
+        
+        // 고객 정보 매핑
+        form.customerName = data.customerName || data.customer?.name;
+        form.quoteCumId = data.cumId || data.quoteCumId || data.customerId;
+        
+        form.customerCallNum = data.customerPhone || data.customerCallNum || data.customer?.phone || '';
+        form.quoteSummary = data.summary || data.quoteSummary;
+        form.quoteContent = data.content || data.quoteContent;
+    } else {
+        Object.assign(form, initForm);
+        setToday();
+    }
+};
+
+// 모달 열림 여부 및 editData 변경을 모두 감지
+watch(
+  [() => props.modelValue, () => props.editData],
+  ([newOpen, newData]) => {
+    if (newOpen) {
+      mapDataToForm();
+    }
+  },
+  { immediate: true }
+);
+
+// 기업 검색 (Autocomplete)
 const querySearchCustomer = async (queryString, cb) => {
   if (!queryString) {
     cb([]);
     return;
   }
   try {
-    // API 호출: 검색어를 파라미터로 전달
     const res = await getCustomerList({ 
         customerName: queryString, 
         page: 1, 
         size: 20 
     });
-    
-    // API 응답 구조에 따라 데이터 추출 (contents 또는 data)
     const dataList = res.data?.contents || res.data || [];
-    
-    // Autocomplete 표시에 필요한 데이터 매핑
     const results = dataList.map(item => ({
       ...item,
-      // [중요] value 속성에 기업명을 넣어야 드롭다운 및 선택 시 input에 표시됨
-      value: item.customerName ? String(item.customerName) : '', 
-      ceo: item.ceoName || item.ceo,
-      phone: item.customerCallNum || item.customerPhone // 연락처 필드 매핑
+      value: item.name || item.customerName, 
+      id: item.id || item.customerId,        
+      phone: item.phone || item.callNum,     
+      ceo: item.ceoName || item.inCharge || '' 
     }));
-    
     cb(results);
   } catch (e) {
     console.error('기업 검색 실패:', e);
@@ -199,29 +212,38 @@ const querySearchCustomer = async (queryString, cb) => {
   }
 };
 
-// 기업 선택 시 처리 핸들러
 const handleSelectCustomer = (item) => {
-  // form.customerName은 v-model에 의해 자동 업데이트 되므로 여기서 수동 설정하지 않음 (경고 방지)
-  
-  // 1. 기업 ID 설정 (백엔드 전송용)
-  form.quoteCumId = item.customerId || item.id; 
-  
-  // 2. 연락처 자동 입력
-  form.customerCallNum = item.phone || item.customerCallNum || '';
+  form.customerName = item.value; 
+  form.quoteCumId = item.id; 
+  form.customerCallNum = item.phone || '';
+};
+
+const handleInputChange = () => {
+  form.quoteCumId = null;
 };
 
 const handleSubmit = async () => {
   if (!form.quoteCounselor) return ElMessage.warning('상담사를 입력해주세요.');
   if (!form.customerName) return ElMessage.warning('기업명을 입력해주세요.');
+  if (!form.quoteCumId) return ElMessage.warning('기업명을 검색하여 목록에서 선택해주세요.');
   if (!form.quoteSummary) return ElMessage.warning('요약 제목을 입력해주세요.');
 
   try {
     loading.value = true;
+    const payload = { ...form };
+
+    // 수정 시 ID가 없으면 중단
+    if (isEditMode.value && !form.quoteId) {
+        ElMessage.error('상담 ID가 누락되어 수정할 수 없습니다.');
+        loading.value = false;
+        return;
+    }
+
     if (isEditMode.value) {
-        await updateQuote(form.quoteId, form);
+        await updateQuote(form.quoteId, payload);
         ElMessage.success('수정되었습니다.');
     } else {
-        await createQuote(form);
+        await createQuote(payload);
         ElMessage.success('상담 내역이 등록되었습니다.');
     }
     emit('refresh');
@@ -247,14 +269,13 @@ const handleClose = () => {
     font-weight: 700; 
     color: #333; 
     margin-bottom: 12px; 
-    margin-top: 4px;
+    margin-top: 4px; 
     border-left: 4px solid #409EFF; 
     padding-left: 8px;
 }
 .unit { margin-left: 8px; color: #666; font-size: 13px; }
 .dialog-footer { display: flex; justify-content: flex-end; }
 
-/* 검색 결과 아이템 스타일 */
 .customer-item { 
     display: flex; 
     justify-content: space-between;

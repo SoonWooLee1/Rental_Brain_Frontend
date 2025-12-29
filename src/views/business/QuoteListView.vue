@@ -50,7 +50,7 @@
       <div class="filter-wrapper">
         <el-input
           v-model="keyword"
-          placeholder="기업명, 담당자, 문의 내용으로 검색..."
+          placeholder="기업명으로 검색..."
           class="search-input"
           @keyup.enter="handleSearch"
           clearable
@@ -132,7 +132,7 @@
         <el-table-column prop="quoteCounselor" label="상담사" width="80" align="center" />
         <el-table-column prop="quoteSummary" label="요약" min-width="260" show-overflow-tooltip />
 
-        <el-table-column label="액션" width="110" align="center">
+        <el-table-column label="관리" width="110" align="center">
           <template #default="{ row }">
             <el-button size="small" @click="openDetailModal(row)">
               상세보기
