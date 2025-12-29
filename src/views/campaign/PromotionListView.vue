@@ -67,7 +67,7 @@
 
       <el-table-column label="유형" width="100" align="center">
         <template #default="{ row }">
-          <el-tag type="info" effect="light">
+          <el-tag :type="getTypeTagType(row.type)" effect="plain">
             {{ getTypeLabel(row.type) }}
           </el-tag>
         </template>
@@ -166,13 +166,19 @@ const getStatusTagType = (status) => {
   if (status === 'A') return 'success';
   if (status === 'P') return 'warning';
   if (status === 'H') return 'info';
-  if (status === 'C') return 'default';
+  if (status === 'C') return 'primary';
   return 'default';
 };
 
 const getTypeLabel = (type) => {
   if (type === 'A') return '자동';
   if (type === 'M') return '일반';
+  return '기타';
+};
+
+const getTypeTagType = (type) => {
+  if (type === 'A') return 'danger';
+  if (type === 'M') return 'info';
   return '기타';
 };
 

@@ -10,9 +10,28 @@
           {{ customer.name }}
           <el-tag v-if="customer.isDeleted === 'Y'" type="danger" effect="dark" class="ml-2">비활성</el-tag>
         </h2>
-        <el-tag :type="getSegmentColor(customer.segmentName)" effect="light" class="segment-tag">
-          {{ customer.segmentName || '일반' }}
-        </el-tag>
+        
+        <template v-if="isEditMode">
+          <el-select v-model="editForm.segmentName" placeholder="세그먼트 선택" class="ml-2" style="width: 220px;">
+            <el-option label="잠재 고객" value="잠재 고객" />
+            <el-option label="신규 고객" value="신규 고객" />
+            <el-option label="일반 고객" value="일반 고객" />
+            <el-option label="이탈 위험 고객" value="이탈 위험 고객" />
+            <el-option label="VIP 고객" value="VIP 고객" />
+            <el-option label="블랙리스트 고객" value="블랙리스트 고객" />
+            <el-option label="확장 의사 고객" value="확장 의사 고객" />
+          </el-select>
+        </template>
+        <template v-else>
+          <el-tag 
+            :color="getSegmentHexColor(customer.segmentName)" 
+            effect="dark" 
+            class="segment-tag" 
+            style="border: none; color: #fff;"
+          >
+            {{ customer.segmentName || '일반 고객' }}
+          </el-tag>
+        </template>
       </div>
 
       <div class="header-right">
@@ -36,7 +55,8 @@
     <el-tabs v-model="activeTab" type="border-card" class="detail-tabs">
       
       <el-tab-pane label="종합 정보" name="general">
-        <div class="info-grid">
+        
+        <div class="info-grid two-columns">
           
           <el-card class="info-card basic-info" shadow="never">
             <template #header><span class="card-title">기본 정보</span></template>
@@ -77,37 +97,36 @@
             />
             <div v-if="isEditMode" class="tip-text text-right mt-2">* '저장' 클릭 시 반영됩니다.</div>
           </el-card>
+        </div> 
+        <el-card class="info-card history-info mt-20" shadow="never">
+          <template #header><span class="card-title">고객 대응 히스토리</span></template>
+          <el-scrollbar height="300px">
+            <el-timeline v-if="customer.historyList && customer.historyList.length > 0">
+              <el-timeline-item
+                v-for="(item, index) in customer.historyList"
+                :key="index"
+                :timestamp="formatDate(item.date)"
+                placement="top"
+                :color="getStatusColor(item.status)"
+              >
+                <el-card class="history-item-card" shadow="hover">
+                  <div class="history-header">
+                    <span class="history-type">[{{ item.type }}]</span>
+                    <span class="history-performer">{{ item.performer }}</span>
+                  </div>
+                  <div class="history-content">{{ item.content }}</div>
+                  <div class="history-status">
+                    <el-tag size="small" :type="getStatusType(item.status)">
+                      {{ item.status === '완료' ? '완료' : '진행 중' }}
+                    </el-tag>
+                  </div>
+                </el-card>
+              </el-timeline-item>
+            </el-timeline>
+            <el-empty v-else description="히스토리가 없습니다." />
+          </el-scrollbar>
+        </el-card>
 
-          <el-card class="info-card history-info" shadow="never">
-            <template #header><span class="card-title">고객 대응 히스토리</span></template>
-            <el-scrollbar height="400px">
-              <el-timeline v-if="customer.historyList && customer.historyList.length > 0">
-                <el-timeline-item
-                  v-for="(item, index) in customer.historyList"
-                  :key="index"
-                  :timestamp="formatDate(item.date)"
-                  placement="top"
-                  :color="getStatusColor(item.status)"
-                >
-                  <el-card class="history-item-card" shadow="hover">
-                    <div class="history-header">
-                      <span class="history-type">[{{ item.type }}]</span>
-                      <span class="history-performer">{{ item.performer }}</span>
-                    </div>
-                    <div class="history-content">{{ item.content }}</div>
-                    <div class="history-status">
-                      <el-tag size="small" :type="getStatusType(item.status)">
-                        {{ item.status === '완료' ? '완료' : '진행 중' }}
-                      </el-tag>
-                    </div>
-                  </el-card>
-                </el-timeline-item>
-              </el-timeline>
-              <el-empty v-else description="히스토리가 없습니다." />
-            </el-scrollbar>
-          </el-card>
-
-        </div>
       </el-tab-pane>
 
       <el-tab-pane label="문의 내역" name="support">
@@ -116,7 +135,15 @@
           <el-table-column prop="createDate" label="접수일자" width="120" align="center" :formatter="dateFormatter" />
           <el-table-column prop="categoryName" label="카테고리" width="120" align="center" />
           <el-table-column prop="title" label="제목" min-width="150" show-overflow-tooltip />
-          <el-table-column prop="channelName" label="접수 채널" width="100" align="center" />
+          
+          <el-table-column prop="channelName" label="접수 채널" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" :style="getChannelTagStyle(row.channelName)">
+                {{ row.channelName || '-' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
           <el-table-column prop="empName" label="담당자" width="100" align="center" />
           <el-table-column prop="status" label="진행 상태" width="100" align="center">
             <template #default="{ row }">
@@ -193,7 +220,7 @@
       </el-tab-pane>
 
       <el-tab-pane label="캠페인 내역" name="campaign">
-        <h4>🎟️ 보유 쿠폰</h4>
+        <h4>보유 쿠폰</h4>
         <el-table :data="customer.couponList" border stripe class="mb-20">
           <el-table-column prop="couponCode" label="쿠폰 코드" width="140" align="center" />
           <el-table-column prop="name" label="쿠폰명" />
@@ -209,7 +236,7 @@
           </el-table-column>
         </el-table>
 
-        <h4>🎁 프로모션 참여</h4>
+        <h4>프로모션 참여</h4>
         <el-table :data="customer.promotionList" border stripe>
           <el-table-column prop="promotionCode" label="프로모션 코드" width="140" align="center" />
           <el-table-column prop="name" label="프로모션명" />
@@ -221,32 +248,32 @@
         </el-table>
       </el-tab-pane>
 
-    <el-tab-pane label="세그먼트 변경 이력" name="history">
-      <el-timeline style="padding: 20px;">
-        <el-timeline-item
-          v-for="(item, index) in customer.segmentHistoryList"
-          :key="index"
-          :timestamp="formatDate(item.historyChangedAt)" 
-          placement="top"
-          color="#409eff"
-        >
-      <el-card shadow="hover">
-        <div class="history-item">
-          <strong>
-            {{ item.previousSegmentName || '가입' }} 
-            <el-icon style="vertical-align: middle;"><Right /></el-icon> 
-            {{ item.currentSegmentName }}
-          </strong>
-          <p class="history-reason">
-            사유: {{ item.historyReason }} 
-            
-            <el-tag size="small" effect="plain" class="ml-2">{{ item.historyTriggerType }}</el-tag>
-          </p>
-        </div>
-      </el-card>
-    </el-timeline-item>
-  </el-timeline>
-</el-tab-pane>
+      <el-tab-pane label="세그먼트 변경 이력" name="history">
+        <el-timeline style="padding: 20px;">
+          <el-timeline-item
+            v-for="(item, index) in customer.segmentHistoryList"
+            :key="index"
+            :timestamp="formatDate(item.historyChangedAt)" 
+            placement="top"
+            :color="getSegmentHexColor(item.currentSegmentName)" 
+          >
+            <el-card shadow="hover">
+              <div class="history-item">
+                <strong>
+                  {{ item.previousSegmentName || '가입' }} 
+                  <el-icon style="vertical-align: middle;"><Right /></el-icon> 
+                  <span :style="{ color: getSegmentHexColor(item.currentSegmentName) }">
+                    {{ item.currentSegmentName }}
+                  </span>
+                </strong>
+                <p class="history-reason">
+                  사유: {{ item.historyReason }} 
+                </p>
+              </div>
+            </el-card>
+          </el-timeline-item>
+        </el-timeline>
+      </el-tab-pane>
 
     </el-tabs>
   </div>
@@ -284,16 +311,25 @@ const fetchData = async () => {
   }
 };
 
-const enableEditMode = () => { editForm.value = { ...customer.value }; isEditMode.value = true; };
+const enableEditMode = () => { 
+    editForm.value = { ...customer.value }; 
+    isEditMode.value = true; 
+};
 const cancelEdit = () => { isEditMode.value = false; editForm.value = {}; };
 const saveEdit = async () => {
-  try { editForm.value.memo = customer.value.memo; await updateCustomer(customerId, editForm.value); ElMessage.success('저장되었습니다.'); isEditMode.value = false; fetchData(); } catch (e) { ElMessage.error('저장 실패: ' + e.message); }
+  try { 
+    editForm.value.memo = customer.value.memo; 
+    await updateCustomer(customerId, editForm.value); 
+    ElMessage.success('저장되었습니다.'); 
+    isEditMode.value = false; 
+    fetchData(); 
+  } catch (e) { ElMessage.error('저장 실패: ' + e.message); }
 };
 const handleDelete = () => { ElMessageBox.confirm('정말 삭제(비활성화) 하시겠습니까?', '경고', { type: 'warning' }).then(async () => { try { await deleteCustomer(customerId); ElMessage.success('비활성화 되었습니다.'); fetchData(); } catch (e) { ElMessage.error('삭제 실패'); } }); };
 const handleRestore = () => { ElMessageBox.confirm('고객을 다시 활성화 하시겠습니까?', '복구 확인', { type: 'success' }).then(async () => { try { await restoreCustomer(customerId); ElMessage.success('고객이 복구되었습니다.'); fetchData(); } catch (e) { ElMessage.error('복구 실패'); } }); };
 const goList = () => router.push('/customers');
 
-// ▼ 상태 코드 변환 함수 ▼
+// 상태 코드 변환 함수
 const formatContractStatus = (status) => {
     const map = { P: '진행 중', C: '완료', W: '승인 대기', R: '반려', T: '해지', I: '만료 임박' };
     return map[status] || status;
@@ -321,15 +357,38 @@ const getAsStatusTag = (status) => {
     return map[status] || 'info';
 };
 
+// 채널 태그 스타일 (견적 페이지와 동일)
+const getChannelTagStyle = (name) => {
+  const styles = {
+    '전화': { color: '#409EFF', backgroundColor: '#ecf5ff', borderColor: '#d9ecff' },
+    '이메일': { color: '#67C23A', backgroundColor: '#f0f9eb', borderColor: '#e1f3d8' },
+    '웹': { color: '#E6A23C', backgroundColor: '#fdf6ec', borderColor: '#faecd8' },
+    '웹(채팅, 게시판)': { color: '#E6A23C', backgroundColor: '#fdf6ec', borderColor: '#faecd8' },
+    'SNS': { color: '#F56C6C', backgroundColor: '#fef0f0', borderColor: '#fde2e2' },
+    '방문': { color: '#909399', backgroundColor: '#f4f4f5', borderColor: '#e9e9eb' }
+  };
+  return styles[name] || styles['방문'];
+};
+
+// [수정] 세그먼트별 Hex 색상 (CustomerListView와 매핑 일치)
+const getSegmentHexColor = (s) => {
+  if(!s) return '#409EFF'; // 기본값 (일반)
+  if(s.includes('VIP')) return '#E6A23C';       // warning (오렌지)
+  if(s.includes('이탈')) return '#F56C6C';      // danger (빨강)
+  if(s.includes('블랙')) return '#909399';      // info (회색)
+  if(s.includes('신규')) return '#67C23A';      // success (초록)
+  if(s.includes('확장')) return '#409EFF'; // primary (파랑)
+  if(s.includes('잠재')) return '#909399';      // 잠재 (회색)
+  if(s.includes('일반')) return '#409EFF';      // 일반 (파랑)
+  return '#409EFF'; 
+};
+
 // 유틸
 const formatDate = (d) => d ? d.substring(0, 10) : '';
 const dateFormatter = (row, col, val) => formatDate(val);
 const formatPhone = (v) => v ? v.replace(/(^02|^0505|^1[0-9]{3}|^0[0-9]{2})([0-9]+)?([0-9]{4})$/,"$1-$2-$3") : '-';
-const getSegmentColor = (s) => { if(!s) return 'info'; if(s.includes('VIP')) return 'warning'; if(s.includes('이탈')) return 'danger'; if(s.includes('신규')) return 'success'; return ''; };
-// 색상 결정 (타임라인 점 색상)
-const getStatusColor = (status) => status === '완료' ? '#0bbd87' : '#ff9900'; // 완료: 초록, 그외: 주황
-// 태그 타입 결정 (Tag 색상)
-const getStatusType = (status) => status === '완료' ? 'success' : 'warning'; // 완료: 초록(success), 그외: 주황(warning)
+const getStatusColor = (status) => status === '완료' ? '#0bbd87' : '#ff9900'; 
+const getStatusType = (status) => status === '완료' ? 'success' : 'warning'; 
 
 onMounted(fetchData);
 </script>
@@ -342,15 +401,19 @@ onMounted(fetchData);
 .ml-2 { margin-left: 10px; }
 .segment-tag { margin-left: 10px; }
 
-/* 3단 그리드 레이아웃 */
-.info-grid {
+/* 2단 그리드 레이아웃 */
+.info-grid.two-columns {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1.2fr;
+  grid-template-columns: 1fr 1fr; /* 1:1 비율 */
   gap: 20px;
   align-items: stretch;
 }
+
 .info-card { height: 100%; display: flex; flex-direction: column; }
 .card-title { font-weight: 700; font-size: 16px; }
+
+/* 하단 마진 유틸리티 */
+.mt-20 { margin-top: 20px; }
 
 /* 텍스트 영역 스타일 */
 .memo-textarea :deep(.el-textarea__inner),

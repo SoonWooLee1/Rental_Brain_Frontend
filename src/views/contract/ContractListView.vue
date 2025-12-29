@@ -45,10 +45,10 @@
 
       <div class="actions">
         <el-select v-model="searchType" style="width: 150px">
-          <el-option label="전체" value="contract_code,cusName,in_charge,conName" />
-          <el-option label="계약 코드" value="contract_code" />
+          <el-option label="전체" value="contractCode,cusName,inCharge,conName" />
+          <el-option label="계약 코드" value="contractCode" />
           <el-option label="고객명" value="cusName" />
-          <el-option label="담당자" value="in_charge" />
+          <el-option label="담당자" value="inCharge" />
           <el-option label="계약명" value="conName" />
         </el-select>
 
@@ -69,31 +69,31 @@
     <!-- Table -->
     <el-card shadow="never" :body-style="{ padding: '0' }">
       <el-table :data="contractList" v-loading="loading">
-        <el-table-column label="계약 코드" width="150">
+        <el-table-column label="계약 코드" width="150" prop="contractCode">
           <template #default="{ row }">
-            <span class="code-text">{{ row.contract_code }}</span>
+            <span class="code-text">{{ row.contractCode }}</span>
           </template>
         </el-table-column>
 
         <el-table-column prop="conName" label="계약명" min-width="220" show-overflow-tooltip />
         <el-table-column prop="cusName" label="고객명" width="160" />
-        <el-table-column prop="in_charge" label="담당자" width="140" />
+        <el-table-column prop="inCharge" label="담당자" width="140" />
 
         <el-table-column label="기간" width="100">
           <template #default="{ row }">
-            {{ row.contract_period }}개월
+            {{ row.contractPeriod }}개월
           </template>
         </el-table-column>
 
         <el-table-column label="월 납부액" width="140">
           <template #default="{ row }">
-            {{ row.monthly_payment.toLocaleString() }}원
+            {{ row.monthlyPayment.toLocaleString() }}원
           </template>
         </el-table-column>
 
         <el-table-column label="시작일" width="140">
           <template #default="{ row }">
-            {{ formatDate(row.start_date) }}
+            {{ formatDate(row.startDate) }}
           </template>
         </el-table-column>
 
@@ -151,8 +151,9 @@ const loading = ref(false)
 const contractList = ref([])
 
 const searchKeyword = ref('')
-const searchType = ref('contract_code,cusName,in_charge,conName')
+const searchType = ref('contractCode,cusName,inCharge,conName')
 const selectedStatus = ref('')
+const money = (v) => Number(v ?? 0).toLocaleString();
 
 const kpi = ref({
   totalContracts: 0,

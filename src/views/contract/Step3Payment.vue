@@ -1,6 +1,128 @@
+<template>
+  <div class="step-container">
+    <h2 class="title">결제 정보 설정</h2>
+
+    <!-- 금액 정보 -->
+    <section class="card">
+      <h3 class="section-title">결제 금액</h3>
+
+      <div class="price-grid">
+        <div class="price-item">
+          <label>월 납부액 (할인 전)</label>
+          <strong>{{ formatPrice(originalMonthlyPayment) }}</strong>
+        </div>
+
+        <div v-if="selectedCoupon" class="price-item discount">
+          <label>할인 ({{ discountRate }}%)</label>
+          <strong>-{{ formatPrice(discountAmount) }}</strong>
+        </div>
+
+        <div class="price-item">
+          <label>월 납부액 (할인 후)</label>
+          <strong class="final">
+            {{ formatPrice(discountedMonthlyPayment) }}
+          </strong>
+        </div>
+
+        <div class="price-item">
+          <label>계약 기간</label>
+          <strong>{{ contractDuration }} 개월</strong>
+        </div>
+
+        <div class="price-item">
+          <label>계약 총액</label>
+          <strong>{{ formatPrice(totalAmount) }}</strong>
+        </div>
+
+        <div class="price-item">
+          <label>결제일</label>
+          <strong>매월 {{ paymentDay }}일</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- 결제 방법 -->
+    <section class="card">
+      <h3 class="section-title">결제 방법</h3>
+
+      <div class="radio-group">
+        <label class="radio-item">
+          <input
+            type="radio"
+            value="AUTO"
+            v-model="paymentMethod"
+          />
+          자동이체
+        </label>
+
+        <label class="radio-item">
+          <input
+            type="radio"
+            value="ACCOUNT"
+            v-model="paymentMethod"
+          />
+          계좌이체
+        </label>
+      </div>
+    </section>
+
+    <!-- 특약 사항 -->
+    <section class="card">
+      <h3 class="section-title">특약 사항</h3>
+
+      <textarea
+        v-model="memo"
+        rows="4"
+        placeholder="특약 사항 또는 참고 메모를 입력하세요."
+      />
+    </section>
+
+    <section class="card">
+  <h3 class="section-title">적용 가능한 쿠폰</h3>
+
+  <div v-if="coupons.length === 0" class="empty">
+    사용 가능한 쿠폰이 없습니다.
+  </div>
+
+  <ul v-else>
+    <li
+      v-for="c in coupons"
+      :key="c.id"
+      class="coupon-list"
+    >
+      <div class="coupon-text">
+        <strong>{{ c.name }}</strong>
+        <p class="desc">
+          {{ c.content }} ({{ c.rate }}%)
+        </p>
+      </div>
+
+      <label class="coupon-label">
+        <input
+          type="radio"
+          name="coupon"
+          :value="c"
+          v-model="selectedCoupon"
+        />
+      </label>
+    </li>
+  </ul>
+</section>
+
+    <!-- 하단 버튼 -->
+    <div class="footer">
+      <button class="secondary-btn" @click="$emit('prev')">
+        이전
+      </button>
+      <button class="primary-btn" @click="goNext">
+        다음
+      </button>
+    </div>
+  </div>
+</template>
 <script setup>
   import { ref, computed, watch } from 'vue'
-  import api from '@/api/axios';
+  import { getCouponsForContract } from '@/api/contract';
 
   /* =========================
      props / emits
@@ -72,10 +194,9 @@
   })
 
   const fetchCoupons = async () => {
+  if (!props.draft.segmentId) return
   // 예: 고객 ID 기준
-  const res = await api.get(
-    `/coupon/use-contract/${props.draft.segmentId}`
-  )
+  const res = await getCouponsForContract(props.draft.segmentId)
   coupons.value = res.data || []
   }
 
@@ -112,127 +233,6 @@
   const formatPrice = v => v.toLocaleString() + '원'
 
   </script>
-  
-  <template>
-    <div class="step-container">
-      <h2 class="title">결제 정보 설정</h2>
-  
-      <!-- 금액 정보 -->
-      <section class="card">
-        <h3 class="section-title">결제 금액</h3>
-  
-        <div class="price-grid">
-          <div class="price-item">
-            <label>월 납부액 (할인 전)</label>
-            <strong>{{ formatPrice(originalMonthlyPayment) }}</strong>
-          </div>
-
-          <div v-if="selectedCoupon" class="price-item discount">
-            <label>할인 ({{ discountRate }}%)</label>
-            <strong>-{{ formatPrice(discountAmount) }}</strong>
-          </div>
-
-          <div class="price-item">
-            <label>월 납부액 (할인 후)</label>
-            <strong class="final">
-              {{ formatPrice(discountedMonthlyPayment) }}
-            </strong>
-          </div>
-  
-          <div class="price-item">
-            <label>계약 기간</label>
-            <strong>{{ contractDuration }} 개월</strong>
-          </div>
-  
-          <div class="price-item">
-            <label>계약 총액</label>
-            <strong>{{ formatPrice(totalAmount) }}</strong>
-          </div>
-  
-          <div class="price-item">
-            <label>결제일</label>
-            <strong>매월 {{ paymentDay }}일</strong>
-          </div>
-        </div>
-      </section>
-  
-      <!-- 결제 방법 -->
-      <section class="card">
-        <h3 class="section-title">결제 방법</h3>
-  
-        <div class="radio-group">
-          <label class="radio-item">
-            <input
-              type="radio"
-              value="AUTO"
-              v-model="paymentMethod"
-            />
-            자동이체
-          </label>
-  
-          <label class="radio-item">
-            <input
-              type="radio"
-              value="ACCOUNT"
-              v-model="paymentMethod"
-            />
-            계좌이체
-          </label>
-        </div>
-      </section>
-  
-      <!-- 특약 사항 -->
-      <section class="card">
-        <h3 class="section-title">특약 사항</h3>
-  
-        <textarea
-          v-model="memo"
-          rows="4"
-          placeholder="특약 사항 또는 참고 메모를 입력하세요."
-        />
-      </section>
-
-      <section class="card">
-        <h3 class="section-title">적용 가능한 쿠폰</h3>
-
-        <div v-if="coupons.length === 0" class="empty">
-          사용 가능한 쿠폰이 없습니다.
-        </div>
-      
-        <ul v-else>
-          <li
-            v-for="c in coupons"
-            :key="c.id"
-            class="coupon-item"
-          >
-            <label>
-              <input
-                type="radio"
-                name="coupon"
-                :value="c"
-                v-model="selectedCoupon"
-              />
-              <strong>{{ c.name }}</strong>
-              <p class="desc">
-                {{ c.content }} ({{ c.rate }}%)
-              </p>
-            </label>
-          </li>
-        </ul>
-      </section>
-  
-      <!-- 하단 버튼 -->
-      <div class="footer">
-        <button class="secondary-btn" @click="$emit('prev')">
-          이전
-        </button>
-        <button class="primary-btn" @click="goNext">
-          다음
-        </button>
-      </div>
-    </div>
-  </template>
-  
   <style scoped>
   .step-container {
     padding: 32px 48px;
@@ -311,5 +311,31 @@
     padding: 8px 16px;
     border-radius: 6px;
   }
+
+  .coupon-list {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+  padding: 16px 20px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.coupon-text {
+  flex: 1;
+}
+
+.coupon-label {
+  margin-left: 18px;
+  margin-right: 30px;
+}
+
+.coupon-list input[name="coupon"] {
+  accent-color: #248eff;
+  transform: scale(1.5);
+  cursor: pointer;
+}
+
   </style>
   

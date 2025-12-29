@@ -49,6 +49,15 @@
         </template>
       </el-table-column>
     </el-table>
+    <div class="pagination-area">
+      <el-pagination
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="size"
+        v-model:current-page="page"
+        @current-change="fetchList"
+      />
+    </div>
   </el-card>
 </template>
 

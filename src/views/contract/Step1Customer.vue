@@ -1,7 +1,7 @@
 <script setup>
   import { ref, watch, onMounted } from 'vue'
-  import api from '@/api/axios'
   import Pagination from '@/components/common/Pagination.vue'
+  import { getContractCustomers } from '@/api/contract'
   
   /* props / emits */
   const props = defineProps({
@@ -45,7 +45,7 @@
     }
   
     try {
-      const res = await api.get('/contract/customer', { params })
+      const res = await getContractCustomers(params)
   
       customers.value = res.data?.contents ?? []
       totalCount.value = res.data?.totalCount ?? 0

@@ -93,7 +93,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox} from 'element-plus';
 import { getQuoteDetail, deleteQuote } from '@/api/quote'; // [수정] deleteQuote 추가
 
 const props = defineProps({
@@ -145,21 +145,34 @@ const handleEditRequest = () => {
   emit('request-edit', detail.value);
 };
 
-// 삭제 처리
-const handleDelete = async () => {
-  if (!confirm('정말로 이 상담 내역을 삭제하시겠습니까?')) return;
-  try {
-    loading.value = true;
-    await deleteQuote(props.quoteId); // DELETE /quote/delete/{id}
-    ElMessage.success('삭제되었습니다.');
-    emit('refresh'); // 목록 갱신
-    handleClose();
-  } catch (e) {
-    console.error(e);
-    ElMessage.error('삭제 중 오류가 발생했습니다.');
-  } finally {
-    loading.value = false;
-  }
+// [수정] 삭제 처리 로직 변경
+const handleDelete = () => {
+  // 기존 window.confirm 대신 Element Plus의 모달 사용
+  ElMessageBox.confirm(
+    '정말로 이 상담 내역을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.',
+    '삭제 안내',
+    {
+      confirmButtonText: '예',
+      cancelButtonText: '아니오',
+      type: 'warning',
+    }
+  ).then(async () => {
+    // '예' 선택 시 실행
+    try {
+      loading.value = true;
+      await deleteQuote(props.quoteId);
+      ElMessage.success('삭제되었습니다.');
+      emit('refresh');
+      handleClose();
+    } catch (e) {
+      console.error(e);
+      ElMessage.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      loading.value = false;
+    }
+  }).catch(() => {
+    // '아니오' 혹은 닫기 선택 시 (아무것도 안 함)
+  });
 };
 
 // ✅ immediate로 "처음 열릴 때"도 호출되게

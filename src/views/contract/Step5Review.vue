@@ -1,3 +1,155 @@
+<template>
+  <div class="step-container">
+    <h2 class="title">계약 검토 및 승인 요청</h2>
+    <p class="desc">
+      입력한 계약 정보를 최종 확인한 후 승인 요청을 진행하세요.
+    </p>
+
+    <!-- 계약 기본 정보 -->
+    <section class="card">
+      <h3 class="section-title">계약 기본 정보</h3>
+
+      <div class="review-grid">
+        <div class="review-item">
+          <span class="label">계약명</span>
+          <span class="value">{{ draft.contract.name }}</span>
+        </div>
+
+        <div class="review-item">
+          <span class="label">계약 기간</span>
+          <span class="value">{{ draft.contract.duration }} 개월</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 고객 정보 -->
+    <section class="card">
+      <h3 class="section-title">고객 정보</h3>
+
+      <div class="review-grid">
+        <div class="review-item">
+          <span class="label">고객명</span>
+          <span class="value">{{ draft.customerName }}</span>
+        </div>
+
+        <div class="review-item">
+          <span class="label">고객 코드</span>
+          <span class="value">{{ draft.customerCode }}</span>
+        </div>
+
+        <div class="review-item">
+          <span class="label">담당자</span>
+          <span class="value">{{ draft.inCharge }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 계약 기간 -->
+    <section class="card">
+      <h3 class="section-title">계약 기간</h3>
+
+      <div class="review-grid">
+        <div class="review-item">
+          <span class="label">시작일</span>
+          <span class="value">{{ draft.contract.startDate }}</span>
+        </div>
+
+        <div class="review-item">
+          <span class="label">종료일</span>
+          <span class="value">{{ draft.contract.endDate }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 렌탈 제품 -->
+    <section class="card">
+      <h3 class="section-title">렌탈 제품</h3>
+
+      <table class="item-table" v-if="draft.assets.length">
+        <thead>
+          <tr>
+            <th>제품명</th>
+            <th>수량</th>
+            <th>월 렌탈금</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in draft.assets" :key="item.itemName">
+            <td>{{ item.itemName }}</td>
+            <td>{{ item.quantity }}</td>
+            <td class="price">{{ formatPrice(item.monthlyTotal) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div v-else class="empty">선택된 제품이 없습니다.</div>
+    </section>
+
+    <!-- 결제 정보 -->
+    <section class="card">
+      <h3 class="section-title">결제 정보</h3>
+
+      <div class="review-grid">
+        <div class="review-item">
+          <span class="label">월 납부액</span>
+          <span class="value price">
+            {{ formatPrice(draft.payment.monthlyPayment) }}
+          </span>
+        </div>
+
+        <div class="review-item">
+          <span class="label">계약 총액</span>
+          <span class="value price">
+            {{ formatPrice(draft.payment.totalAmount) }}
+          </span>
+        </div>
+
+        <div class="review-item">
+          <span class="label">결제 방법</span>
+          <span class="value">
+            {{ draft.payment.paymentMethod === 'AUTO' ? '자동이체' : '계좌이체' }}
+          </span>
+        </div>
+
+        <div class="review-item">
+          <span class="label">결제일</span>
+          <span class="value">
+            매월 {{ draft.payment.paymentDay }}일
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 결재선 -->
+    <section class="card">
+      <h3 class="section-title">결재선</h3>
+
+      <ul class="approval-line">
+        <li
+          v-for="(emp, idx) in draft.approvalLine"
+          :key="emp.id"
+        >
+          <span class="step">{{ idx + 1 }}차 승인</span>
+          <span class="role">
+            {{ emp.name }} ({{ emp.positionName }})
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 버튼 -->
+    <div class="action-row">
+      <button class="secondary-btn" @click="$emit('prev')">
+        이전 단계
+      </button>
+
+      <button class="primary-btn" @click="$emit('submit')">
+        계약 승인 요청
+      </button>
+    </div>
+  </div>
+</template>
 <script setup>
   const props = defineProps({
     draft: {
@@ -9,159 +161,6 @@
   const formatPrice = v =>
     v ? v.toLocaleString() + '원' : '-'
   </script>
-  
-  <template>
-    <div class="step-container">
-      <h2 class="title">계약 검토 및 승인 요청</h2>
-      <p class="desc">
-        입력한 계약 정보를 최종 확인한 후 승인 요청을 진행하세요.
-      </p>
-  
-      <!-- 계약 기본 정보 -->
-      <section class="card">
-        <h3 class="section-title">계약 기본 정보</h3>
-  
-        <div class="review-grid">
-          <div class="review-item">
-            <span class="label">계약명</span>
-            <span class="value">{{ draft.contract.name }}</span>
-          </div>
-  
-          <div class="review-item">
-            <span class="label">계약 기간</span>
-            <span class="value">{{ draft.contract.duration }} 개월</span>
-          </div>
-  
-        </div>
-      </section>
-  
-      <!-- 고객 정보 -->
-      <section class="card">
-        <h3 class="section-title">고객 정보</h3>
-  
-        <div class="review-grid">
-          <div class="review-item">
-            <span class="label">고객명</span>
-            <span class="value">{{ draft.customerName }}</span>
-          </div>
-  
-          <div class="review-item">
-            <span class="label">고객 코드</span>
-            <span class="value">{{ draft.customerCode }}</span>
-          </div>
-  
-          <div class="review-item">
-            <span class="label">담당자</span>
-            <span class="value">{{ draft.inCharge }}</span>
-          </div>
-        </div>
-      </section>
-  
-      <!-- 계약 기간 -->
-      <section class="card">
-        <h3 class="section-title">계약 기간</h3>
-  
-        <div class="review-grid">
-          <div class="review-item">
-            <span class="label">시작일</span>
-            <span class="value">{{ draft.contract.startDate }}</span>
-          </div>
-  
-          <div class="review-item">
-            <span class="label">종료일</span>
-            <span class="value">{{ draft.contract.endDate }}</span>
-          </div>
-        </div>
-      </section>
-  
-      <!-- 렌탈 제품 -->
-      <section class="card">
-        <h3 class="section-title">렌탈 제품</h3>
-  
-        <table class="item-table" v-if="draft.assets.length">
-          <thead>
-            <tr>
-              <th>제품명</th>
-              <th>수량</th>
-              <th>월 렌탈금</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in draft.assets" :key="item.itemName">
-              <td>{{ item.itemName }}</td>
-              <td>{{ item.quantity }}</td>
-              <td class="price">{{ formatPrice(item.monthlyTotal) }}</td>
-            </tr>
-          </tbody>
-        </table>
-  
-        <div v-else class="empty">선택된 제품이 없습니다.</div>
-      </section>
-  
-      <!-- 결제 정보 -->
-      <section class="card">
-        <h3 class="section-title">결제 정보</h3>
-  
-        <div class="review-grid">
-          <div class="review-item">
-            <span class="label">월 납부액</span>
-            <span class="value price">
-              {{ formatPrice(draft.payment.monthlyPayment) }}
-            </span>
-          </div>
-  
-          <div class="review-item">
-            <span class="label">계약 총액</span>
-            <span class="value price">
-              {{ formatPrice(draft.payment.totalAmount) }}
-            </span>
-          </div>
-  
-          <div class="review-item">
-            <span class="label">결제 방법</span>
-            <span class="value">
-              {{ draft.payment.paymentMethod === 'AUTO' ? '자동이체' : '계좌이체' }}
-            </span>
-          </div>
-  
-          <div class="review-item">
-            <span class="label">결제일</span>
-            <span class="value">
-              매월 {{ draft.payment.paymentDay }}일
-            </span>
-          </div>
-        </div>
-      </section>
-  
-      <!-- 결재선 -->
-      <section class="card">
-        <h3 class="section-title">결재선</h3>
-  
-        <ul class="approval-line">
-          <li
-            v-for="(emp, idx) in draft.approvalLine"
-            :key="emp.id"
-          >
-            <span class="step">{{ idx + 1 }}차 승인</span>
-            <span class="role">
-              {{ emp.name }} ({{ emp.positionName }})
-            </span>
-          </li>
-        </ul>
-      </section>
-  
-      <!-- 버튼 -->
-      <div class="action-row">
-        <button class="secondary-btn" @click="$emit('prev')">
-          이전 단계
-        </button>
-  
-        <button class="primary-btn" @click="$emit('submit')">
-          계약 승인 요청
-        </button>
-      </div>
-    </div>
-  </template>
   <style scoped>
     /* =========================
    Layout

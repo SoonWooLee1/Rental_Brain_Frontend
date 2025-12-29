@@ -1,7 +1,85 @@
+<template>
+  <div class="step-container">
+    <h2 class="title">결재선 지정</h2>
+
+    <!-- 결재선 없음 -->
+    <div
+      v-if="approvalPolicy === 'NONE'"
+      class="card info"
+    >
+      현재 직급에서는 결재선 지정이 필요하지 않습니다.
+    </div>
+
+    <!-- CEO만 선택 -->
+    <section
+      v-if="approvalPolicy === 'CEO_ONLY'"
+      class="card"
+    >
+      <h3 class="section-title">CEO 결재자 선택</h3>
+
+      <ul class="employee-list">
+        <li
+          v-for="e in ceos"
+          :key="e.id"
+          :class="{ selected: selectedCeo?.id === e.id }"
+          @click="selectedCeo = e"
+        >
+          <strong>{{ e.name }}</strong>
+          <span>{{ e.positionName }}</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 팀장 + CEO -->
+    <template v-if="approvalPolicy === 'LEADER_AND_CEO'">
+      <section class="card">
+        <h3 class="section-title">팀장 결재자 선택</h3>
+
+        <ul class="employee-list">
+          <li
+            v-for="e in leaders"
+            :key="e.id"
+            :class="{ selected: selectedLeader?.id === e.id }"
+            @click="selectedLeader = e"
+          >
+            <strong>{{ e.name }}</strong>
+            <span>{{ e.positionName }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h3 class="section-title">CEO 결재자 선택</h3>
+
+        <ul class="employee-list">
+          <li
+            v-for="e in ceos"
+            :key="e.id"
+            :class="{ selected: selectedCeo?.id === e.id }"
+            @click="selectedCeo = e"
+          >
+            <strong>{{ e.name }}</strong>
+            <span>{{ e.positionName }}</span>
+          </li>
+        </ul>
+      </section>
+    </template>
+
+    <!-- 버튼 -->
+    <div class="footer">
+      <button class="secondary-btn" @click="$emit('prev')">
+        이전
+      </button>
+      <button class="primary-btn" @click="goNext">
+        다음
+      </button>
+    </div>
+  </div>
+</template>
 <script setup>
   import { ref, computed, onMounted } from 'vue'
-  import api from '@/api/axios'
   import { useAuthStore } from '@/store/auth.store'
+  import { getContractApprovers } from '@/api/contract'
 
   const authStore = useAuthStore()
 
@@ -62,7 +140,7 @@
      API
   ========================= */
   async function fetchEmployees() {
-    const res = await api.get('/contract/emp')
+    const res = await getContractApprovers()
     employees.value = res.data ?? []
   }
   
@@ -100,86 +178,6 @@
   ========================= */
   onMounted(fetchEmployees)
   </script>
-  
-  <template>
-    <div class="step-container">
-      <h2 class="title">결재선 지정</h2>
-  
-      <!-- 결재선 없음 -->
-      <div
-        v-if="approvalPolicy === 'NONE'"
-        class="card info"
-      >
-        현재 직급에서는 결재선 지정이 필요하지 않습니다.
-      </div>
-  
-      <!-- CEO만 선택 -->
-      <section
-        v-if="approvalPolicy === 'CEO_ONLY'"
-        class="card"
-      >
-        <h3 class="section-title">CEO 결재자 선택</h3>
-  
-        <ul class="employee-list">
-          <li
-            v-for="e in ceos"
-            :key="e.id"
-            :class="{ selected: selectedCeo?.id === e.id }"
-            @click="selectedCeo = e"
-          >
-            <strong>{{ e.name }}</strong>
-            <span>{{ e.positionName }}</span>
-          </li>
-        </ul>
-      </section>
-  
-      <!-- 팀장 + CEO -->
-      <template v-if="approvalPolicy === 'LEADER_AND_CEO'">
-        <section class="card">
-          <h3 class="section-title">팀장 결재자 선택</h3>
-  
-          <ul class="employee-list">
-            <li
-              v-for="e in leaders"
-              :key="e.id"
-              :class="{ selected: selectedLeader?.id === e.id }"
-              @click="selectedLeader = e"
-            >
-              <strong>{{ e.name }}</strong>
-              <span>{{ e.positionName }}</span>
-            </li>
-          </ul>
-        </section>
-  
-        <section class="card">
-          <h3 class="section-title">CEO 결재자 선택</h3>
-  
-          <ul class="employee-list">
-            <li
-              v-for="e in ceos"
-              :key="e.id"
-              :class="{ selected: selectedCeo?.id === e.id }"
-              @click="selectedCeo = e"
-            >
-              <strong>{{ e.name }}</strong>
-              <span>{{ e.positionName }}</span>
-            </li>
-          </ul>
-        </section>
-      </template>
-  
-      <!-- 버튼 -->
-      <div class="footer">
-        <button class="secondary-btn" @click="$emit('prev')">
-          이전
-        </button>
-        <button class="primary-btn" @click="goNext">
-          다음
-        </button>
-      </div>
-    </div>
-  </template>
-  
   <style scoped>
   .step-container {
     padding: 32px 48px;

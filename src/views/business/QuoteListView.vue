@@ -96,8 +96,8 @@
     </div>
 
     <el-card shadow="never" class="table-card">
-      <el-table :data="quoteList" style="width: 100%" v-loading="loading">
-        <el-table-column prop="quoteCode" label="ID" width="120" align="center" />
+      <el-table :data="quoteList" style="width: 100%" v-loading="loading" @sort-change="handleSortChange">
+        <el-table-column prop="quoteCode" label="ID" width="120" align="center" sortable="custom"/>
         <el-table-column label="상담일시" min-width="200">
           <template #default="{ row }">
             <div>
@@ -116,12 +116,15 @@
         </el-table-column>
 
         <el-table-column prop="channelName" label="유형" width="130" align="center">
-          <template #default="{ row }">
-            <el-tag size="small" effect="light">
-              {{ row.channelName || '-' }}
-            </el-tag>
-          </template>
-        </el-table-column>
+      <template #default="{ row }">
+        <el-tag 
+          size="small" 
+          :style="getChannelTagStyle(row.channelName)"
+        >
+          {{ row.channelName || '-' }}
+        </el-tag>
+      </template>
+    </el-table-column>
 
         <el-table-column label="처리시간" width="80" align="center">
           <template #default="{ row }">
@@ -170,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, reactive} from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Search, Plus } from '@element-plus/icons-vue';
@@ -213,6 +216,12 @@ const kpi = ref({
   avgProcessingTime: 0,
 });
 
+// [추가] 정렬 상태 관리
+const sortState = reactive({
+  sortBy: 'quoteId', 
+  sortOrder: 'desc'
+});
+
 const fetchData = async () => {
   loading.value = true;
   try {
@@ -227,6 +236,8 @@ const fetchData = async () => {
       page: currentPage.value,
       size: pageSize.value,
       quoteChannelId: quoteChannelId.value ?? undefined,
+      sortBy: sortState.sortBy,      // [추가]
+      sortOrder: sortState.sortOrder // [추가]
     };
 
     // ✅ keywordTarget에 따라 "딱 1개 필드"에만 kw를 넣기
@@ -327,6 +338,29 @@ const toHM = (d) => {
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
   return `${hh}:${mm}`;
+};
+
+// [추가] 정렬 핸들러
+const handleSortChange = ({ prop, order }) => {
+  // 백엔드 필드명과 매핑 (필요 시 수정)
+  sortState.sortBy = prop === 'quoteCode' ? 'quoteId' : prop; 
+  sortState.sortOrder = order === 'ascending' ? 'asc' : (order === 'descending' ? 'desc' : null);
+  
+  currentPage.value = 1; 
+  fetchData();
+};
+
+// [추가] 유형별 배지 색상 반환
+const getChannelTagStyle = (name) => {
+  const styles = {
+    '전화': { color: '#409EFF', backgroundColor: '#ecf5ff', borderColor: '#d9ecff' }, // 파랑
+    '이메일': { color: '#67C23A', backgroundColor: '#f0f9eb', borderColor: '#e1f3d8' }, // 초록
+    '웹': { color: '#E6A23C', backgroundColor: '#fdf6ec', borderColor: '#faecd8' }, // 주황
+    '웹(채팅, 게시판)': { color: '#E6A23C', backgroundColor: '#fdf6ec', borderColor: '#faecd8' },
+    'SNS': { color: '#F56C6C', backgroundColor: '#fef0f0', borderColor: '#fde2e2' }, // 빨강
+    '방문': { color: '#909399', backgroundColor: '#f4f4f5', borderColor: '#e9e9eb' }  // 회색
+  };
+  return styles[name] || styles['방문'];
 };
 
 onMounted(fetchData);

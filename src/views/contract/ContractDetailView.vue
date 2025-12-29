@@ -241,9 +241,10 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '@/api/axios'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useToastStore } from '@/store/useToast'
+import { getContractBasic, getContractItems,getContractPayments,
+  patchCompletePayment, patchMarkAsNonPayment} from '@/api/contract'
 
 const itemSummary = ref([])
 const selectedItemName = ref(null)
@@ -293,8 +294,7 @@ async function fetchBasic(contractId) {
 
   loading.value = true
   try {
-    const res = await api.get(`/contract/${contractId}/basic-info`)
-    const b = res.data
+    const { data: b } = await getContractBasic(contractId)
     const payMethodMap = { A: '자동이체', B: '계좌이체' }
 
     vm.value = {
@@ -324,7 +324,7 @@ async function fetchItems() {
   if (itemsLoaded.value) return
   loading.value = true
   try {
-    const res = await api.get(`/contract/${route.params.id}/items`)
+    const res = await getContractItems(route.params.id)
     items.value = res.data?.contractItemDetail ?? []
     itemSummary.value = res.data?.contractItemSummary ?? []
 
@@ -352,7 +352,7 @@ async function fetchPayments() {
   } 
   loading.value = true
   try {
-    const res = await api.get(`/contract/${route.params.id}/payments`)
+    const res = await getContractPayments(route.params.id)
     payments.value = (res.data ?? []).map(p => ({
     id: p.id,
     paymentDue: p.payment_due,
@@ -374,8 +374,7 @@ async function completePayment(row) {
   try {
     loading.value = true
 
-    await api.patch(
-      `/payment-details/${row.id}/complete`,
+    await patchCompletePayment(row.id,
       {
         paymentActual: row._editPaymentActual
       }
@@ -397,7 +396,7 @@ async function markAsNonPayment(row) {
   try {
     loading.value = true
 
-    await api.patch(`/payment-details/${row.id}/non-payment`)
+    await patchMarkAsNonPayment(row.id)
 
     toastStore.showToast('미납 처리되었습니다.')
 

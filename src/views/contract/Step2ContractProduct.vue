@@ -14,7 +14,8 @@
 
         <div>
           <label>계약 시작일</label>
-          <input type="date" v-model="startDate" />
+          <input type="date" v-model="startDate" :min="today"
+          />
         </div>
 
         <div>
@@ -133,7 +134,8 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import api from '@/api/axios'
+import { getProductNameList } from '@/api/product'
+import { getPromotionsForContract } from '@/api/contract'
 
 const props = defineProps({
   draft: Object,
@@ -164,6 +166,23 @@ const selectedItems = ref([])
 const promotions = ref([])
 const selectedPromotion = ref(null)
 
+const today = computed(() => {
+  const now = new Date()
+  const yyyy = now.getFullYear()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+})
+
+watch(startDate, (val) => {
+  if (!val) return
+
+  if (val < today.value) {
+    alert('계약 시작일은 오늘 이후 날짜만 선택할 수 있습니다.')
+    startDate.value = today.value
+  }
+})
+
 watch(
   () => props.draft,
   (draft) => {
@@ -185,13 +204,13 @@ watch(
 
 /* API 호출 */
 const fetchItems = async () => {
-  const res = await api.get('/item/read-groupby-name')
+  const res = await getProductNameList()
   items.value = res.data.contents || []
 }
 
 const fetchPromotions = async () => {
   if (!props.draft.segmentId) return
-  const res = await api.get(`/promotion/use-contract/${props.draft.segmentId}`)
+  const res = await getPromotionsForContract(props.draft.segmentId)
   promotions.value = res.data || []
 }
 
@@ -325,36 +344,22 @@ const formatPrice = v =>
 
 <style scoped>
 .step-container {padding: 32px 48px;}
-
 .title {font-size: 22px;margin-bottom: 20px;}
-
 .card {background: #fff;border-radius: 8px;padding: 20px;margin-bottom: 24px;}
-
 .section-title {font-size: 16px; margin-bottom: 12px;}
-
 .form-grid {display: grid;grid-template-columns: repeat(2, 1fr);gap: 16px;}
-
 input, select {width: 100%;padding: 8px 10px;}
-
 .product-select {display: flex;gap: 8px;margin-bottom: 16px;}
-
 .item-table {width: 100%;border-collapse: collapse;}
-
 .item-table th, .item-table td {padding: 10px;border-bottom: 1px solid #eee;}
-
 .total-price {margin-top: 12px;font-size: 16px;}
-
-.promotion-list {display: flex;justify-content: space-around;align-items: center;margin: 30px;}
-
+.promotion-list {display: flex;justify-content: space-between ;align-items: center; margin: 20px 0; padding: 16px 20px; border: 1px solid #eee; border-radius: 8px;}
+.promotion-text {flex: 1;}
+.promotion-label {margin-left: 18px; margin-right: 30px;}
 .promotion-list input[name="promotion"] {accent-color: #248eff;transform: scale(1.5);cursor: pointer;}
-
 .desc {margin-top: 10px;font-size: 13px;color: #666;line-height: 1.4;}
-
 .footer {display: flex;justify-content: space-between;}
-
 .primary-btn {background: #248eff;color: #fff;border: none;padding: 8px 16px;}
-
 .secondary-btn {background: #eee;border: none;padding: 8px 16px;}
-
 .link-btn {background: none;border: none;color: #248eff;}
 </style>

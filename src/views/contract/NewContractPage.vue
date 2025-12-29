@@ -1,9 +1,63 @@
+<template>
+  <!-- 🔹 상위 레이아웃 컨테이너 -->
+  <div class="contract-create-page">
+    <div class="page-container">
+      <ContractStepIndicator
+        :currentStep="currentStep"
+        @move="goToStep"
+      />
+      <!-- Step 1 -->
+      <Step1Customer
+        v-if="currentStep === 1"
+        :draft="draft"
+        @next="nextStep"
+        @update="updateDraft"
+      />
+
+      <!-- Step 2 -->
+      <Step2ContractProduct
+        v-if="currentStep === 2"
+        :draft="draft"
+        @next="nextStep"
+        @prev="prevStep"
+        @update="updateDraft"
+      />
+
+      <!-- Step 3 -->
+      <Step3Payment
+        v-if="currentStep === 3"
+        :draft="draft"
+        @next="nextStep"
+        @prev="prevStep"
+        @update="updateDraft"
+      />
+
+      <!-- Step 4 -->
+      <Step4Approval
+        v-if="currentStep === 4"
+        :draft="draft"
+        @next="nextStep"
+        @prev="prevStep"
+        @update="updateDraft"
+      />
+
+      <!-- Step 5 -->
+      <Step5Review
+        v-if="currentStep === 5"
+        :draft="draft"
+        @prev="prevStep"
+        @submit="submitContract"
+      />
+    </div>
+  </div>
+</template>
 <script setup>
   import { ref } from 'vue'
-  import api from '@/api/axios';
+  import { createContract } from '@/api/contract'
   import { useRouter } from 'vue-router'
   import { useToastStore } from '@/store/useToast'
   
+  import ContractStepIndicator from './ContractStepIndicator.vue'
   import Step1Customer from './Step1Customer.vue'
   import Step2ContractProduct from './Step2ContractProduct.vue'
   import Step3Payment from './Step3Payment.vue'
@@ -16,6 +70,9 @@ const toastStore = useToastStore();
    Step 상태
 ========================= */
   const currentStep = ref(1)
+  const goToStep = (step) => {
+  currentStep.value = step
+}
   
 /* =========================
    계약 Draft
@@ -121,7 +178,7 @@ const submitContract = async () => {
 
     console.log('계약 승인 요청 body', body)
 
-    await api.post('/contract', body)
+    await createContract(body)
 
     toastStore.showToast('계약 승인 요청이 완료되었습니다.')
 
@@ -134,57 +191,6 @@ const submitContract = async () => {
   }
 }
   </script>
-  
-  <template>
-    <!-- 🔹 상위 레이아웃 컨테이너 -->
-    <div class="contract-create-page">
-      <div class="page-container">
-        <!-- Step 1 -->
-        <Step1Customer
-          v-if="currentStep === 1"
-          :draft="draft"
-          @next="nextStep"
-          @update="updateDraft"
-        />
-  
-        <!-- Step 2 -->
-        <Step2ContractProduct
-          v-if="currentStep === 2"
-          :draft="draft"
-          @next="nextStep"
-          @prev="prevStep"
-          @update="updateDraft"
-        />
-  
-        <!-- Step 3 -->
-        <Step3Payment
-          v-if="currentStep === 3"
-          :draft="draft"
-          @next="nextStep"
-          @prev="prevStep"
-          @update="updateDraft"
-        />
-  
-        <!-- Step 4 -->
-        <Step4Approval
-          v-if="currentStep === 4"
-          :draft="draft"
-          @next="nextStep"
-          @prev="prevStep"
-          @update="updateDraft"
-        />
-  
-        <!-- Step 5 -->
-        <Step5Review
-          v-if="currentStep === 5"
-          :draft="draft"
-          @prev="prevStep"
-          @submit="submitContract"
-        />
-      </div>
-    </div>
-  </template>
-  
   <style scoped>
   /* 페이지 배경 */
   .contract-create-page {

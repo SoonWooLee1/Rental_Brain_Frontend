@@ -49,7 +49,6 @@
 import { ref } from "vue";
 import BaseCard from "@/components/common/BaseCard.vue";
 import InsightTopListCard from "@/components/analysis/InsightTopListCard.vue";
-import { getQuoteAnalyze } from "@/api/customeranalysis";
 
 const month = ref(new Date().toISOString().slice(0, 7));
 const windowDays = ref(60);
@@ -59,19 +58,6 @@ const loading = ref(false);
 const error = ref("");
 const result = ref(null);
 
-const analyze = async () => {
-  loading.value = true;
-  error.value = "";
-  try {
-    const res = await getQuoteAnalyze(month.value, windowDays.value, sampleEach.value);
-    result.value = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-  } catch (e) {
-    console.error(e);
-    error.value = "AI 분석 중 오류가 발생했습니다. (백엔드 로그/파라미터 확인)";
-  } finally {
-    loading.value = false;
-  }
-};
 </script>
 
 <style scoped>

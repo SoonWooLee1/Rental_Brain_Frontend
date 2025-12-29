@@ -150,7 +150,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { getCustomerSupportKpi, getSatisfactionDist, getQuoteAnalyze } from "@/api/customeranalysis";
+import { getCustomerSupportKpi, getSatisfactionDist } from "@/api/customeranalysis";
 
 import SupportMonthlyTrend from "@/components/analysis/SupportMonthlyTrend.vue";
 import CustomerSatisfactionCard from "@/components/analysis/CustomerSatisfactionCard.vue";
@@ -420,18 +420,9 @@ const normalizeInsight = (raw) => {
   return clone(DEFAULT_INSIGHT_SECTIONS);
 };
 
-const fetchInsightTopList = async () => {
-  try {
-    const res = await getQuoteAnalyze(month.value, 60, 50);
-    insightSections.value = normalizeInsight(res.data);
-  } catch (e) {
-    // ✅ 비어버리면 컴포넌트가 아무것도 안 나와서, 차라리 더미를 유지
-    insightSections.value = clone(DEFAULT_INSIGHT_SECTIONS);
-  }
-};
 
 const fetchAll = async () => {
-  await Promise.all([fetchKpi(), fetchSatisfactionDist(), fetchInsightTopList()]);
+  await Promise.all([fetchKpi(), fetchSatisfactionDist()]);
 };
 
 onMounted(fetchAll);
