@@ -363,10 +363,12 @@ const fetchData = async () => {
       keyword: search.keyword,
       category: search.category || null,
       status: search.status || null,
-      star: search.star || null, // ★ 이 부분이 있어야 필터가 작동합니다
+      star: (search.star === '' || search.star === null) ? null : Number(search.star),
       sortBy: sortState.sortBy,
       sortOrder: sortState.sortOrder
     };
+
+    console.log('검색 요청 파라미터:', params);
 
     const res = await getFeedbackList(params);
     
@@ -556,14 +558,20 @@ onMounted(() => {
 .dialog-footer-right { display: flex; gap: 10px; }
 :deep(.el-dialog__footer) { display: flex; justify-content: space-between; }
 
-/* [수정] 별점 필터 선택 시 입력창 텍스트를 황금색으로 변경 */
-:deep(.star-filter .el-input__inner) {
-  color: #ff9900 !important; 
+.star-filter {
+  /* Element Plus 입력창 텍스트 색상 변수를 황금색으로 변경 */
+  --el-input-text-color: #ff9900 !important;
   font-weight: bold;
 }
-/* placeholder는 원래 색상 유지 */
+
 :deep(.star-filter .el-input__inner::placeholder) {
   color: #a8abb2 !important;
+  -webkit-text-fill-color: #a8abb2 !important; /* Safari/Chrome 호환성 */
   font-weight: normal;
+}
+
+:deep(.star-filter .el-input__inner) {
+    color: #ff9900 !important;
+    -webkit-text-fill-color: #ff9900 !important; 
 }
 </style>
