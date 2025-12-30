@@ -363,7 +363,7 @@ const fetchData = async () => {
       keyword: search.keyword,
       category: search.category || null,
       status: search.status || null,
-      star: (search.star === '' || search.star === null) ? null : Number(search.star),
+      star: search.star ? Number(search.star) : null,
       sortBy: sortState.sortBy,
       sortOrder: sortState.sortOrder
     };
