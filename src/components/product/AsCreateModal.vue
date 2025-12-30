@@ -1,10 +1,13 @@
 <template>
     <el-dialog
-        v-model="visible"
+        :model-value="modelValue"
         title="점검 일정 추가"
         width="520px"
         destroy-on-close
-        align-center >
+        align-center 
+        @update:model-value="emit('update:modelValue', $event)"
+        @closed="onClosed">
+
     <el-form :model="form" label-width="100px">
 
         <el-form-item label="점검 유형">
@@ -106,7 +109,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'created'])
-const visible = ref(false)
 
 const getInitialForm = () => ({
     type: '',
@@ -124,7 +126,6 @@ const rentalItems = ref([])
 watch(
     () => props.modelValue,
     async (v) => {
-    visible.value = v
     if (!v) return
 
     form.value = getInitialForm()
@@ -158,6 +159,11 @@ const close = () => {
     form.value = getInitialForm()
     rentalItems.value = []
     emit('update:modelValue', false)
+}
+
+const onClosed = () => {
+    form.value = getInitialForm()
+    rentalItems.value = []
 }
 
 const submit = async () => {

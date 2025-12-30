@@ -1,10 +1,13 @@
 <template>
     <el-dialog
-    v-model="visible"
-    width="720px"
-    destroy-on-close
-    align-center
-    class="as-detail-dialog" >
+        :model-value="modelValue"
+        width="720px"
+        destroy-on-close
+        align-center
+        class="as-detail-dialog"
+        :close-on-click-modal="true"
+        @update:model-value="emit('update:modelValue', $event)"
+        @closed="onClosed" >
 
     <!-- Header -->
     <template #header>
@@ -118,9 +121,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({ asId: Number, modelValue: Boolean })
 
-const emit = defineEmits(['update:modelValue', 'updated'])
+const emit = defineEmits(['update:modelValue', 'updated', 'closed'])
 
-const visible = ref(false)
 const editMode = ref(false)
 const detail = ref({})
 
@@ -129,17 +131,15 @@ const form = ref({engineer: '', dueDate: '', status: '', contents: '' })
 watch(
     () => props.modelValue,
     async (v) => {
-        visible.value = v
         if (v && props.asId) {
         const { data } = await fetchAsDetail(props.asId)
         detail.value = data
-
         form.value = {
-            engineer: data.engineer,
-            dueDate: data.dueDate,
-            status: data.status,
-            contents: data.contents
-        }
+                engineer: data.engineer,
+                dueDate: data.dueDate,
+                status: data.status,
+                contents: data.contents
+            }
         }
     }
 )
@@ -153,6 +153,18 @@ watch(editMode, (v) => {
 const close = () => {
     editMode.value = false
     emit('update:modelValue', false)
+}
+
+const onClosed = () => {
+    editMode.value = false
+    detail.value = {}
+    form.value = {
+        engineer: '',
+        dueDate: '',
+        status: '',
+        contents: ''
+    }
+    emit('closed')
 }
 
 // ===== 수정 저장 =====

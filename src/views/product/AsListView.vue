@@ -170,7 +170,8 @@
 
     <AsDetailModal
     v-model="showDetail"
-    :as-id="selectedAsId" />
+    :as-id="selectedAsId"
+    @closed="onDetailClosed" />
 
     <AsCreateModal
     v-model="showCreate"
@@ -284,6 +285,10 @@ const selectedAsId = ref(null)
 const openDetail = (row) => {
     selectedAsId.value = row.id
     showDetail.value = true
+}
+
+const onDetailClosed = () => {
+    selectedAsId.value = null
 }
 
 const onCreated = () => {

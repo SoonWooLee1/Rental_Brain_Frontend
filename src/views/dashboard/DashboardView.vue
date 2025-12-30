@@ -67,12 +67,9 @@
 import { useRouter } from "vue-router";
 
 import DashboardKpi from "@/components/dashboard/DashboardKpi.vue";
-import AiInsight from "@/components/dashboard/AiInsight.vue";
-
 import ProductStatusChart from "@/components/dashboard/ProductStatusChart.vue";
 import SegmentAnalysisChart from "@/components/analysis/SegmentAnalysisChart.vue";
 import QuarterCustomerChart from "@/components/dashboard/QuarterCustomerChart.vue";
-
 import SegmentDistribution from "@/components/analysis/SegmentDistribution.vue";
 import CampaignWorkbenchMock from "@/components/dashboard/CampaignWorkbenchMock.vue";
 

@@ -118,7 +118,7 @@ const option = computed(() => {
     series: [
       { name: "견적상담", type: "line", smooth: true, data: s.quote, symbol: "circle", symbolSize: 8 },
       { name: "문의", type: "line", smooth: true, data: s.support, symbol: "circle", symbolSize: 8 },
-      { name: "만족도", type: "line", smooth: true, data: s.feedback, symbol: "circle", symbolSize: 8 },
+      { name: "피드백", type: "line", smooth: true, data: s.feedback, symbol: "circle", symbolSize: 8 },
       { name: "설문조사", type: "line", smooth: true, data: s.survey, symbol: "circle", symbolSize: 8 },
     ],
   };

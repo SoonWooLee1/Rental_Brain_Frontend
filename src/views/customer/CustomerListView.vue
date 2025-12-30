@@ -112,11 +112,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="총 거래액" width="130" align="right">
-          <template #default="{ row }">
-            {{ row.totalTransactionAmount?.toLocaleString() || 0 }}원
-          </template>
-        </el-table-column>
+      <el-table-column label="총 거래액" width="130" align="right">
+        <template #default="{ row }">
+          {{ formatMoneyMan(row.totalTransactionAmount) }} <!-- 새 금액 표시 포맷 --> 
+        </template>
+      </el-table-column>
         <el-table-column prop="contractCount" label="계약 수" width="80" align="center" />
         <el-table-column label="관리" width="100" align="center">
           <template #default="{ row }">
@@ -317,6 +317,33 @@ const getSegmentColor = (s) => {
     if(s.includes('확장')) return 'primary';
     return ''; 
 };
+
+/* 금액 포맷
+ * 5,320,000   -> 532만원
+ * 150,000,000 -> 1억 5000만원
+ * 1,000,000,000 -> 10억
+ */
+const formatMoneyMan = (value) => {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n <= 0) return '-'
+
+  const EOK = 100_000_000   // 1억
+  const MAN = 10_000        // 1만원
+
+  const eok = Math.floor(n / EOK)
+  const rest = n % EOK
+  const man = Math.floor(rest / MAN)
+
+  if (eok > 0 && man > 0) {
+    return `${eok}억 ${man}만원`
+  }
+
+  if (eok > 0 && man === 0) {
+    return `${eok}억`
+  }
+
+  return `${man}만원`
+}
 
 onMounted(fetchData);
 </script>

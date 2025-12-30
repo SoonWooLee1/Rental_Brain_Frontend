@@ -91,16 +91,6 @@
         </el-table-column>
 
         <el-table-column prop="categoryName" label="카테고리" width="120" align="center" />
-        <el-table-column prop="channelName" label="유입 채널" width="100" align="center" />
-        <el-table-column prop="empName" label="담당자" width="100" align="center" />
-        
-        <el-table-column prop="action" label="조치 사항" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span v-if="row.action">{{ row.action }}</span>
-            <span v-else class="text-gray">-</span>
-          </template>
-        </el-table-column>
-
         <el-table-column prop="status" label="상태" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === '완료' || row.status === 'C' ? 'success' : 'warning'">
@@ -239,7 +229,7 @@
       <div v-if="selectedSupport">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="문의 번호">{{ selectedSupport.customerSupportCode }}</el-descriptions-item>
-          <el-descriptions-item label="접수일시">{{ selectedSupport.createDate }}</el-descriptions-item>
+          <el-descriptions-item label="접수일시">{{ formatDateTime(selectedSupport.createDate) }}</el-descriptions-item>
           <el-descriptions-item label="기업명">{{ selectedSupport.customerName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="담당자">{{ selectedSupport.empName || '미배정' }}</el-descriptions-item>
           <el-descriptions-item label="카테고리">{{ selectedSupport.categoryName }}</el-descriptions-item>
@@ -400,38 +390,23 @@ const resetSearch = () => {
   handleSearch();
 };
 
-// [수정] 정렬 핸들러 수정
 const handleSortChange = ({ prop, order }) => {
-  // 1. prop이 customerSupportCode일 경우 DB의 'id' (혹은 customer_support_code)로 매핑
-  // 2. order가 null (정렬 취소)일 경우 기본 정렬(id desc)로 초기화
-  
   if (!order) {
-    // 정렬 취소 시 기본값
     sortState.sortBy = 'id';
     sortState.sortOrder = 'desc';
   } else {
-    // 정렬 적용
     if (prop === 'customerSupportCode') {
-      sortState.sortBy = 'id'; // DB 컬럼명에 맞게 설정 (보통 PK인 id로 정렬)
+      sortState.sortBy = 'id'; 
     } else {
       sortState.sortBy = prop;
     }
-    // element-plus는 'ascending'/'descending'을 반환하므로 'asc'/'desc'로 변환
     sortState.sortOrder = order === 'ascending' ? 'asc' : 'desc';
   }
-  
-  // 데이터 재조회
   fetchData();
 };
 
 const handlePageChange = (val) => {
   page.currentPage = val;
-  fetchData();
-};
-
-const handleSizeChange = (val) => {
-  page.pageSize = val;
-  page.currentPage = 1;
   fetchData();
 };
 
@@ -455,7 +430,6 @@ const searchCustomers = async (query) => {
   }
 };
 
-// 등록 모달 열기
 const openCreateModal = () => {
   isEditMode.value = false;
   Object.keys(createForm).forEach(key => createForm[key] = null);
@@ -469,13 +443,11 @@ const openCreateModal = () => {
   searchCustomers(''); 
 };
 
-// 상세 모달 열기
 const openDetailModal = (row) => {
   selectedSupport.value = row;
   detailModalVisible.value = true;
 };
 
-// 상태 변경(처리 완료) 핸들러
 const handleComplete = async () => {
     try {
         await updateSupport(selectedSupport.value.id, { status: 'C' });
@@ -487,10 +459,8 @@ const handleComplete = async () => {
     }
 };
 
-// [추가] 상태 변경(진행 중으로 되돌리기) 핸들러
 const handleReopen = async () => {
     try {
-        // P (Processing) 상태로 업데이트
         await updateSupport(selectedSupport.value.id, { status: 'P' });
         ElMessage.success('상태가 진행 중으로 변경되었습니다.');
         detailModalVisible.value = false;
@@ -500,7 +470,6 @@ const handleReopen = async () => {
     }
 };
 
-// 수정 모달 열기
 const openEditModal = () => {
     isEditMode.value = true;
     const item = selectedSupport.value;
@@ -526,7 +495,6 @@ const openEditModal = () => {
     createModalVisible.value = true;
 };
 
-// 헬퍼: 이름으로 ID 찾기
 const getCategoryIdByName = (name) => {
     const map = { '가격 문의': 1, '제품 문의': 2, '계약 문의': 3, '기술 지원': 4, '서비스 만족': 5, '제품 불량': 6, '제품 품질': 7, 'AS 지연': 8, '직원 응대': 9, '서비스 불만': 10 };
     return map[name] || null;
@@ -536,7 +504,6 @@ const getChannelIdByName = (name) => {
     return map[name] || null;
 }
 
-// 등록/수정 제출
 const submitCreate = async () => {
   if (!createForm.title || !createForm.content) {
     ElMessage.warning('제목과 내용은 필수입니다.');
@@ -545,11 +512,9 @@ const submitCreate = async () => {
 
   try {
     if (isEditMode.value) {
-        // 수정
         await updateSupport(selectedSupport.value.id, createForm);
         ElMessage.success('수정되었습니다.');
     } else {
-        // 등록
         await createSupport(createForm);
         ElMessage.success('등록되었습니다.');
     }
@@ -560,7 +525,6 @@ const submitCreate = async () => {
   }
 };
 
-// 삭제 핸들러
 const handleDelete = async () => {
     if (!selectedSupport.value) return;
     ElMessageBox.confirm('정말 삭제하시겠습니까?', '경고', { type: 'warning' })
@@ -579,6 +543,12 @@ const handleDelete = async () => {
 const truncateText = (text, length) => {
   if (!text) return '';
   return text.length > length ? text.substring(0, length) + '....' : text;
+};
+
+// [추가] 날짜 포맷 변환 함수 (T 제거)
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-';
+  return dateStr.replace('T', ' ');
 };
 
 onMounted(() => {
