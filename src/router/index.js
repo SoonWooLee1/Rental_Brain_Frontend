@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GlobalLayout from "@/layouts/GlobalLayout.vue";
+import FeedbackDetailView from '@/views/cs/FeedbackDetailView.vue'
+import SupportDetailView from '@/views/cs/SupportDetailView.vue'
 
 const routes = [
   {
@@ -36,6 +38,19 @@ const routes = [
         path: 'cs/feedbacks',
         name: 'cs-feedback-list',
         component: () => import('@/views/cs/FeedbackListView.vue'), // 피드백 관리
+      },
+
+      {
+        path: '/cs/feedback/:id',
+        name: 'FeedbackDetail',
+        component: FeedbackDetailView,
+        meta: { title: '피드백 상세' }
+      },
+      {
+        path: '/cs/support/:id',
+        name: 'SupportDetail',
+        component: SupportDetailView,
+        meta: { title: '고객 문의 상세' }
       },
 
       {
