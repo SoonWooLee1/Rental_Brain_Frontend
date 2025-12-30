@@ -12,7 +12,7 @@
         </h2>
         
         <template v-if="isEditMode">
-          <el-select v-model="editForm.segmentName" placeholder="세그먼트 선택" class="ml-2" style="width: 220px;">
+          <el-select v-model="editForm.segmentId" placeholder="세그먼트 선택" class="ml-2" style="width: 220px;">
             <el-option label="잠재 고객" value="1" />
             <el-option label="신규 고객" value="2" />
             <el-option label="일반 고객" value="3" />

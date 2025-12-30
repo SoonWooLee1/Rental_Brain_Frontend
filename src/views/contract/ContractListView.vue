@@ -87,7 +87,7 @@
 
         <el-table-column label="월 납부액" width="140">
           <template #default="{ row }">
-            {{ row.monthlyPayment.toLocaleString() }}원
+        {{ fmtWon(row.monthlyPayment) }}원
           </template>
         </el-table-column>
 
@@ -153,7 +153,7 @@ const contractList = ref([])
 const searchKeyword = ref('')
 const searchType = ref('contractCode,cusName,inCharge,conName')
 const selectedStatus = ref('')
-const money = (v) => Number(v ?? 0).toLocaleString();
+const fmtWon = (v) => (Number(v) || 0).toLocaleString("ko-KR");
 
 const kpi = ref({
   totalContracts: 0,

@@ -33,11 +33,6 @@ export const patchCompletePayment = (paymentId, payload) => {
   )
 }
 
-// 미납 처리
-export const patchMarkAsNonPayment = (paymentId) => {
-  return api.patch(`/payment-details/${paymentId}/non-payment`)
-}
-
 // 계약 생성 (승인 요청)
 export const createContract = (payload) => {
   return api.post('/contract', payload)
