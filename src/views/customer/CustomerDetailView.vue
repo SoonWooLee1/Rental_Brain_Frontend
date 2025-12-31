@@ -165,13 +165,13 @@
 
       <el-tab-pane label="계약 내역" name="contract">
         <el-table :data="customer.contractList" border stripe>
-          <el-table-column prop="contract_code" label="계약 번호" width="140" align="center" />
+          <el-table-column prop="contractCode" label="계약 번호" width="140" align="center" />
           <el-table-column prop="conName" label="계약명" min-width="180" />
-          <el-table-column prop="start_date" label="계약 시작일" width="120" align="center" :formatter="dateFormatter" />
-          <el-table-column prop="contract_period" label="기간(개월)" width="100" align="center" />
+          <el-table-column prop="startDate" label="계약 시작일" width="120" align="center" :formatter="dateFormatter" />
+          <el-table-column prop="contractPeriod" label="기간(개월)" width="100" align="center" />
           
-          <el-table-column prop="monthly_payment" label="월 납입금" width="150" align="right">
-            <template #default="{row}">{{ row.monthly_payment?.toLocaleString() }}원</template>
+          <el-table-column prop="monthlyPayment" label="월 납입금" width="150" align="right">
+            <template #default="{row}">{{ row.monthlyPayment?.toLocaleString() }}원</template>
           </el-table-column>
           
           <el-table-column prop="status" label="계약 상태" width="100" align="center">
