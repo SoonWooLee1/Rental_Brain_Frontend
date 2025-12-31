@@ -42,7 +42,6 @@
       <!-- 이탈 위험 고객 비중 -->
       <div class="card clickable" @click="openRiskSegmentModal">
         <div class="kpi-head">
-          <div class="icon warn">⚠️</div>
           <div>
             <div class="kpi-title">이탈 위험 고객 비중</div>
             <div class="kpi-value">{{ round1(risk?.currentRiskRate) }}%</div>
@@ -65,7 +64,6 @@
       <!-- 이탈 위험 사유 분포 -->
       <div class="card clickable" @click="openRiskReasonModal()">
         <div class="kpi-head">
-          <div class="icon purple">△</div>
           <div>
             <div class="kpi-title">이탈 위험 사유 분포</div>
             <div class="kpi-subtitle">원인별 비중</div>

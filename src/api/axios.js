@@ -22,7 +22,7 @@ api.interceptors.request.use(
     },
     (e) => {
         console.log('오류: ', e.message);
-        toastStore.showToast('오류가 발생했습니다: '+ e.message);
+        toastStore.showToast('오류가 발생했습니다: '+ e.message); 
         return Promise.reject(e)
     }
 )

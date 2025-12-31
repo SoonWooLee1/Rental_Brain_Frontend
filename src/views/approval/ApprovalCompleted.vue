@@ -10,7 +10,7 @@
       />
       <el-button type="primary" @click="onSearch">검색</el-button>
     </div>
-    <el-table :data="list" style="width: 100%" empty-text="완료된 결재가 없습니다.">
+    <el-table :data="list" style="width: 100%" empty-text="완료된 결재가 없습니다." @row-click="goContractDetail">
       <el-table-column
         prop="approvalCode"
         label="결재 코드"
@@ -63,8 +63,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import { getApprovalCompleted } from '@/api/approval'
+
+/* router */
+const router = useRouter()
 
 /* pagination */
 const page = ref(1)
@@ -74,6 +78,18 @@ const total = ref(0)
 const keyword = ref('')
 const list = ref([])
 const loading = ref(false)
+
+/* ===== 계약 상세 이동 ===== */
+const goContractDetail = (row) => {
+  if (!row.contractId) return
+
+  router.push({
+    name: 'contract-detail',
+    params: {
+      id: row.contractId
+    }
+  })
+}
 
 const fetchList = async () => {
   loading.value = true

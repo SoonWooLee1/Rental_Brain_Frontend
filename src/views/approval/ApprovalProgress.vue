@@ -19,15 +19,16 @@
       v-loading="loading"
       style="width: 100%"
       empty-text="진행 중인 결재가 없습니다."
+      @row-click="goContractDetail"
     >
       <el-table-column
-        prop="approval_code"
+        prop="approvalCode"
         label="결재 코드"
         width="160"
       />
 
       <el-table-column
-        prop="approval_title"
+        prop="approvalTitle"
         label="제목"
       />
 
@@ -71,8 +72,12 @@
 </template>
 <script setup>
   import { ref, onMounted } from 'vue'
+  import { useRouter } from 'vue-router'
   import dayjs from 'dayjs'
   import { getApprovalProgress } from '@/api/approval'
+  
+  /* router */
+  const router = useRouter()
   
   /* pagination */
   const page = ref(1)
@@ -86,6 +91,18 @@
   const list = ref([])
   const loading = ref(false)
   
+  /* ===== 계약 상세 이동 ===== */
+  const goContractDetail = (row) => {
+    if (!row.contractId) return
+
+    router.push({
+      name: 'contract-detail',
+      params: {
+        id: row.contractId
+      }
+    })
+  }
+
   /* api */
   const fetchList = async () => {
     loading.value = true

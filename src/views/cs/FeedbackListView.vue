@@ -253,11 +253,17 @@
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
+
+import { useRouter } from 'vue-router'; 
+
 import { Search, Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getFeedbackList, getFeedbackKpi, createFeedback, updateFeedback, deleteFeedback } from '@/api/feedback';
 import { getCustomerList } from '@/api/customerlist'; 
 import { getInChargeList } from '@/api/customersupport';
+
+
+const router = useRouter();
 
 const loading = ref(false);
 const feedbackList = ref([]);

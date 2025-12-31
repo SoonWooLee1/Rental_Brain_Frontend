@@ -62,6 +62,11 @@ export const getMonthlyTrend = (year) =>
     params: year ? { year } : {},
   });
 
+  
+export const getMonthlyDetail = ({ month, type, page = 1, size = 10 }) =>
+  api.get("/customerSupportAnalysis/monthly-detail", {
+    params: { month, type, page, size },
+  });
 
 
 /**
@@ -103,3 +108,5 @@ export const getRiskReasonCustomers = (month, reasonCode) =>
   api.get("/customersegmentanalysis/riskReasonCustomers", {
     params: { month, reasonCode },
   });
+
+

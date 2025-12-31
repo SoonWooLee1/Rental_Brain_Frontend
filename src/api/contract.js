@@ -57,3 +57,7 @@ export const getCouponsForContract = (segmentId) => {
 export const getContractApprovers = () => {
   return api.get('/contract/emp')
 }
+
+export const patchTerminateContract = (contractId) => {
+  return api.patch(`/contract/${contractId}/terminate`)
+}

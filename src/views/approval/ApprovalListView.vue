@@ -2,55 +2,45 @@
   <div class="page-container">
     <!-- Header -->
     <div class="header">
-      <h2>내 결재 내역</h2>
+      <h1>내 결재 내역</h1>
       <p class="subtitle">
         내가 처리해야 할 결재와 전체 결재 진행 현황
       </p>
     </div>
 
-    <!-- KPI -->
-    <div class="stats-grid">
-      <!-- 내 대기 결재 -->
-      <div class="stat-card danger">
-        <div class="head">
-          <el-icon><Clock /></el-icon>
-          내 대기 결재
-        </div>
-        <div class="number">{{ status.my_pending }}</div>
-        <div class="tail">처리 필요</div>
-      </div>
+    <!-- ===== KPI ===== -->
+<div class="kpi-wrapper">
 
-      <!-- 진행 중 결재 -->
-      <div class="stat-card warning wide">
-        <div class="head">
-          <el-icon><Loading /></el-icon>
-          결재 진행 중
-        </div>
-        <div class="number">{{ status.in_progress }}</div>
-        <div class="tail">승인 절차 진행 중</div>
-      </div>
+  <div class="kpi-box danger-box">
+    <span class="kpi-title">내 대기 결재</span>
+    <span class="kpi-count danger">
+      {{ status.my_pending }}건
+    </span>
+  </div>
 
-      <!-- 총 승인된 결재 -->
-      <div class="stat-card success">
-        <div class="head">
-          <el-icon><CircleCheck /></el-icon>
-          총 승인된 결재
-        </div>
-        <div class="number">{{ status.total_approved }}</div>
-        <div class="tail">모든 승인 완료</div>
-      </div>
+  <div class="kpi-box">
+    <span class="kpi-title">결재 진행 중</span>
+    <span class="kpi-count highlight">
+      {{ status.in_progress }}건
+    </span>
+  </div>
 
-      <!-- 총 반려된 결재 -->
-      <div class="stat-card reject">
-        <div class="head">
-          <el-icon><CircleClose /></el-icon>
-          총 반려된 결재
-        </div>
-        <div class="number">{{ status.total_rejected }}</div>
-        <div class="tail">반려 처리됨</div>
-      </div>
+  <div class="kpi-box reject-box">
+    <span class="kpi-title">총 반려된 결재</span>
+    <span class="kpi-count reject">
+      {{ status.total_rejected }}건
+    </span>
+  </div>
 
-    </div>
+    <div class="kpi-box">
+    <span class="kpi-title">총 승인된 결재</span>
+    <span class="kpi-count success">
+      {{ status.total_approved }}건
+    </span>
+  </div>
+
+</div>
+
 
     <!-- Tabs -->
     <el-card shadow="never" class="tabs-card">
@@ -135,9 +125,9 @@ onMounted(fetchStatus)
   margin-bottom: 24px;
 }
 
-.header h2 {
-  font-size: 22px;
-  font-weight: 700;
+.header h1 {
+  font-size: 30px;
+  font-weight: 600;
 }
 
 .subtitle {
@@ -146,44 +136,50 @@ onMounted(fetchStatus)
   font-size: 14px;
 }
 
-/* ===== KPI Grid ===== */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 28px;
-}
-
-.stat-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  border-left: 6px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.stat-card.wide {
-  grid-column: auto;
-}
-
-.stat-card .head {
+/* ===== KPI (Contract Style) ===== */
+.kpi-wrapper {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 14px;
+  gap: 15px;
+  margin-bottom: 24px;
 }
 
-.stat-card .number {
+.kpi-box {
+  flex: 1;
+  background: #fff;
+  padding: 24px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kpi-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 18px;
+}
+
+.kpi-count {
+  margin-top: auto;
   font-size: 28px;
   font-weight: 800;
-  margin: 10px 0;
+  line-height: 1.2;
 }
 
-.stat-card .tail {
-  font-size: 13px;
-  opacity: 0.85;
+/* ===== Color Variants ===== */
+.highlight { color: #f59e0b; } /* 진행 */
+.success { color: #16a34a; }   /* 승인 */
+.reject  { color: #dc2626; }   /* 반려 */
+
+
+
+.reject-box {
+  background-color: #fef2f2;
+  border-color: #fee2e2;
 }
+
 
 /* ===== Colors ===== */
 .stat-card.danger {

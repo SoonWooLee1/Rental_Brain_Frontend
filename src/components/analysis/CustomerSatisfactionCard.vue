@@ -32,17 +32,6 @@
           <div class="right">{{ fmt(r.count) }}개사</div>
         </button>
       </div>
-
-      <!-- (선택) 불만족 원인 TOP3 섹션: 부모에서 topIssues 주면 자동 표시 -->
-      <div v-if="topIssuesSafe.length" class="issues">
-        <div class="issues-title">불만족 원인 TOP 3</div>
-        <ol class="issues-list">
-          <li v-for="(it, idx) in topIssuesSafe.slice(0, 3)" :key="idx">
-            <span class="t">{{ it.issue ?? it.name ?? it.title ?? '원인' }}</span>
-            <span class="c">{{ fmt(it.count ?? it.value ?? 0) }}건</span>
-          </li>
-        </ol>
-      </div>
     </div>
   </BaseCard>
 </template>

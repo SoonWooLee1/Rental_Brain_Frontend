@@ -18,7 +18,7 @@
   const totalCount = ref(0)
   
   const page = ref(1)
-  const size = ref(10)
+  const size = ref(5)
   
   const keyword = ref('')
   const loading = ref(false)

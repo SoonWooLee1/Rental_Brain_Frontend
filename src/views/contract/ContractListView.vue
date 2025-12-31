@@ -1,50 +1,30 @@
 <template>
   <div class="page-container">
-    <!-- Header -->
-    <div class="header">
-      <h2 class="page-title">계약 목록</h2>
-      <p class="page-subtitle">계약 현황 및 진행 상태 관리</p>
-    </div>
 
-    <!-- KPI -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="head"><el-icon><Document /></el-icon> 전체 계약</div>
-        <div class="number">{{ kpi.totalContracts }}건</div>
-        <div class="tail blue">누적 계약</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="head purple"><el-icon><Clock /></el-icon> 계약 진행</div>
-        <div class="number">{{ kpi.progressContracts }}건</div>
-        <div class="tail purple">진행 중</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="head orange"><el-icon><Warning /></el-icon> 만료 임박</div>
-        <div class="number">{{ kpi.imminentExpireContracts }}건</div>
-        <div class="tail orange">주의 필요</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="head green"><el-icon><CircleCheck /></el-icon> 신규 계약</div>
-        <div class="number">{{ kpi.thisMonthContracts }}건</div>
-        <div class="tail green">이번 달</div>
+    <!-- ===== Header ===== -->
+    <div class="header-row">
+      <div>
+        <h1 class="page-title">계약 목록</h1>
+        <p class="page-subtitle">계약 현황 및 진행 상태 관리</p>
       </div>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="계약명, 고객명, 담당자, 계약코드 검색"
-        prefix-icon="Search"
-        class="search-bar"
-        @keyup.enter="fetchList"
-      />
+     <!-- ===== Search / Filter ===== -->
+    <div class="search-area card-box">
+      <div class="filter-wrapper">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="계약명, 고객명, 담당자, 계약코드 검색"
+          class="search-input"
+          style="width: 300px"
+          @keyup.enter="fetchList"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
 
-      <div class="actions">
-        <el-select v-model="searchType" style="width: 150px">
+        <el-select v-model="searchType" style="width: 160px">
           <el-option label="전체" value="contractCode,cusName,inCharge,conName" />
           <el-option label="계약 코드" value="contractCode" />
           <el-option label="고객명" value="cusName" />
@@ -60,16 +40,41 @@
           <el-option label="만료" value="C" />
         </el-select>
 
-        <el-button type="primary" icon="Plus" @click="goToCreateContract">
-          계약 생성
-        </el-button>
+        <el-button type="primary" @click="fetchList">검색</el-button>
+      </div>
+      <el-button type="primary" @click="goToCreateContract">
+        <el-icon><Plus /></el-icon>
+        계약 생성
+      </el-button>
+    </div>
+
+    <!-- ===== KPI ===== -->
+    <div class="kpi-wrapper">
+      <div class="kpi-box">
+        <span class="kpi-title">전체 계약</span>
+        <span class="kpi-count">{{ kpi.totalContracts }}건</span>
+      </div>
+
+      <div class="kpi-box">
+        <span class="kpi-title">진행 중</span>
+        <span class="kpi-count highlight">{{ kpi.progressContracts }}건</span>
+      </div>
+
+      <div class="kpi-box warning-box">
+        <span class="kpi-title">만료 임박</span>
+        <span class="kpi-count warning">{{ kpi.imminentExpireContracts }}건</span>
+      </div>
+
+      <div class="kpi-box">
+        <span class="kpi-title">이번 달 신규</span>
+        <span class="kpi-count">{{ kpi.thisMonthContracts }}건</span>
       </div>
     </div>
 
-    <!-- Table -->
-    <el-card shadow="never" :body-style="{ padding: '0' }">
+    <!-- ===== Table ===== -->
+    <el-card shadow="never" class="table-card">
       <el-table :data="contractList" v-loading="loading">
-        <el-table-column label="계약 코드" width="150" prop="contractCode">
+        <el-table-column label="계약 코드" width="150">
           <template #default="{ row }">
             <span class="code-text">{{ row.contractCode }}</span>
           </template>
@@ -79,27 +84,27 @@
         <el-table-column prop="cusName" label="고객명" width="160" />
         <el-table-column prop="inCharge" label="담당자" width="140" />
 
-        <el-table-column label="기간" width="100">
+        <el-table-column label="기간" width="100" align="center">
           <template #default="{ row }">
             {{ row.contractPeriod }}개월
           </template>
         </el-table-column>
 
-        <el-table-column label="월 납부액" width="140">
+        <el-table-column label="월 납부액" width="140" align="right">
           <template #default="{ row }">
-        {{ fmtWon(row.monthlyPayment) }}원
+            {{ fmtWon(row.monthlyPayment) }}만원
           </template>
         </el-table-column>
 
-        <el-table-column label="시작일" width="140">
+        <el-table-column label="시작일" width="130" align="center">
           <template #default="{ row }">
             {{ formatDate(row.startDate) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="상태" width="120">
+        <el-table-column label="상태" width="120" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" effect="light" size="small">
+            <el-tag :type="statusType(row.status)" size="small">
               {{ statusLabel(row.status) }}
             </el-tag>
           </template>
@@ -107,39 +112,32 @@
 
         <el-table-column label="관리" width="120" align="center">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="goToDetail(row.id)">
+            <el-button size="small" @click="goToDetail(row.id)">
               상세보기
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="pagination-area">
+      <div class="pagination-wrapper">
         <el-pagination
           layout="prev, pager, next"
           :total="totalCount"
-          v-model:current-page="page"
           :page-size="size"
+          v-model:current-page="page"
           @current-change="fetchList"
         />
       </div>
     </el-card>
   </div>
 </template>
+
 <script setup>
-import { getContractList, getContractStatus } from '@/api/contract'
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
-
-import {
-  Document,
-  Clock,
-  Warning,
-  CircleCheck,
-  Search,
-  Plus
-} from '@element-plus/icons-vue'
+import { getContractList, getContractStatus } from '@/api/contract'
+import { Search, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -153,7 +151,6 @@ const contractList = ref([])
 const searchKeyword = ref('')
 const searchType = ref('contractCode,cusName,inCharge,conName')
 const selectedStatus = ref('')
-const fmtWon = (v) => (Number(v) || 0).toLocaleString("ko-KR");
 
 const kpi = ref({
   totalContracts: 0,
@@ -161,6 +158,11 @@ const kpi = ref({
   imminentExpireContracts: 0,
   thisMonthContracts: 0
 })
+
+const fmtWon = (v) => {
+  const value = Number(v) || 0
+  return (value / 10000).toLocaleString('ko-KR')
+}
 
 const fetchKpi = async () => {
   const res = await getContractStatus()
@@ -170,14 +172,13 @@ const fetchKpi = async () => {
 const fetchList = async () => {
   loading.value = true
   try {
-    const params = {
-        page: page.value,
-        size: size.value,
-        type: searchType.value,
-        keyword: searchKeyword.value,
-        status: selectedStatus.value || null
-    }
-    const res = await getContractList(params)
+    const res = await getContractList({
+      page: page.value,
+      size: size.value,
+      type: searchType.value,
+      keyword: searchKeyword.value,
+      status: selectedStatus.value || null
+    })
     contractList.value = res.data.contents
     totalCount.value = res.data.totalCount
   } finally {
@@ -200,8 +201,7 @@ const statusLabel = (s) =>
   ({ P: '진행', I: '만료 임박', T: '해지', C: '만료', W: '결제 대기', R: '결제 거절' }[s])
 
 const statusType = (s) =>
-  ({ P: 'warning', I: 'danger', T: 'info', C: 'success', W:'waiting', R: "reject" }[s])
-
+  ({ P: 'warning', I: 'danger', T: 'info', C: 'success', W: 'info', R: 'danger' }[s])
 
 watch(selectedStatus, () => {
   page.value = 1
@@ -213,28 +213,106 @@ onMounted(async () => {
   await fetchList()
 })
 </script>
+
 <style scoped>
-.page-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
-.page-title { font-size: 24px; font-weight: 700; color: #333; margin: 0; }
-.page-subtitle { margin: 6px 0 0; color: #6b7280; font-size: 13px; margin-bottom: 24px; }
+.page-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-row h1 {
+  font-size: 30px;
+  font-weight: 600;
+}
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+.page-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Search */
+.search-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+.filter-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* KPI */
+.kpi-wrapper {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.kpi-box {
+  flex: 1;
+  background: #fff;
+  padding: 24px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kpi-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 18px;
+}
+
+.kpi-count {
+  margin-top: auto;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
 
 
-.stats-row {display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;}
-.stat-card {background: white; border: 1px solid #eee; border-radius: 8px; padding: 20px;}
-.stat-card .head {display: flex; align-items: center; gap: 6px;font-weight: 600;font-size: 14px;color: #555;}
+.highlight { color: #f59e0b; }
+.warning { color: #ef4444; }
+.warning-box {
+  background-color: #fef2f2;
+  border-color: #fee2e2;
+}
 
-.stat-card .number {font-size: 24px; font-weight: 700; margin: 8px 0;}
-.stat-card .tail {font-size: 12px; color: #888;}
+/* Table */
+.table-card {
+  border-radius: 8px;
+}
+.code-text {
+  font-family: monospace;
+}
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
 
-.head.purple { color: #9333ea; }
-.head.green { color: #16a34a; }
-.head.orange { color: #ea580c; }
-
-.toolbar {display: flex; justify-content: space-between; margin-bottom: 16px;}
-
-.search-bar { width: 350px; }
-.actions {display: flex; gap: 8px;}
-
-.code-text {font-family: monospace;}
-.pagination-area {display: flex; justify-content: flex-end; padding: 16px;}
 </style>

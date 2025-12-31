@@ -220,7 +220,7 @@
       </el-tab-pane>
 
       <el-tab-pane label="캠페인 내역" name="campaign">
-        <h4>보유 쿠폰</h4>
+        <h4>쿠폰 사용 이력</h4>
         <el-table :data="customer.couponList" border stripe class="mb-20">
           <el-table-column prop="couponCode" label="쿠폰 코드" width="140" align="center" />
           <el-table-column prop="name" label="쿠폰명" />
@@ -230,13 +230,13 @@
           <el-table-column prop="status" label="사용 여부" width="100" align="center">
              <template #default="{row}">
                 <el-tag :type="row.status === 'Y' ? 'info' : 'success'">
-                  {{ row.status === 'Y' ? '사용 완료' : '사용 가능' }}
+                  {{ row.status === 'Y' ? '사용 완료' : '사용 완료' }}
                 </el-tag>
              </template>
           </el-table-column>
         </el-table>
 
-        <h4>프로모션 참여</h4>
+        <h4>프로모션 참여 이력</h4>
         <el-table :data="customer.promotionList" border stripe>
           <el-table-column prop="promotionCode" label="프로모션 코드" width="140" align="center" />
           <el-table-column prop="name" label="프로모션명" />

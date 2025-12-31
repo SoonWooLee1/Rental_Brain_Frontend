@@ -160,16 +160,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="연락처">
-              <el-input v-model="createForm.phone" placeholder="010-0000-0000" />
-            </el-form-item>
-          </el-col>
         </el-row>
-
-        <el-form-item label="이메일">
-          <el-input v-model="createForm.email" placeholder="example@email.com" />
-        </el-form-item>
 
         <el-row :gutter="20">
           <el-col :span="12">

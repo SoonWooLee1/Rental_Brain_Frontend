@@ -127,6 +127,24 @@ watch(
   { immediate: true }
 )
 
+/* 연락처 포맷: 02-6100-0060 / 010-1234-5678 */
+const formatPhone = (value) => {
+  if (!value) return '-'
+  const d = String(value).replace(/\D/g, '')
+
+  // 02 지역번호
+  if (d.startsWith('02')) {
+    if (d.length === 9)  return d.replace(/^(\d{2})(\d{3})(\d{4})$/, '$1-$2-$3')   // 02-123-4567
+    if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1-$2-$3')  // 02-1234-5678
+  }
+
+  // 휴대폰/기타 지역번호(3자리)
+  if (d.length === 10) return d.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')    // 031-123-4567
+  if (d.length === 11) return d.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3')    // 010-1234-5678
+
+  return value
+}
+
 onMounted(fetchList)
 </script>
 
@@ -185,7 +203,11 @@ onMounted(fetchList)
       />
       <el-table-column prop="customerName" label="기업명" align="center" header-align="center" />
       <el-table-column prop="inCharge" label="담당자" align="center" header-align="center"/>
-      <el-table-column prop="callNum" label="연락처" align="center" header-align="center"/>
+      <el-table-column prop="callNum" label="연락처" align="center" header-align="center">
+        <template #default="{ row }">
+          {{ formatPhone(row.callNum) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="contractCode" label="계약 ID" align="center" header-align="center"/>
 
       <el-table-column

@@ -122,11 +122,11 @@
 
     <div class="trend-ai-row">
       <div class="trend-col">
-        <SupportMonthlyTrend />
+        <!-- ✅ 차트 월 클릭 → 페이지 전체(month) 갱신 -->
+        <SupportMonthlyTrend @select-month="applyMonthFromTrend" />
       </div>
 
       <div class="ai-col">
-        <!-- ✅ 분포는 satDist를 내려줘야 막대가 뜸 -->
         <CustomerSatisfactionCard
           :satisfaction="satDist"
           :topIssues="topIssues"
@@ -141,7 +141,6 @@
       </div>
     </div>
 
-    <!-- ✅ 핵심: sections 내려줘야 내용이 렌더링 됨 -->
     <InsightTopListCard :sections="insightSections" />
   </div>
 </template>
@@ -178,11 +177,10 @@ const satDist = ref({
   totalCount: 0,
 });
 
-// ✅ (추가) topIssues가 템플릿에서 사용되는데 선언이 없어서 에러났음
-// 백엔드 붙이기 전까지는 빈 배열로 안전 처리
+// 템플릿에서 사용되는 topIssues 안전 처리
 const topIssues = ref([]);
 
-// 한줄로 정리해주는 것
+// 한줄 요약
 const supportSummary = computed(() => {
   if (!kpi.value) return { text: "응대 지표를 불러오는 중입니다.", tone: "neutral" };
 
@@ -211,7 +209,7 @@ const supportSummary = computed(() => {
   };
 });
 
-// 인사이트 TOP 리스트(InsightTopListCard용) -> 더미용
+// 인사이트(더미)
 const DEFAULT_INSIGHT_SECTIONS = [
   {
     title: "견적 상담 성공/실패 요인",
@@ -268,7 +266,6 @@ const DEFAULT_INSIGHT_SECTIONS = [
   },
 ];
 
-// ✅ structuredClone이 없는 환경도 있어서 안전하게
 const clone = (v) => {
   try {
     return structuredClone(v);
@@ -301,8 +298,15 @@ const addMonths = (baseYM, diff) => {
   return ym(d);
 };
 
+/** ✅ route query month 갱신(여기서 페이지 전체 갱신이 트리거됨) */
 const setMonthQuery = (m) => {
-  router.replace({ query: { ...route.query, month: m } });
+  router.replace({
+    query: {
+      ...route.query,
+      month: m,
+      year: String(m).slice(0, 4), // (선택) year도 같이 맞춰두면 trend쪽 year 계산이 안정적
+    },
+  });
 };
 
 const setThisMonth = () => {
@@ -323,6 +327,14 @@ const applyPickedMonth = () => {
   mode.value = "pick";
   if (!pickedMonth.value) return;
   setMonthQuery(pickedMonth.value);
+};
+
+/** ✅ 차트에서 월 클릭하면 여기로 들어옴 (템플릿의 applyMonthFromTrend와 연결) */
+const applyMonthFromTrend = (selectedYm) => {
+  if (!selectedYm) return;
+  mode.value = "pick";
+  pickedMonth.value = selectedYm;
+  setMonthQuery(selectedYm);
 };
 
 /** month 기준 mode 자동 정렬 */
@@ -349,11 +361,11 @@ const fetchKpi = async () => {
   kpi.value = res.data;
 };
 
-/** ✅ 만족도 분포 normalize (응답이 배열/객체/문자열 등 섞여도 안전하게) */
+/** 만족도 분포 normalize */
 const normalizeSatDist = (raw) => {
   const data = typeof raw === "string" ? JSON.parse(raw) : raw;
 
-  // 1) 배열 형태: [{star:5,count:10}, ...]
+  // 배열 형태: [{star:5,count:10}, ...]
   if (Array.isArray(data)) {
     const map = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     for (const it of data) {
@@ -372,7 +384,7 @@ const normalizeSatDist = (raw) => {
     };
   }
 
-  // 2) 객체 형태
+  // 객체 형태
   const d = data?.distribution ?? data?.data ?? data ?? {};
   const n = (v) => Number(v) || 0;
 
@@ -383,7 +395,14 @@ const normalizeSatDist = (raw) => {
   const s1 = n(d.star1Count ?? d.star1 ?? d.one ?? d.count1);
   const total = n(d.totalCount ?? d.total ?? d.count ?? s5 + s4 + s3 + s2 + s1);
 
-  return { star5Count: s5, star4Count: s4, star3Count: s3, star2Count: s2, star1Count: s1, totalCount: total };
+  return {
+    star5Count: s5,
+    star4Count: s4,
+    star3Count: s3,
+    star2Count: s2,
+    star1Count: s1,
+    totalCount: total,
+  };
 };
 
 const fetchSatisfactionDist = async () => {
@@ -399,27 +418,16 @@ const fetchSatisfactionDist = async () => {
     const res2 = await getSatisfactionDist();
     satDist.value = normalizeSatDist(res2.data);
   } catch (e) {
-    satDist.value = { star5Count: 0, star4Count: 0, star3Count: 0, star2Count: 0, star1Count: 0, totalCount: 0 };
+    satDist.value = {
+      star5Count: 0,
+      star4Count: 0,
+      star3Count: 0,
+      star2Count: 0,
+      star1Count: 0,
+      totalCount: 0,
+    };
   }
 };
-
-// ✅ (추가) normalizeInsight 정의 안 돼있어서 에러났음
-// 백엔드 응답 형태가 달라도 최대한 sections 형태로 맞춰줌.
-const normalizeInsight = (raw) => {
-  if (!raw) return clone(DEFAULT_INSIGHT_SECTIONS);
-
-  const data = typeof raw === "string" ? JSON.parse(raw) : raw;
-
-  // 이미 sections 배열이면 그대로
-  if (Array.isArray(data) && data.length && data[0]?.title && data[0]?.blocks) return data;
-
-  // { sections: [...] }
-  if (Array.isArray(data?.sections)) return data.sections;
-
-  // 그 외 형태면 일단 더미 유지
-  return clone(DEFAULT_INSIGHT_SECTIONS);
-};
-
 
 const fetchAll = async () => {
   await Promise.all([fetchKpi(), fetchSatisfactionDist()]);
@@ -454,7 +462,7 @@ const mergedTypeRows = computed(() => {
   }));
 });
 
-/** ✅ 총 응대 건수는 누적(ytdTotal) */
+/** 총 응대 건수는 누적(ytdTotal) */
 const ytdTotal = computed(() => Number(kpi.value?.totalResponseCard?.ytdTotal ?? 0) || 0);
 
 const fmt = (n) => (Number(n) || 0).toLocaleString();
@@ -462,7 +470,6 @@ const round1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
 
 const fmtHours = (minutesLike) => {
   const v = Number(minutesLike) || 0;
-  // 기존 로직 유지(네 백엔드가 "시간" 단위로 주는지 "분"으로 주는지 애매해서)
   if (v <= 24) return `${round1(v)}시간`;
   return `${round1(v / 60)}시간`;
 };
@@ -518,228 +525,165 @@ const typeLabel = (t) => {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
 }
 .seg-btn {
   padding: 8px 12px;
   font-size: 12px;
-  font-weight: 800;
-  color: #374151;
-  background: transparent;
-  border: 0;
+  font-weight: 700;
+  border: none;
+  background: white;
   cursor: pointer;
-}
-.seg-btn + .seg-btn {
-  border-left: 1px solid #e5e7eb;
+  color: #111827;
 }
 .seg-btn.active {
   background: #111827;
-  color: #fff;
+  color: white;
 }
 .month-pick {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
 }
 .month-input {
+  padding: 6px 10px;
+  border-radius: 8px;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 8px 10px;
   font-size: 12px;
-  font-weight: 700;
 }
 .apply-btn {
-  border: 1px solid #111827;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
   background: #111827;
-  color: #fff;
-  border-radius: 10px;
-  padding: 8px 12px;
+  color: white;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
 }
 .month-badge {
-  font-size: 12px;
-  font-weight: 900;
-  color: #111827;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
   padding: 8px 10px;
-  border-radius: 999px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
 }
 
-/* KPI */
+/* KPI Row */
 .kpi-row-3 {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 15px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
 }
 
-.card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 22px 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+/* trend + ai */
+.trend-ai-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
 }
-
-.kpi-head {
+.trend-col,
+.ai-col {
   display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.kpi-title {
+/* 카드 공통 */
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+}
+
+/* KPI 내부 */
+.kpi-card .kpi-title {
   font-size: 12px;
-  color: #666;
-  font-weight: 600;
+  font-weight: 700;
+  color: #6b7280;
 }
-
-.kpi-value {
+.kpi-card .kpi-value {
   font-size: 24px;
   font-weight: 800;
   color: #111827;
-  margin-top: 4px;
+  margin-top: 6px;
 }
-
 .kpi-subtitle {
-  margin-top: 12px;
+  margin-top: 10px;
   font-size: 12px;
   color: #6b7280;
   font-weight: 700;
 }
-
-/* 유형별 리스트 */
 .type-list {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
-
 .type-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
 }
-
 .type-left {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .type-label {
-  color: #374151;
+  font-size: 12px;
   font-weight: 800;
-}
-
-.type-total {
-  font-weight: 900;
   color: #111827;
 }
-
-.type-delta .count {
+.type-total {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+}
+.count.up {
+  color: #16a34a;
+  font-weight: 800;
+}
+.count.down {
+  color: #ef4444;
   font-weight: 800;
 }
 
-.up {
-  color: #16a34a;
-  font-weight: 900;
-}
-
-.down {
-  color: #ef4444;
-  font-weight: 900;
-}
-
-/* 기타 */
 .split-line {
   height: 1px;
-  background: #eee;
+  background: #e5e7eb;
   margin: 12px 0;
 }
-
 .metric-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
 }
-
 .metric-label {
   color: #6b7280;
   font-weight: 700;
 }
-
 .metric-value {
   color: #111827;
-  font-weight: 900;
+  font-weight: 800;
 }
-
 .metric-sub {
   margin-top: 8px;
   font-size: 12px;
+  font-weight: 800;
 }
-
+.metric-sub .up {
+  color: #16a34a;
+}
+.metric-sub .down {
+  color: #ef4444;
+}
 .small-box {
   margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f1f1f1;
-}
-
-/* 차트/카드 영역 */
-.trend-ai-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 18px;
-  align-items: start;
-}
-
-@media (max-width: 1200px) {
-  .kpi-row-3 {
-    grid-template-columns: 1fr;
-  }
-  .header-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .header-actions {
-    justify-content: flex-start;
-  }
-  .trend-ai-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/*  한줄평 */
-.kpi-card,
-.card.kpi-card {
-  cursor: pointer;
-  transition:
-    transform 0.14s ease,
-    box-shadow 0.14s ease,
-    border-color 0.14s ease,
-    background-color 0.14s ease;
-}
-
-.kpi-card:hover,
-.card.kpi-card:hover {
-  transform: translateY(-2px);
-  border-color: #d1d5db;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
-}
-
-.kpi-card:active,
-.card.kpi-card:active {
-  transform: translateY(-1px);
-}
-
-.kpi-card:focus-visible,
-.card.kpi-card:focus-visible {
-  outline: 2px solid #111827;
-  outline-offset: 2px;
+  padding-top: 10px;
+  border-top: 1px dashed #e5e7eb;
 }
 </style>

@@ -17,7 +17,14 @@
       <div class="hint">트렌드 데이터가 없습니다.</div>
     </div>
 
-    <v-chart v-else :option="option" autoresize class="chart" />
+    <!-- ✅ 클릭 이벤트 -->
+    <v-chart
+      v-else
+      :option="option"
+      autoresize
+      class="chart"
+      @click="onChartClick"
+    />
   </BaseCard>
 </template>
 
@@ -40,6 +47,9 @@ defineProps({
   title: { type: String, default: "월별 응대 트렌드" },
 });
 
+/** ✅ 부모에게 YYYY-MM 전달 */
+const emit = defineEmits(["select-month"]);
+
 const route = useRoute();
 const loading = ref(false);
 const error = ref("");
@@ -58,13 +68,6 @@ const monthLabels = computed(() =>
   Array.from({ length: 12 }, (_, i) => `${i + 1}월`)
 );
 
-/**
- * ✅ 백엔드 응답
- * {
- *   year: 2025,
- *   monthly: [{ month, quoteCount, SupportCount, feedbackCount, surveyCount }, ...]
- * }
- */
 const seriesData = computed(() => {
   const init = {
     quote: Array(12).fill(0),
@@ -82,7 +85,7 @@ const seriesData = computed(() => {
     if (idx < 0 || idx > 11) return;
 
     init.quote[idx] = Number(row.quoteCount ?? 0) || 0;
-    init.support[idx] = Number(row.SupportCount ?? row.supportCount ?? 0) || 0; // 대문자 S 방어
+    init.support[idx] = Number(row.SupportCount ?? row.supportCount ?? 0) || 0;
     init.feedback[idx] = Number(row.feedbackCount ?? 0) || 0;
     init.survey[idx] = Number(row.surveyCount ?? 0) || 0;
   });
@@ -137,48 +140,29 @@ const fetchTrend = async () => {
   }
 };
 
+/** ✅ 차트 클릭 → 해당 월(YYYY-MM) 부모로 전달 */
+const onChartClick = (params) => {
+  const idx = Number(params?.dataIndex);
+  if (Number.isNaN(idx) || idx < 0 || idx > 11) return;
+
+  const mm = String(idx + 1).padStart(2, "0");
+  const ym = `${year.value}-${mm}`;
+  emit("select-month", ym);
+};
+
 onMounted(fetchTrend);
 watch(year, fetchTrend);
 </script>
 
 <style scoped>
-.trend-card {
-  width: 100%;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 900;
-  color: #111827;
-}
-
-.chart {
-  width: 100%;
-  height: 320px;
-}
-
+.trend-card { width: 100%; }
+.card-title { margin: 0; font-size: 14px; font-weight: 900; color: #111827; }
+.chart { width: 100%; height: 320px; }
 .chart-placeholder {
-  height: 320px;
-  border: 1px dashed #e5e7eb;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
+  height: 320px; border: 1px dashed #e5e7eb; border-radius: 10px;
+  display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center;
   background: #fafafa;
 }
-
-.hint {
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.error {
-  color: #ef4444;
-  font-size: 12px;
-  font-weight: 800;
-}
+.hint { color: #6b7280; font-size: 13px; font-weight: 700; }
+.error { color: #ef4444; font-size: 12px; font-weight: 800; }
 </style>

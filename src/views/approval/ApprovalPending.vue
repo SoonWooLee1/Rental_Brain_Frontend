@@ -23,6 +23,7 @@
       v-loading="loading"
       style="width: 100%"
       empty-text="대기 중인 결재가 없습니다."
+      @row-click="goContractDetail"
     >
       <el-table-column
         prop="approvalCode"
@@ -148,7 +149,10 @@ import { getApprovalPending } from '@/api/approval'
 import { approveApproval, rejectApproval } from '@/api/approval'
 import { ElMessage} from 'element-plus'
 import { useToastStore } from '@/store/useToast'
+import { useRouter } from 'vue-router'
 
+/* router */
+const router = useRouter()
 
 const toastStore = useToastStore();
 const emit = defineEmits(['changed'])
@@ -212,6 +216,18 @@ const confirmApprove = async () => {
   } finally {
     approveLoading.value = false
   }
+}
+
+/* ===== 계약 상세 이동 ===== */
+const goContractDetail = (row) => {
+  if (!row.contractId) return
+
+  router.push({
+    name: 'contract-detail',
+    params: {
+      id: row.contractId
+    }
+  })
 }
 
 const openApproveModal = (row) => {
