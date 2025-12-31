@@ -225,57 +225,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="detailModalVisible" title="문의 상세 정보" width="700px">
-      <div v-if="selectedSupport">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="문의 번호">{{ selectedSupport.customerSupportCode }}</el-descriptions-item>
-          <el-descriptions-item label="접수일시">{{ formatDateTime(selectedSupport.createDate) }}</el-descriptions-item>
-          <el-descriptions-item label="기업명">{{ selectedSupport.customerName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="담당자">{{ selectedSupport.empName || '미배정' }}</el-descriptions-item>
-          <el-descriptions-item label="카테고리">{{ selectedSupport.categoryName }}</el-descriptions-item>
-          <el-descriptions-item label="채널">{{ selectedSupport.channelName }}</el-descriptions-item>
-          <el-descriptions-item label="제목" :span="2">{{ selectedSupport.title }}</el-descriptions-item>
-        </el-descriptions>
-
-        <div class="detail-content-box mt-4">
-          <p class="label">문의 내용</p>
-          <div class="content-text">{{ selectedSupport.content }}</div>
-        </div>
-
-        <div class="detail-content-box mt-4 bg-gray">
-          <p class="label">조치 결과</p>
-          <div class="content-text">
-            {{ selectedSupport.action || '아직 조치 내용이 등록되지 않았습니다.' }}
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <div class="dialog-footer-left">
-           <el-button type="danger" plain @click="handleDelete">삭제</el-button>
-        </div>
-        <div class="dialog-footer-right">
-          
-          <el-button 
-            v-if="selectedSupport && (selectedSupport.status === 'C' || selectedSupport.status === '완료')"
-            type="warning" 
-            @click="handleReopen"
-          >
-            진행 중으로 변경
-          </el-button>
-
-          <el-button 
-            v-if="selectedSupport && selectedSupport.status !== 'C' && selectedSupport.status !== '완료'"
-            type="success" 
-            @click="handleComplete"
-          >
-            처리 완료
-          </el-button>
-
-          <el-button type="primary" @click="openEditModal">수정</el-button>
-          <el-button @click="detailModalVisible = false">닫기</el-button>
-        </div>
-      </template>
-    </el-dialog>
+    
 
   </div>
 </template>
@@ -286,6 +236,8 @@ import { Search, Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getSupportList, getSupportKpi, createSupport, updateSupport, deleteSupport, getInChargeList } from '@/api/customersupport';
 import { getCustomerList } from '@/api/customerlist'; 
+import { useRouter } from 'vue-router'; // 추가
+const router = useRouter(); // 추가
 
 // 상태 변수들
 const loading = ref(false);
@@ -443,16 +395,15 @@ const openCreateModal = () => {
   searchCustomers(''); 
 };
 
+// [변경] 상세 페이지 이동
 const openDetailModal = (row) => {
-  selectedSupport.value = row;
-  detailModalVisible.value = true;
+  router.push(`/cs/supports/${row.id}`); // 또는 row.customerSupportCode 등 ID 필드 사용
 };
 
 const handleComplete = async () => {
     try {
         await updateSupport(selectedSupport.value.id, { status: 'C' });
         ElMessage.success('문의가 완료 처리되었습니다.');
-        detailModalVisible.value = false;
         fetchData();
     } catch (e) {
         ElMessage.error('처리 실패: ' + e.message);
@@ -463,7 +414,6 @@ const handleReopen = async () => {
     try {
         await updateSupport(selectedSupport.value.id, { status: 'P' });
         ElMessage.success('상태가 진행 중으로 변경되었습니다.');
-        detailModalVisible.value = false;
         fetchData();
     } catch (e) {
         ElMessage.error('상태 변경 실패: ' + e.message);

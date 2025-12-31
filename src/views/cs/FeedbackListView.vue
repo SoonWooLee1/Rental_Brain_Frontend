@@ -247,44 +247,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="detailModalVisible" title="피드백 상세 정보" width="700px">
-      <div v-if="selectedFeedback">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="피드백 번호">{{ selectedFeedback.feedbackCode }}</el-descriptions-item>
-          <el-descriptions-item label="접수일시">{{ selectedFeedback.createDate }}</el-descriptions-item>
-          <el-descriptions-item label="기업명">{{ selectedFeedback.customerName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="담당자">{{ selectedFeedback.empName || '미배정' }}</el-descriptions-item>
-          <el-descriptions-item label="카테고리">{{ selectedFeedback.categoryName }}</el-descriptions-item>
-          <el-descriptions-item label="채널">{{ selectedFeedback.channelName }}</el-descriptions-item>
-          <el-descriptions-item label="평점" :span="2"> 
-            <el-rate v-model="selectedFeedback.star" disabled text-color="#ff9900" />
-          </el-descriptions-item>
-          <el-descriptions-item label="제목" :span="2">{{ selectedFeedback.title }}</el-descriptions-item>
-        </el-descriptions>
-
-        <div class="detail-content-box mt-4">
-          <p class="label">피드백 내용</p>
-          <div class="content-text">{{ selectedFeedback.content }}</div>
-        </div>
-
-        <div class="detail-content-box mt-4 bg-gray">
-          <p class="label">조치 결과</p>
-          <div class="content-text">
-            {{ selectedFeedback.action || '아직 조치 내용이 등록되지 않았습니다.' }}
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <div class="dialog-footer-left">
-           <el-button type="danger" plain @click="handleDelete">삭제</el-button>
-        </div>
-        <div class="dialog-footer-right">
-          <el-button type="primary" @click="openEditModal">수정</el-button>
-          <el-button @click="detailModalVisible = false">닫기</el-button>
-        </div>
-      </template>
-    </el-dialog>
-
+    
   </div>
 </template>
 
@@ -325,8 +288,6 @@ const sortState = reactive({
 });
 
 const createModalVisible = ref(false);
-const detailModalVisible = ref(false);
-const selectedFeedback = ref(null);
 
 const createForm = reactive({
   customerId: null,
@@ -449,8 +410,7 @@ const openCreateModal = () => {
 };
 
 const openDetailModal = (row) => {
-  selectedFeedback.value = row;
-  detailModalVisible.value = true;
+  router.push(`/cs/feedbacks/${row.id}`);
 };
 
 const openEditModal = () => {

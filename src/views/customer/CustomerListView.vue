@@ -153,7 +153,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showSegmentGuideModal" title="고객 세그먼트 기준표" width="600px">
+    <el-dialog v-model="showSegmentGuideModal" title="고객 세그먼트 기준표" width="1100px">
       <div class="segment-guide-content">
         <el-table :data="segmentGuideData" border style="width: 100%">
           <el-table-column prop="grade" label="등급" width="120" align="center">
@@ -206,13 +206,13 @@ const showSegmentGuideModal = ref(false);
 const regForm = ref({});
 
 const segmentGuideData = [
-  { grade: 'VIP 고객', criteria: '연간 거래액 1억원 이상 또는 계약 건수 10건 이상' },
-  { grade: '일반 고객', criteria: '최근 1년 내 거래 이력이 있는 고객' },
-  { grade: '신규 고객', criteria: '최초 계약일로부터 3개월 이내 고객' },
-  { grade: '이탈 위험 고객', criteria: '최근 6개월간 거래가 없거나 문의 감소' },
-  { grade: '블랙리스트 고객', criteria: '미수금 발생 또는 악성 민원 제기' },
-  { grade: '잠재 고객', criteria: '견적 문의 단계의 가망 고객' },
-  { grade: '확장 의사 고객', criteria: '업셀링 대상, 결합 고객, 재계약 고객 포함' },
+  { grade: '잠재 고객', criteria: '아직 계약 이력이 없는 고객으로, 문의·견적·상담 등 초기 접점만 존재하는 상태' },
+  { grade: '신규 고객', criteria: '첫 계약을 체결한 직후의 고객으로, 아직 관계 안정성이 검증되지 않은 초기 거래 단계' },
+  { grade: '일반 고객', criteria: '첫 계약 시작일 기준 3개월 이상 경과했고, 해지·연체·이탈 위험·확장 시그널이 없는 정상 거래 고객' },
+  { grade: 'VIP 고객', criteria: '해지 이력이 없고, 계약 유지 개월 수 합계가 36개월 이상이거나 총 계약 금액이 3억 원 이상인 핵심 고객' },
+  { grade: '확장 의사 고객', criteria: '업셀링이 증가했거나 계약 만료가 3~6개월 이내이면서 만족도 4.0 이상인 고객 중, 해지 요청이나 연체가 없는 경우' },
+  { grade: '이탈 위험 고객', criteria: '계약 만료가 1~3개월 이내이거나, 해지·연체가 발생했거나, 최근 3개월 평균 만족도가 2.5 이하이거나, 계약 종료 후 3개월 이내에 활성 계약이 없는 고객' },
+  { grade: '블랙리스트 고객', criteria: '이탈 위험 고객 중 연체가 90일 이상이거나, 욕설·비방 등 정책 위반 행위가 확인된 경우 블랙리스트로 전이한다.' },
 ];
 
 const fetchData = async () => {

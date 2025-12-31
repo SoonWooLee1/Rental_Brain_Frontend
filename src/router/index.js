@@ -29,13 +29,22 @@ const routes = [
       {
         path: 'cs/supports',
         name: 'cs-support-list',
-        component: () => import('@/views/cs/SupportListView.vue'), // 문의 관리
+        component: () => import('@/views/cs/SupportListView.vue'),
       },
-
+      {
+        path: 'cs/supports/:id', // 문의 상세 페이지
+        name: 'cs-support-detail',
+        component: () => import('@/views/cs/SupportDetailView.vue'),
+      },
       {
         path: 'cs/feedbacks',
         name: 'cs-feedback-list',
-        component: () => import('@/views/cs/FeedbackListView.vue'), // 피드백 관리
+        component: () => import('@/views/cs/FeedbackListView.vue'),
+      },
+      {
+        path: 'cs/feedbacks/:id', // 피드백 상세 페이지
+        name: 'cs-feedback-detail',
+        component: () => import('@/views/cs/FeedbackDetailView.vue'),
       },
 
       {
