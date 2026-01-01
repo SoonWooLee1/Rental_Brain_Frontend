@@ -112,11 +112,11 @@
             </el-tag>
           </template>
         </el-table-column>
-      <el-table-column label="총 거래액" width="130" align="right">
-        <template #default="{ row }">
-          {{ formatMoneyMan(row.totalTransactionAmount) }} <!-- 새 금액 표시 포맷 --> 
-        </template>
-      </el-table-column>
+        <el-table-column label="총 거래액" width="130" align="right">
+          <template #default="{ row }">
+            {{ formatMoneyMan(row.totalTransactionAmount) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="contractCount" label="계약 수" width="80" align="center" />
         <el-table-column label="관리" width="100" align="center">
           <template #default="{ row }">
@@ -156,16 +156,39 @@
     <el-dialog v-model="showSegmentGuideModal" title="고객 세그먼트 기준표" width="1100px">
       <div class="segment-guide-content">
         <el-table :data="segmentGuideData" border style="width: 100%">
-          <el-table-column prop="grade" label="등급" width="120" align="center">
+          <el-table-column prop="grade" label="등급" width="150" align="center">
              <template #default="{row}">
-                <el-tag :type="getSegmentColor(row.grade)">{{ row.grade }}</el-tag>
+                <el-input v-if="isSegmentEditMode" v-model="row.grade" size="small" />
+                <el-tag v-else :type="getSegmentColor(row.grade)">{{ row.grade }}</el-tag>
              </template>
           </el-table-column>
-          <el-table-column prop="criteria" label="선정 기준" />
+          <el-table-column prop="criteria" label="선정 기준">
+            <template #default="{row}">
+                <el-input 
+                    v-if="isSegmentEditMode" 
+                    v-model="row.criteria" 
+                    type="textarea" 
+                    :rows="2" 
+                    placeholder="기준 내용을 입력하세요"
+                />
+                <span v-else>{{ row.criteria }}</span>
+            </template>
+          </el-table-column>
         </el-table>
-        </div>
+      </div>
       <template #footer>
-        <el-button @click="showSegmentGuideModal = false">닫기</el-button>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <el-button v-if="!isSegmentEditMode" type="warning" plain @click="isSegmentEditMode = true">
+              <el-icon class="el-icon--left"><Edit /></el-icon> 기준표 수정
+            </el-button>
+            <template v-else>
+              <el-button type="success" @click="saveSegmentGuide">저장 완료</el-button>
+              <el-button @click="cancelSegmentEdit">취소</el-button>
+            </template>
+          </div>
+          <el-button @click="showSegmentGuideModal = false">닫기</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -177,7 +200,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getCustomerList, getCustomerKpi, createCustomer } from '@/api/customerlist';
 import { ElMessage } from 'element-plus';
-import { Search, Plus, InfoFilled } from '@element-plus/icons-vue';
+import { Search, Plus, InfoFilled, Edit } from '@element-plus/icons-vue'; // Edit 아이콘 추가
 
 const router = useRouter();
 
@@ -194,7 +217,7 @@ const searchKeyword = ref('');
 const selectedSegments = ref([]); 
 const selectedStatus = ref('ACTIVE');
 
-// [추가] 정렬 상태
+// 정렬 상태
 const sortState = ref({
   sortBy: 'id',
   sortOrder: 'desc'
@@ -205,7 +228,8 @@ const showRegisterModal = ref(false);
 const showSegmentGuideModal = ref(false);
 const regForm = ref({});
 
-const segmentGuideData = [
+// [수정] 세그먼트 데이터 (const -> ref 로 변경하여 수정 가능하게 함)
+const segmentGuideData = ref([
   { grade: '잠재 고객', criteria: '아직 계약 이력이 없는 고객으로, 문의·견적·상담 등 초기 접점만 존재하는 상태' },
   { grade: '신규 고객', criteria: '첫 계약을 체결한 직후의 고객으로, 아직 관계 안정성이 검증되지 않은 초기 거래 단계' },
   { grade: '일반 고객', criteria: '첫 계약 시작일 기준 3개월 이상 경과했고, 해지·연체·이탈 위험·확장 시그널이 없는 정상 거래 고객' },
@@ -213,7 +237,22 @@ const segmentGuideData = [
   { grade: '확장 의사 고객', criteria: '업셀링이 증가했거나 계약 만료가 3~6개월 이내이면서 만족도 4.0 이상인 고객 중, 해지 요청이나 연체가 없는 경우' },
   { grade: '이탈 위험 고객', criteria: '계약 만료가 1~3개월 이내이거나, 해지·연체가 발생했거나, 최근 3개월 평균 만족도가 2.5 이하이거나, 계약 종료 후 3개월 이내에 활성 계약이 없는 고객' },
   { grade: '블랙리스트 고객', criteria: '이탈 위험 고객 중 연체가 90일 이상이거나, 욕설·비방 등 정책 위반 행위가 확인된 경우 블랙리스트로 전이한다.' },
-];
+]);
+
+// [추가] 세그먼트 수정 모드 관련
+const isSegmentEditMode = ref(false);
+
+const saveSegmentGuide = () => {
+    // 여기에 실제 API 호출 로직 추가 가능 (updateSegmentGuide 등)
+    ElMessage.success('세그먼트 기준표가 저장되었습니다.');
+    isSegmentEditMode.value = false;
+};
+
+const cancelSegmentEdit = () => {
+    // 취소 시 원복 로직이 필요하다면 여기에 추가 (deep copy본을 만들어두었다가 복구 등)
+    isSegmentEditMode.value = false;
+    ElMessage.info('수정이 취소되었습니다.');
+};
 
 const fetchData = async () => {
   loading.value = true;
@@ -221,22 +260,18 @@ const fetchData = async () => {
     const kpiRes = await getCustomerKpi();
     if(kpiRes.data) kpiData.value = kpiRes.data;
     
-    // [수정] 정렬 파라미터(sortBy, sortOrder) 추가
     const listRes = await getCustomerList({
         pageNum: currentPage.value, 
         amount: pageSize.value,
         name: searchKeyword.value,
         segments: selectedSegments.value, 
         status: selectedStatus.value,
-        sortBy: sortState.value.sortBy,      // 추가
-        sortOrder: sortState.value.sortOrder // 추가
+        sortBy: sortState.value.sortBy,      
+        sortOrder: sortState.value.sortOrder 
     });
 
-    // 백엔드 응답 구조에 따라 데이터 바인딩 (PageResponseDTO 기준)
     if(listRes.data) {
-        // 백엔드가 contents를 쓰는지 data를 쓰는지 확인 (이전 코드 기반 contents 유지)
         customerList.value = listRes.data.contents || listRes.data.data || [];
-        // totalCount 위치 확인
         if (listRes.data.pageInfo) {
              totalCount.value = listRes.data.pageInfo.total;
         } else {
@@ -256,27 +291,21 @@ const handleSearch = () => {
     fetchData();
 };
 
-// [추가] 초기화 함수
 const resetSearch = () => {
     searchKeyword.value = '';
     selectedSegments.value = [];
     selectedStatus.value = 'ACTIVE';
     currentPage.value = 1;
-    
-    // 정렬 초기화 (선택 사항)
     sortState.value.sortBy = 'id';
     sortState.value.sortOrder = 'desc';
-    
     fetchData();
 };
 
-// [수정] 정렬 핸들러
 const handleSortChange = ({ prop, order }) => {
-    // 테이블의 prop="customerCode"를 백엔드가 아는 "id"로 변환
     if (prop === 'customerCode') { 
         sortState.value.sortBy = 'id';
         sortState.value.sortOrder = order === 'ascending' ? 'asc' : 'desc';
-        fetchData(); // 데이터 재요청
+        fetchData(); 
     }
 };
 
@@ -318,17 +347,13 @@ const getSegmentColor = (s) => {
     return ''; 
 };
 
-/* 금액 포맷
- * 5,320,000   -> 532만원
- * 150,000,000 -> 1억 5000만원
- * 1,000,000,000 -> 10억
- */
+/* 금액 포맷 */
 const formatMoneyMan = (value) => {
   const n = Number(value)
   if (!Number.isFinite(n) || n <= 0) return '-'
 
-  const EOK = 100_000_000   // 1억
-  const MAN = 10_000        // 1만원
+  const EOK = 100_000_000   
+  const MAN = 10_000        
 
   const eok = Math.floor(n / EOK)
   const rest = n % EOK

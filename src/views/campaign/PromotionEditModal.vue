@@ -79,14 +79,15 @@
           v-model="form.segmentName"
           placeholder="대상 선택"
         >
+          <el-option label="잠재 고객" value="잠재 고객" />
           <el-option label="신규 고객" value="신규 고객" />
           <el-option label="일반 고객" value="일반 고객" />
           <el-option label="이탈 위험 고객" value="이탈 위험 고객" />
           <el-option label="VIP 고객" value="VIP 고객" />
           <el-option
-            label="확장 의사 고객 (기회 고객)"
-            value="확장 의사 고객 (기회 고객)"
-          />
+                label="확장 의사 고객 (기회 고객)"
+                value="확장 의사 고객 (기회 고객)"
+              />
         </el-select>
       </el-form-item>
 

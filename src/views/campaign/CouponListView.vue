@@ -40,8 +40,8 @@
       >
         <el-option label="전체 상태" value="ALL" />
         <el-option label="사용 가능" value="A" />
-        <el-option label="종료" value="C" />
-        <!-- 필요하면 더 추가 -->
+        <el-option label="기간 만료" value="C" />
+        <el-option label="시작 전" value="P" />
       </el-select>
 
       <el-button style="display: flex; margin-left: auto;" type="primary" @click="openCreateModal">
@@ -50,6 +50,7 @@
     </div>
 
     <!-- 쿠폰 목록 테이블 -->
+    <el-card shadow="never" :body-style="{ padding: '0' }">
     <el-table
       :data="couponList"
       v-loading="loading"
@@ -145,7 +146,7 @@
         @current-change="fetchCouponList"
     />
   </div>
-
+  </el-card>
     <CouponCreateModal
       v-model:visible="createModalVisible"
       @created="fetchCouponList"

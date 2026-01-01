@@ -26,7 +26,7 @@
           <el-form-item label="할인 유형" prop="type">
             <el-select v-model="form.type" placeholder="할인 유형 선택">
               <el-option label="비율 할인" value="R" />
-              <el-option label="금액 할인" value="F" />
+              <el-option label="금액 할인" value="A" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -49,6 +49,7 @@
               v-model="form.segmentName"
               placeholder="세그먼트 선택"
             >
+              <el-option label="잠재 고객" value="잠재 고객" />
               <el-option label="신규 고객" value="신규 고객" />
               <el-option label="일반 고객" value="일반 고객" />
               <el-option label="이탈 위험 고객" value="이탈 위험 고객" />

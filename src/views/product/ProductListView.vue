@@ -11,24 +11,6 @@
       </button>
     </div>
 
-    <!-- KPI 카드 3개 -->
-    <div class="kpi-row">
-      <div class="kpi-card">
-        <p class="label">총 제품</p>
-        <p class="value">{{ kpi.wholeCount }}개</p>
-        <p class="sub">오피스 관련 제품</p>
-      </div>
-      <div class="kpi-card">
-        <p class="label">렌탈 중</p>
-        <p class="value">{{ kpi.rentalCount }}개</p>
-      </div>
-      <div class="kpi-card">
-        <p class="label">수리/점검 중</p>
-        <p class="value">{{ kpi.repairCount }}개</p>
-        <p class="sub">AS 처리 중</p>
-      </div>
-    </div>
-
     <!-- 검색 / 카테고리 / 필터 -->
     <div class="search-area card-box">
       <div class="filter-wrapper">
@@ -186,12 +168,6 @@
   import ProductCreateModal from './ProductCreateModal.vue';
   import ProductDetailModal from './ProductDetailModal.vue';
 
-const kpi = ref({
-  totalCount: 0,
-  rentalCount: 0,
-  repairCount: 0,
-});
-
 const itemList = ref([]);
 const searchKeyword = ref('');
 const selectedCategory = ref('');
@@ -208,19 +184,7 @@ const totalCount = ref(0);
 const page = ref(1);
 const pageSize = ref(5);
 
-// 1. KPI 조회
-async function fetchKpi() {
-  try {
-    const res = await api.get('/item/kpi-count');
-    kpi.value.wholeCount = res.data.wholeCount;
-    kpi.value.rentalCount = res.data.rentalCount;
-    kpi.value.repairCount = res.data.repairCount;
-  } catch (err) {
-    console.error("KPI 조회 실패", err);
-  }
-}
-
-// 2. 기본 목록 조회
+// 기본 목록 조회
 async function fetchItemList() {
   try {
     const res = await api.get('/item/read-groupby-name',{
@@ -240,7 +204,7 @@ async function fetchItemList() {
   }
 }
 
-// 3. 검색
+// 검색
 async function handleSearch() {
   const keyword = searchKeyword.value.trim();
   if (!keyword) {
@@ -261,7 +225,7 @@ async function handleSearch() {
   }
 }
 
-// 4. 카테고리 필터
+// 카테고리 필터
 async function handleCategoryFilter() {
   const category = selectedCategory.value;
   if (!category) {
@@ -283,7 +247,7 @@ async function handleCategoryFilter() {
   }
 }
 
-// 5. 카테고리 조회(// 카테고리 select 옵션 구성)
+// 카테고리 조회(// 카테고리 select 옵션 구성)
 async function fetchCategory() {
   try {
     const res = await api.get('item/category');
@@ -347,7 +311,7 @@ const changePage = (p) => {
 
 // 목록 리로드 (모달에서 성공 이벤트 발생 시 사용)
 async function reloadList() {
-  await Promise.all([fetchKpi(), fetchItemList()]);
+  await Promise.all([fetchItemList()]);
 }
 
 onMounted(async () => {
@@ -544,5 +508,7 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.pagination { display: flex; justify-content: center; margin-top: 16px; }
+.pagination-area {
+    display: flex; justify-content: center; margin-top: 10px; margin-bottom: 10px;
+}
 </style>

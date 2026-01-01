@@ -49,6 +49,7 @@
               v-model="form.segmentName"
               placeholder="세그먼트 선택"
             >
+              <el-option label="잠재 고객" value="잠재 고객" />
               <el-option label="신규 고객" value="신규 고객" />
               <el-option label="일반 고객" value="일반 고객" />
               <el-option label="이탈 위험 고객" value="이탈 위험 고객" />
