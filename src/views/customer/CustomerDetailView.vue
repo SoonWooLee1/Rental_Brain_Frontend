@@ -180,7 +180,7 @@
             <el-table :data="customer.supportList" border stripe style="width: 100%">
               <el-table-column prop="customerSupportCode" label="문의 번호" width="140" align="center">
                 <template #default="{ row }">
-                  <span class="clickable-link" @click="goSupportDetail(row.customerSupportCode)">
+                  <span class="clickable-link" @click="goSupportDetail(row.id)">
                     {{ row.customerSupportCode }}
                   </span>
                 </template>
@@ -208,7 +208,7 @@
             <el-table :data="customer.feedbackList" border stripe>
               <el-table-column prop="feedbackCode" label="피드백 번호" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="goFeedbackDetail(row.feedbackCode)">
+                   <span class="clickable-link" @click="goFeedbackDetail(row.id)">
                     {{ row.feedbackCode }}
                    </span>
                 </template>
@@ -236,7 +236,7 @@
             <el-table :data="customer.quoteList" border stripe>
               <el-table-column prop="quoteCode" label="견적 번호" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="goQuoteDetail(row.quoteCode)">
+                   <span class="clickable-link" @click="goQuoteDetail(row.quoteId)">
                      {{ row.quoteCode }}
                    </span>
                 </template>
@@ -252,7 +252,7 @@
             <el-table :data="customer.contractList" border stripe>
               <el-table-column prop="contractCode" label="계약 번호" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="goContractDetail(row.contractCode)">
+                   <span class="clickable-link" @click="goContractDetail(row.id)">
                      {{ row.contractCode }}
                    </span>
                 </template>
@@ -278,7 +278,7 @@
             <el-table :data="customer.couponList" border stripe class="mb-20">
               <el-table-column prop="couponCode" label="쿠폰 코드" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="openCouponDetail(row.couponCode)">
+                   <span class="clickable-link" @click="openCouponDetail(row.id)">
                      {{ row.couponCode }}
                    </span>
                 </template>
@@ -300,7 +300,7 @@
             <el-table :data="customer.promotionList" border stripe>
               <el-table-column prop="promotionCode" label="프로모션 코드" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="openPromotionDetail(row.promotionCode)">
+                   <span class="clickable-link" @click="openPromotionDetail(row.id)">
                      {{ row.promotionCode }}
                    </span>
                 </template>
@@ -318,7 +318,7 @@
             <el-table :data="customer.asList" border stripe>
               <el-table-column prop="after_service_code" label="관리 번호" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="openAsDetail(row.after_service_code)">
+                   <span class="clickable-link" @click="openAsDetail(row.id)">
                      {{ row.after_service_code }}
                    </span>
                 </template>
@@ -372,9 +372,23 @@
 
     </el-tabs>
 
-    <AsDetailModal v-if="showAsModal" v-model="showAsModal" :asId="selectedAsId" />
-    <CouponDetailModal v-if="showCouponModal" v-model="showCouponModal" :couponId="selectedCouponId" />
-    <PromotionDetailModal v-if="showPromotionModal" v-model="showPromotionModal" :promotionId="selectedPromotionId" />
+    <AsDetailModal 
+      v-if="showAsModal" 
+      v-model="showAsModal" 
+      :asId="selectedAsId" 
+    />
+
+    <CouponDetailModal 
+      v-if="showCouponModal" 
+      v-model:visible="showCouponModal" 
+      :couponId="selectedCouponId" 
+    />
+
+    <PromotionDetailModal 
+      v-if="showPromotionModal" 
+      v-model:visible="showPromotionModal" 
+      :promotionId="selectedPromotionId" 
+    />
 
   </div>
 </template>
@@ -386,6 +400,7 @@ import { getCustomerDetail, updateCustomer, deleteCustomer, restoreCustomer } fr
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft, Edit, Delete, RefreshLeft, Right, Search } from '@element-plus/icons-vue';
 
+// [수정] 모달 Import 경로 수정 (components 폴더 확인)
 import AsDetailModal from '@/components/product/AsDetailModal.vue';
 import CouponDetailModal from '@/views/campaign/CouponDetailModal.vue';
 import PromotionDetailModal from '@/views/campaign/PromotionDetailModal.vue';
@@ -397,7 +412,7 @@ const customerId = route.params.id;
 const loading = ref(false);
 const activeTab = ref(route.query.tab || 'general');
 
-// [수정] 견적 관련 모달 상태 제거
+// [수정] 모달 상태 변수 (견적 모달은 제거됨)
 const showAsModal = ref(false);
 const selectedAsId = ref(null);
 
@@ -406,7 +421,6 @@ const selectedCouponId = ref(null);
 
 const showPromotionModal = ref(false);
 const selectedPromotionId = ref(null);
-
 
 const isEditMode = ref(false);
 const customer = ref({
@@ -425,14 +439,12 @@ watch(() => route.query.tab, (newTab) => {
   activeTab.value = newTab || 'general';
 });
 
-// 탭 변경 핸들러 (URL 업데이트)
 const updateUrlTab = (val) => {
   activeTab.value = val;
   router.replace({ query: { ...route.query, tab: val } });
 };
 
 // 탭 그룹핑 Computed
-// activeTab 하나로 메인/서브 탭 상태를 모두 제어
 const activeMainTab = computed({
   get: () => {
     const t = activeTab.value;
@@ -442,7 +454,6 @@ const activeMainTab = computed({
     return 'main_general';
   },
   set: (val) => {
-    // 메인 탭을 클릭했을 때 기본으로 보여줄 서브 탭 설정
     if (val === 'main_general') updateUrlTab('general');
     else if (val === 'main_cs') updateUrlTab('support');
     else if (val === 'main_biz') updateUrlTab('quote');
@@ -458,24 +469,22 @@ const activeBizTab = computed({
   set: (val) => updateUrlTab(val)
 });
 
-// [수정] 상세 이동/오픈 핸들러
+// [수정] 상세 이동 핸들러 (라우터 경로 및 파라미터 수정)
+// * 주의: row.id (숫자)를 넘겨받아 해당 ID 경로로 이동합니다.
 const goContractDetail = (id) => {
-  router.push(`/contract/detail/${id}`); 
+  router.push(`/contracts/${id}`); 
 };
 const goSupportDetail = (id) => {
-  router.push(`/cs/support/${id}`); 
+  router.push(`/cs/supports/${id}`); 
 };
 const goFeedbackDetail = (id) => {
-  router.push(`/cs/feedback/${id}`);
+  router.push(`/cs/feedbacks/${id}`);
 };
-
-// [추가] 견적 페이지 이동 함수
 const goQuoteDetail = (id) => {
-  // 실제 라우터 경로에 맞춰 수정 필요 (예: /business/quote/detail/:id)
-  router.push(`/business/quote/${id}`); 
+  router.push(`/quote/${id}`); 
 };
 
-// 모달 오픈 함수들
+// [수정] 모달 오픈 핸들러 (ID 사용)
 const openAsDetail = (id) => {
   selectedAsId.value = id;
   showAsModal.value = true;
@@ -496,7 +505,7 @@ const fetchData = async () => {
     const res = await getCustomerDetail(customerId);
     customer.value = res.data;
 
-    // 계약 내역을 히스토리에 병합
+    // 계약 내역 히스토리 병합
     if (customer.value.contractList && customer.value.contractList.length > 0) {
       const contractHistory = customer.value.contractList.map(c => ({
         date: c.startDate ? c.startDate + ' 00:00:00' : null, 
@@ -519,7 +528,6 @@ const fetchData = async () => {
   }
 };
 
-/* 히스토리 카드 클릭 핸들러 (탭 이동) */
 const handleHistoryClick = (item) => {
   const type = item.type || '';
   if (!type) return;
@@ -534,14 +542,12 @@ const handleHistoryClick = (item) => {
   else if (type.includes('세그먼트')) targetTab = 'history';
   else if (type.includes('쿠폰') || type.includes('프로모션')) targetTab = 'campaign';
   
-  // 현재 탭과 다를 경우 이동 (URL push -> watch가 activeTab 변경)
   if (activeTab.value !== targetTab) {
       router.push({ query: { ...route.query, tab: targetTab } });
       ElMessage.info(`'${type}' 상세 정보 탭으로 이동했습니다.`);
   }
 };
 
-/* 히스토리 상태 텍스트 로직 */
 const getHistoryStatusText = (item) => {
   const type = item.type || '';
   const status = item.status || '';
@@ -554,7 +560,6 @@ const getHistoryStatusText = (item) => {
   return (status === '완료' || status === 'C') ? '완료' : '진행 중';
 };
 
-/* 히스토리 태그 색상 */
 const getHistoryStatusType = (item) => {
   const text = getHistoryStatusText(item);
   if (text === '완료' || text === '처리 완료') return 'success';
@@ -563,16 +568,12 @@ const getHistoryStatusType = (item) => {
   return 'warning'; 
 };
 
-/* 타임라인 점 색상 */
 const getHistoryDotColor = (item) => {
   return getHistoryStatusType(item) === 'success' ? '#0bbd87' : '#ff9900';
 };
 
-// 히스토리 필터링 로직
 const filteredHistoryList = computed(() => {
   let list = customer.value.historyList || [];
-
-   // 1. 날짜 필터
   if (historyFilterDate.value && historyFilterDate.value.length === 2) {
     const startDate = new Date(historyFilterDate.value[0]);
     const endDate = new Date(historyFilterDate.value[1]);
@@ -583,8 +584,6 @@ const filteredHistoryList = computed(() => {
       return targetDate >= startDate && targetDate <= endDate;
     });
   }
-
-  // 2. 상태 필터
   if (historyFilterStatus.value !== 'ALL') {
     list = list.filter(item => {
       const statusText = getHistoryStatusText(item);
@@ -594,8 +593,6 @@ const filteredHistoryList = computed(() => {
       return true;
     });
   }
-
-  // 3. 검색어 필터
   if (historySearchKeyword.value) {
     const keyword = historySearchKeyword.value.toLowerCase();
     list = list.filter(item => {
