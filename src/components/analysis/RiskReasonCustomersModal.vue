@@ -58,8 +58,8 @@
                     <td class="name">{{ c.customerName ?? "-" }}</td>
                     <td>{{ c.inCharge ?? "-" }}</td>
                     <td>{{ c.dept ?? "-" }}</td>
-                    <td class="mono">{{ c.callNum ?? "-" }}</td>
-                    <td class="mono">{{ c.changedAt ?? "-" }}</td>
+                    <td class="mono">{{ formatPhone(c.callNum ?? "-") }}</td>
+                    <td class="mono">{{ formatDateTime(c.changedAt ?? "-") }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -82,15 +82,41 @@ import { getRiskReasonCustomers } from "@/api/customeranalysis";
 
 const router = useRouter(); 
 
+const formatPhone = (phone) => {
+  if (!phone) return "-";
+  const value = String(phone).replace(/\D/g, "");
+
+  // 휴대폰
+  if (value.length === 11) return value.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+
+  // ✅ 서울(02) : 02-xxxx-xxxx or 02-xxx-xxxx
+  if (value.startsWith("02")) {
+    if (value.length === 10) return value.replace(/(\d{2})(\d{4})(\d{4})/, "$1-$2-$3");
+    if (value.length === 9)  return value.replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3");
+  }
+
+  // ✅ 기타 지역번호: 3-3-4
+  if (value.length === 10) return value.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+
+  return phone;
+};
+
+// 전환 시점
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const s = String(value);  
+  return s.replace("T", " ").substring(0, 16);
+};
+
 
 const goCustomer = async (customerId) => {
   if (!customerId) return;
 
   try {
-    // ✅ ZIP 기준 고객 상세 라우트
+    // 기준 고객 상세 라우트
     await router.push({ name: "customer-detail", params: { id: String(customerId) } });
   } finally {
-    // ✅ 이동 후 모달 닫기(권장)
+    // 이동 후 모달 닫기(권장)
     emit("close");
   }
 };
@@ -206,6 +232,8 @@ watch(
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
   overflow: hidden;
+    font-family: Pretendard, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
 
   display: flex;
   flex-direction: column;
@@ -235,16 +263,15 @@ watch(
 }
 
 .title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 900;
-  color: #111827;
-  line-height: 1.25;
+  font-size: 18px;          /* 기존보다 살짝 또렷 */
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.2px;
 }
 
 .meta {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   color: #6b7280;
 }
 
@@ -310,16 +337,17 @@ watch(
 }
 
 .tab-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.1px;
 }
 
+
 .pct {
-  flex-shrink: 0;
+  font-size: 13px;
   font-weight: 900;
-  color: #374151;
+  color: #111827;
 }
 
 /* =========================
@@ -386,6 +414,7 @@ tbody td {
   overflow: hidden;         /* ✅ 칼럼 넘치면 */
   text-overflow: ellipsis;  /* ✅ ... 처리 */
 }
+
 
 .row:hover {
   background: #f9fafb;

@@ -1,7 +1,6 @@
 <template>
   <div class="page-container">
     <!-- 헤더 -->
-    
     <div class="header-row">
       <div class="title-area">
         <h2 class="page-title">고객 요약 분석</h2>
@@ -9,9 +8,7 @@
           전체 고객 현황을 기반으로 규모, 위험도, 만족도를 종합적으로 분석합니다.
         </p>
       </div>
-      
 
-      
       <!-- ✅ 토글 + 선택월 -->
       <div class="header-actions">
         <div class="seg-toggle">
@@ -26,74 +23,46 @@
           </button>
         </div>
 
-        
         <div v-if="mode === 'pick'" class="month-pick">
           <input type="month" v-model="pickedMonth" class="month-input" />
           <button class="apply-btn" @click="applyPickedMonth">적용</button>
         </div>
-        
-        <div class="month-badge">{{ kpi?.currentMonth ?? month }} 기준</div>
+
+        <div class="month-badge">{{ (summaryKpi?.currentMonth ?? month) }} 기준</div>
       </div>
     </div>
+
+    <!-- 한줄평 -->
     <div class="analysis-section">
-      <AnalysisSummary
-        :text="customerSummary.text"
-        :tone="customerSummary.tone"
-      />
+      <AnalysisSummary :text="customerSummary.text" :tone="customerSummary.tone" />
     </div>
-    
-    <!-- KPI 5개 -->
+
+    <!-- ✅ KPI 4개 (Summary 3 + Risk 1) -->
     <div class="kpi-wrapper">
-      <div class="kpi-box">
-        <div class="kpi-title">거래중 고객 / 총 고객 수</div>
-        <div class="kpi-value">{{ fmt(kpi.tradeCustomerCount) }}개사 / {{ fmt(kpi.totalCustomerCount) }}개사</div>
-        <div class="kpi-sub">
-          <span class="up">▲ {{ round1(kpi.tradeCustomerMomRate) }}%</span>
-          <span class="muted">전월 대비(거래 고객 기준)</span>
+      <div
+        v-for="card in kpiCards"
+        :key="card.key"
+        class="kpi-box clickable"
+        role="button"
+        tabindex="0"
+        @click="card.onClick?.()"
+        @keydown.enter.prevent="card.onClick?.()"
+        @keydown.space.prevent="card.onClick?.()"
+      >
+        <div class="kpi-title">{{ card.title }}</div>
+        <div class="kpi-value" :class="{ danger: card.danger }">
+          {{ card.value }}
         </div>
-      </div>
-      
-      <div class="kpi-box">
-        <div class="kpi-title">평균 거래액</div>
-        <div class="kpi-value">{{ fmtManwon(kpi.avgTradeAmount) }}</div>
         <div class="kpi-sub">
-          <span class="up">▲ {{ round1(kpi.avgTradeMomRate) }}%</span>
-          <span class="muted">전월 대비</span>
-        </div>
-      </div>
-
-      <div class="kpi-box">
-        <div class="kpi-title">평균 만족도</div>
-        <div class="kpi-value">{{ round1(kpi.avgStar) }}점</div>
-        <div class="kpi-sub">
-          <span :class="kpi.avgStarMomDiff >= 0 ? 'up' : 'down'">
-            {{ kpi.avgStarMomDiff >= 0 ? '▲' : '▼' }} {{ round1(Math.abs(kpi.avgStarMomDiff)) }}점
-          </span>
-          <span class="muted">전월 대비</span>
-        </div>
-      </div>
-
-      <div class="kpi-box">
-        <div class="kpi-title">안정 고객 비율</div>
-        <div class="kpi-value">{{ round1(kpi.stableCustomerRate) }}%</div>
-        <div class="kpi-sub">
-          <span class="muted">{{ fmt(kpi.stableCustomerCount) }}/{{ fmt(kpi.tradeCustomerCount) }}개사 안정</span>
-        </div>
-      </div>
-
-      <div class="kpi-box">
-        <div class="kpi-title">이탈 위험률</div>
-        <div class="kpi-value danger">{{ round1(kpi.riskRate) }}%</div>
-        <div class="kpi-sub">
-          <span class="down">▲ {{ round1(kpi.riskMomDiffRate) }}%p</span>
-          <span class="muted">이탈 위험 고객 {{ fmt(kpi.riskCustomerCount) }}개사</span>
+          <span :class="card.deltaTone">{{ card.deltaMain }}</span>
+          <span class="muted">{{ card.deltaSub }}</span>
         </div>
       </div>
     </div>
 
     <!-- 2열 레이아웃 -->
     <div class="summary-grid">
-      <!-- ✅ 월별 응대 트렌드(문의/CS 탭으로 이동) -->
+      <!-- ✅ 월별 응대 트렌드 -->
       <div
         class="col col-2 panel clickable"
         role="button"
@@ -105,7 +74,7 @@
         <SupportMonthlyTrend />
       </div>
 
-      <!-- ✅ 월별 이탈위험률(연체/위험관리 탭으로 이동) -->
+      <!-- ✅ 월별 이탈위험률 추이 (snapshot 기반) -->
       <div
         class="col col-2 panel clickable"
         role="button"
@@ -120,27 +89,27 @@
 
     <!-- 2열 레이아웃 -->
     <div class="grid-2">
-          <CustomerSatisfactionCard
-            :satisfaction="satisfaction"
-            :topIssues="topIssues"
-            @open="openSatisfactionModal"
-          />
+      <CustomerSatisfactionCard
+        :satisfaction="satisfaction"
+        :topIssues="topIssues"
+        @open="openSatisfactionModal"
+      />
 
-          <SatisfactionDetailModal
-            :open="satModalOpen"
-            :star="satStar"
-            @close="satModalOpen = false"
-          />
+      <SatisfactionDetailModal
+        :open="satModalOpen"
+        :star="satStar"
+        @close="satModalOpen = false"
+      />
 
-        <!--  고객 세그먼트(고객분석-세그먼트 탭으로 이동) -->
-        <div
+      <!-- 고객 세그먼트 분포 -->
+      <div
         class="col col-2 panel clickable"
         role="button"
         tabindex="0"
         @click="goTo('CustomerSegmentAnalysisView')"
         @keydown.enter.prevent="goTo('CustomerSegmentAnalysisView')"
         @keydown.space.prevent="goTo('CustomerSegmentAnalysisView')"
-        >
+      >
         <SegmentDistribution />
       </div>
     </div>
@@ -151,11 +120,12 @@
 import { useRoute, useRouter } from "vue-router";
 import { ref, computed, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
+
 import {
   getCustomerSummaryKpi,
-  getMonthlyRiskRate,
   getSatisfactionDist,
   getSegmentDistribution,
+  getRiskKpi,
 } from "@/api/customeranalysis";
 
 import SegmentDistribution from "@/components/analysis/SegmentDistribution.vue";
@@ -165,6 +135,9 @@ import CustomerSatisfactionCard from "@/components/analysis/CustomerSatisfaction
 import SatisfactionDetailModal from "@/components/analysis/SatisfactionDetailModal.vue";
 import AnalysisSummary from "@/components/analysis/AnalysisSummary.vue";
 
+/* =========================
+   Modal
+========================= */
 const satModalOpen = ref(false);
 const satStar = ref(5);
 
@@ -173,64 +146,12 @@ const openSatisfactionModal = (star) => {
   satModalOpen.value = true;
 };
 
-const route = useRoute();
-const router = useRouter();
-const loading = ref(false);
-
-// 한줄평
-const customerSummary = computed(() => {
-  if (!kpi.value) return { text: "고객 요약 지표를 불러오는 중입니다.", tone: "neutral" };
-
-  const stableRate = Number(kpi.value?.stableCustomerRate ?? 0);
-  const riskRate = Number(kpi.value?.riskRate ?? 0);
-  const riskDiffP = Number(kpi.value?.riskMomDiffRate ?? 0);
-
-  if (riskRate >= 15 || riskDiffP >= 3) {
-    return {
-      text: `이탈 위험 고객 비중 ${riskRate}%로 증가 추세입니다. 위험 고객 우선 케어가 필요합니다.`,
-      tone: "danger",
-    };
-  }
-
-  if (riskRate >= 10) {
-    return {
-      text: `안정 고객 비중은 유지되지만, 이탈 위험 고객 ${riskRate}%가 감지되어 선제 대응이 필요합니다.`,
-      tone: "warn",
-    };
-  }
- if (riskRate < 10) {
-  return {
-    text: `안정 고객 비중 ${stableRate}%로 전반적인 고객 상태는 안정적입니다.`,
-    tone: "good",
-  };
-};
-});
-
 
 /* =========================
-   ✅ 카드 클릭 이동(사이드바 기준으로 name만 맞추면 끝)
+   Router
 ========================= */
-function goTo(key) {
-  const map = {
-    // 연체관리 탭
-    overdue: { name: "OverdueManagement" },
-
-    // 문의 관리 탭
-    inquiry: { name: "cs-support-list" },
-
-    // 고객분석 > 세그먼트 탭(이 페이지가 탭형이면 query로)
-    // 1) 탭이 query 방식이면 아래처럼:
-    segment: { name: "CustomerSummaryAnalysis", query: { tab: "segment" } },
-
-    CustomerSegmentAnalysisView: { name: "analysis-segment" },
-
-    CustomerSupportAnalysisView: { name: "analysis-support" },
-  };
-
-  const target = map[key];
-  if (!target) return;
-  router.push(target);
-}
+const route = useRoute();
+const router = useRouter();
 
 /* =========================
    Month (route.query.month)
@@ -293,27 +214,35 @@ watch(
 );
 
 /* =========================
+   Navigation
+========================= */
+function goTo(key) {
+  const map = {
+    customerlist: { name: "customer-list" },
+    cssupportlist: { name: "cs-support-list" },
+    csfeedbacklist: { name: "cs-feedback-list" },
+    contracts: { name: "contract-list" },
+
+    // 세그먼트 분석 탭
+    CustomerSegmentAnalysisView: { name: "analysis-segment" },
+    segment: { name: "analysis-segment" },
+
+    // 응대 분석 탭
+    CustomerSupportAnalysisView: { name: "analysis-support" },
+  };
+
+  const target = map[key];
+  if (!target) return;
+  router.push(target);
+}
+
+/* =========================
    State
 ========================= */
-const kpi = ref({
-  totalCustomerCount: 0,
-  tradeCustomerCount: 0,
-  tradeCustomerMomRate: 0,
-  avgTradeAmount: 0,
-  avgTradeMomRate: 0,
-  avgStar: 0,
-  avgStarMomDiff: 0,
-  stableCustomerCount: 0,
-  stableCustomerRate: 0,
-  riskCustomerCount: 0,
-  riskRate: 0,
-  riskMomDiffRate: 0,
-});
+const loading = ref(false);
 
-const segmentDist = ref({
-  totalCustomerCount: 0,
-  segments: [],
-});
+const summaryKpi = ref(null); // /customerSummaryAnalysis/kpi
+const riskKpi = ref(null);    // /customersegmentanalysis/riskKpi
 
 const satisfaction = ref({
   star5Count: 0,
@@ -329,7 +258,10 @@ const satisfaction = ref({
   star1Percent: 0,
 });
 
-const riskMonthly = ref([]);
+const segmentDist = ref({
+  totalCustomerCount: 0,
+  segments: [],
+});
 
 // TODO: 백엔드 엔드포인트 있으면 교체
 const topIssues = ref([
@@ -339,28 +271,109 @@ const topIssues = ref([
 ]);
 
 /* =========================
+   KPI Cards (4개)
+========================= */
+const kpiCards = computed(() => {
+  const s = summaryKpi.value;
+  const r = riskKpi.value;
+  if (!s || !r) return [];
+
+  return [
+    {
+      key: "trade",
+      title: "거래중 고객 / 전체 고객",
+      value: `${fmt(s.tradeCustomerCount)}개사 / ${fmt(s.totalCustomerCount)}개사`,
+      deltaMain: `▲ ${round1(s.tradeCustomerMomRate)}%`,
+      deltaSub: "전월 대비(거래 고객 기준)",
+      deltaTone: "up",
+      danger: false,
+      onClick: () => goTo("customerlist"),
+    },
+    {
+      key: "avgTrade",
+      title: "고객당 평균 거래액 (월)",
+      value: `${fmtManwon(s.avgTradeAmount)}`,
+      deltaMain: `▲ ${round1(s.avgTradeMomRate)}%`,
+      deltaSub: "전월 대비",
+      deltaTone: "up",
+      danger: false,
+      onClick: () => goTo("contracts"),
+    },
+    {
+      key: "avgStar",
+      title: "평균 만족도",
+      value: `${round1(s.avgStar)}점`,
+      deltaMain: `${Number(s.avgStarMomDiff) >= 0 ? "▲" : "▼"} ${round1(Math.abs(Number(s.avgStarMomDiff) || 0))}점`,
+      deltaSub: "전월 대비",
+      deltaTone: Number(s.avgStarMomDiff) >= 0 ? "up" : "down",
+      danger: false,
+      onClick: () => goTo("csfeedbacklist"),
+    },
+    {
+      key: "risk",
+      title: "이탈 위험률",
+      value: `${round1(r.curRiskRate)}%`,
+      deltaMain: `${Number(r.momDiffRate) >= 0 ? "▲" : "▼"} ${round1(
+        Math.abs(Number(r.momDiffRate) || 0)
+      )}%p`,
+      deltaSub: `이탈 위험 고객 ${fmt(r.curRiskCustomerCount)}개사`,
+      deltaTone: "down",
+      danger: true,
+      onClick: () => goTo("CustomerSegmentAnalysisView"),
+    },
+  ];
+});
+
+
+/* =========================
+   한줄평 (Risk SSOT = riskKpi)
+========================= */
+const customerSummary = computed(() => {
+  const s = summaryKpi.value;
+  const r = riskKpi.value;
+
+  if (!s || !r) return { text: "고객 요약 지표를 불러오는 중입니다.", tone: "neutral" };
+
+  const riskRate = Number(r.curRiskRate ?? 0);
+  const riskDiffP = Number(r.momDiffRate ?? 0);
+
+  // 거래 규모 보정용
+  const trade = Number(s.tradeCustomerCount ?? 0);
+  const total = Number(s.totalCustomerCount ?? 0);
+
+  if (riskRate >= 15 || riskDiffP >= 3) {
+    return {
+      text: `이탈 위험률 ${riskRate}%로 증가 추세입니다. 위험 고객(${fmt(r.curRiskCustomerCount)}개사) 우선 케어가 필요합니다.`,
+      tone: "danger",
+    };
+  }
+  if (riskRate >= 10) {
+    return {
+      text: `이탈 위험률 ${riskRate}%가 감지됩니다. (거래중 ${fmt(trade)} / 전체 ${fmt(total)}) 선제 대응을 권장합니다.`,
+      tone: "warn",
+    };
+  }
+  return {
+    text: `전반적인 고객 상태는 안정적입니다. (거래중 ${fmt(trade)} / 전체 ${fmt(total)} / 위험률 ${riskRate}%)`,
+    tone: "good",
+  };
+});
+
+/* =========================
    Fetch
 ========================= */
-const last12MonthsRange = (toYM) => {
-  const to = toYM;
-  const from = addMonths(toYM, -11);
-  return { from, to };
-};
-
 const fetchAll = async () => {
   loading.value = true;
   try {
-    const { from, to } = last12MonthsRange(month.value);
-
-    const [kpiRes, riskRes, satRes, segRes] = await Promise.all([
+    const [sRes, rRes, satRes, segRes] = await Promise.all([
       getCustomerSummaryKpi(month.value),
-      getMonthlyRiskRate(from, to),
+      getRiskKpi(month.value),
       getSatisfactionDist(),
       getSegmentDistribution(),
     ]);
 
-    kpi.value = kpiRes.data;
-    riskMonthly.value = riskRes.data;
+    summaryKpi.value = sRes.data;
+    riskKpi.value = rRes.data;
     satisfaction.value = satRes.data;
     segmentDist.value = segRes.data;
   } catch (e) {
@@ -394,7 +407,7 @@ const round1 = (n) => (Number(n) || 0).toFixed(1);
 
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 /* 헤더 */
@@ -485,7 +498,7 @@ const round1 = (n) => (Number(n) || 0).toFixed(1);
 /* KPI */
 .kpi-wrapper {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -552,21 +565,12 @@ const round1 = (n) => (Number(n) || 0).toFixed(1);
   gap: 15px;
 }
 
-/* 기본 카드 */
-.card {
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  padding: 18px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-}
-
 /* ✅ 클릭 wrapper */
 .panel {
   width: 100%;
 }
 
-/* ✅ Hover 애니메이션(대시보드 KPI 톤) */
+/* ✅ Hover 애니메이션 */
 .clickable {
   cursor: pointer;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
@@ -608,33 +612,5 @@ const round1 = (n) => (Number(n) || 0).toFixed(1);
   .grid-2 {
     grid-template-columns: 1fr;
   }
-}
-/*  한줄평 */
-.kpi-card,
-.card.kpi-card {
-  cursor: pointer;
-  transition:
-    transform 0.14s ease,
-    box-shadow 0.14s ease,
-    border-color 0.14s ease,
-    background-color 0.14s ease;
-}
-
-.kpi-card:hover,
-.card.kpi-card:hover {
-  transform: translateY(-2px);
-  border-color: #d1d5db;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
-}
-
-.kpi-card:active,
-.card.kpi-card:active {
-  transform: translateY(-1px);
-}
-
-.kpi-card:focus-visible,
-.card.kpi-card:focus-visible {
-  outline: 2px solid #111827;
-  outline-offset: 2px;
 }
 </style>

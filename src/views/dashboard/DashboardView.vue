@@ -31,10 +31,8 @@
           <QuarterCustomerChart />
         </div>
 
-        <div>
-          <h2>이탈 위험 요약 및 고객 수?</h2>
-        </div>
-        <!-- <div
+        <!-- 미가동 자산 추정 매출 기회 -->
+        <div
           class="panel clickable"
           role="button"
           tabindex="0"
@@ -42,8 +40,8 @@
           @keydown.enter.prevent="goTo('product')"
           @keydown.space.prevent="goTo('product')"
         >
-          <ProductStatusChart />
-        </div> -->
+          <ProductStatus />
+        </div>
       </section>
 
       <!-- 3단: WORKBENCH (2열) -->
@@ -71,7 +69,7 @@
 import { useRouter } from "vue-router";
 
 import DashboardKpi from "@/components/dashboard/DashboardKpi.vue";
-// import ProductStatusChart from "@/components/dashboard/ProductStatusChart.vue";
+import ProductStatus from "@/components/dashboard/ProductStatus.vue";
 import SegmentAnalysisChart from "@/components/analysis/SegmentAnalysisChart.vue";
 import QuarterCustomerChart from "@/components/dashboard/QuarterCustomerChart.vue";
 import SegmentDistribution from "@/components/analysis/SegmentDistribution.vue";
@@ -115,14 +113,10 @@ function goTo(key) {
   width: 100%;
 }
 
-/* =========================
-   ✅ 그리드 클래스 분리
-========================= */
-
 /* 2단: 3열 (균등) */
 .grid-3 {
   display: grid;
-  grid-template-columns: 2fr 1fr 2fr;
+  grid-template-columns: 2fr 1fr 1fr; /* ✅ 여기만 3fr → 2fr */
   gap: 16px;
   align-items: stretch;
 }
@@ -140,6 +134,7 @@ function goTo(key) {
   width: 100%;
   height: 100%;
   display: flex;
+  min-width: 0;          /* ✅ 핵심: 그리드/플렉스 overflow 튐 방지 */
 }
 
 .panel > * {

@@ -12,16 +12,24 @@ export const getCustomerSummaryKpi = (month) =>
     params: { month },
   });
 
+// 이제 안씀
+// /**  고객 요약 - 이탈 위험 KPI */
+// export const getCustomerSummaryRiskKpi = (month) =>
+//   api.get("/customerSummaryAnalysis/riskKpi", {
+//     params: { month },
+//   });
+
 /** 월별 이탈 위험률 트렌드 */
+// 기존: /customerSummaryAnalysis/risk-monthly-rate (스냅샷 기반)
+// 변경: /customerSegmentAnalysis/risk-monthly-rate (월말 기준 history 기반)
 export const getMonthlyRiskRate = (from, to) =>
-  api.get("/customerSummaryAnalysis/risk-monthly-rate", {
+  api.get("/customerSegmentAnalysis/risk-monthly-rate", {
     params: { from, to },
   });
 
 /** 만족도 분포 (1~5점) - 요약분석 */
 export const getSatisfactionDist = (month) =>
   api.get("/customerSummaryAnalysis/satisfaction", {
-    // 백엔드가 month를 안 쓰면 무시될 수 있음 (있으면 사용)
     params: month ? { month } : {},
   });
 
@@ -62,51 +70,44 @@ export const getMonthlyTrend = (year) =>
     params: year ? { year } : {},
   });
 
-  
 export const getMonthlyDetail = ({ month, type, page = 1, size = 10 }) =>
   api.get("/customerSupportAnalysis/monthly-detail", {
     params: { month, type, page, size },
   });
 
-
 /**
  * ===========================
- * (기존 다른 분석 API들)
+ * 고객 세그먼트 분석 (Segment)
  * ===========================
  */
 
 export const getRiskKpi = (month) =>
-  api.get("/customersegmentanalysis/riskKpi", {
+  api.get("/customerSegmentAnalysis/riskKpi", {
     params: { month },
   });
 
 export const getRiskReasonKpi = (month) =>
-  api.get("/customersegmentanalysis/riskReasonKpi", {
+  api.get("/customerSegmentAnalysis/riskReasonKpi", {
     params: { month },
   });
 
 export const getSegmentTradeChart = (month) =>
-  api.get("/customersegmentanalysis/segmentTradeChart", {
+  api.get("/customerSegmentAnalysis/segmentTradeChart", {
     params: { month },
   });
 
 export const getCustomerSegmentDetailCard = (segmentId) =>
-  api.get("/customersegmentanalysis/segmentCard", {
+  api.get("/customerSegmentAnalysis/segmentCard", {
     params: { segmentId },
   });
 
-export const getQuoteAnalyze = (month, windowDays = 60, sampleEach = 50) =>
-  api.post("/insight/quoteAnalyze", null, {
-    params: { month, windowDays, sampleEach },
-  });
-
-  /**
- * 이탈 위험 사유별 고객 리스트 조회 (Drill-down)
- * GET /customersegmentanalysis/riskReasonCustomers?month=YYYY-MM&reasonCode=OVERDUE
- */
 export const getRiskReasonCustomers = (month, reasonCode) =>
-  api.get("/customersegmentanalysis/riskReasonCustomers", {
+  api.get("/customerSegmentAnalysis/riskReasonCustomers", {
     params: { month, reasonCode },
   });
 
-
+  
+export const getRiskCustomersByMonth = (month, page = 1, size = 20) =>
+  api.get("/customerSegmentAnalysis/risk-customers", {
+    params: { month, page, size },
+  });

@@ -1,11 +1,9 @@
 <template>
   <BaseCard class="risk-card">
-    <!-- ✅ BaseCard 헤더 -->
     <template #header>
       <div class="card-head">
         <div class="card-title">{{ title }}</div>
 
-        <!-- ✅ 기준표 모달 버튼 -->
         <button class="ghost-btn" @click="showGuide = true">
           권장 기준표 보기
         </button>
@@ -22,10 +20,16 @@
     </div>
 
     <div v-else class="risk-wrap">
-      <v-chart :option="option" autoresize class="risk-chart" />
+      <!-- ✅ 차트 클릭 이벤트 -->
+      <v-chart
+        :option="option"
+        autoresize
+        class="risk-chart"
+        @click="onChartClick"
+      />
     </div>
 
-    <!-- ✅ 모달 -->
+    <!-- ✅ 기준표 모달(기존 유지) -->
     <teleport to="body">
       <div v-if="showGuide" class="modal-backdrop" @click.self="closeGuide">
         <div class="modal">
@@ -33,7 +37,6 @@
             <div class="modal-title">권장 기준표 (B2B 렌탈 CRM 기준)</div>
             <button class="close-btn" @click="closeGuide">✕</button>
           </div>
-
           <div class="modal-body">
             <RiskGuideTable />
           </div>
@@ -59,9 +62,11 @@ import RiskGuideTable from "@/components/analysis/RiskGuideTable.vue";
 
 use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
 
+const emit = defineEmits(["monthClick"]);
+
 const props = defineProps({
-  title: { type: String, default: "월별 이탈률 추이" },
-  months: { type: Number, default: 12 }, // 최근 N개월
+  title: { type: String, default: "월별 이탈 위험률 추이" },
+  months: { type: Number, default: 12 },
 });
 
 const route = useRoute();
@@ -74,7 +79,7 @@ const closeGuide = () => {
   showGuide.value = false;
 };
 
-/** 최근 N개월 from/to (YYYY-MM) */
+// 최근 N개월 from/to (YYYY-MM)
 const range = computed(() => {
   const qFrom = route.query.from;
   const qTo = route.query.to;
@@ -105,36 +110,20 @@ const labels = computed(() =>
 const values = computed(() => (rows.value ?? []).map((r) => Number(r.riskRate ?? r.rate ?? 0) || 0));
 
 const option = computed(() => ({
-  tooltip: {
-    trigger: "axis",
-    valueFormatter: (v) => `${v}%`,
-  },
-  grid: {
-    left: 45,
-    right: 20,
-    top: 40,
-    bottom: 30,
-  },
-  xAxis: {
-    type: "category",
-    data: labels.value,
-    axisTick: { alignWithLabel: true },
-  },
-  yAxis: {
-    type: "value",
-    min: 0,
-    axisLabel: { formatter: "{value}%" },
-    splitLine: { lineStyle: { type: "dashed" } },
-  },
+  tooltip: { trigger: "axis", valueFormatter: (v) => `${v}%` },
+  grid: { left: 45, right: 20, top: 40, bottom: 30 },
+  xAxis: { type: "category", data: labels.value, axisTick: { alignWithLabel: true } },
+  yAxis: { type: "value", min: 0, axisLabel: { formatter: "{value}%" }, splitLine: { lineStyle: { type: "dashed" } } },
   series: [
     {
-      name: "이탈률",
+      name: "이탈 위험률",
       type: "line",
       smooth: true,
       data: values.value,
       symbol: "circle",
       symbolSize: 8,
 
+      // ✅ 빨간색 유지
       lineStyle: { width: 3, color: "#ef4444" },
       itemStyle: { color: "#ef4444" },
       areaStyle: { color: "rgba(239,68,68,0.12)" },
@@ -148,7 +137,7 @@ const option = computed(() => ({
         symbol: "pin",
         symbolSize: 50,
         label: { formatter: "{b}\n{c}%", fontWeight: "bold" },
-        data: [{ type: "max", name: "최고 이탈률" }],
+        data: [{ type: "max", name: "최고 이탈 위험률" }],
       },
 
       markLine: {
@@ -164,14 +153,33 @@ const option = computed(() => ({
   ],
 }));
 
+const onChartClick = (params) => {
+  // series point click만 받기
+  if (!params || params.componentType !== "series") return;
+
+  const idx = params.dataIndex;
+  const month = rows.value?.[idx]?.snapshotMonth;
+  if (!month) return;
+
+  // ✅ 부모로 month 전달
+  emit("monthClick", month);
+};
+
 const fetchData = async () => {
   loading.value = true;
   error.value = "";
   try {
     const res = await getMonthlyRiskRate(range.value.from, range.value.to);
-    rows.value = Array.isArray(res.data) ? res.data : res.data?.monthly ?? [];
+    const body = res?.data ?? res;
+
+    rows.value =
+      Array.isArray(body) ? body :
+      Array.isArray(body?.monthly) ? body.monthly :
+      Array.isArray(body?.data) ? body.data :
+      Array.isArray(body?.list) ? body.list :
+      [];
   } catch (e) {
-    error.value = e?.message ?? String(e);
+    error.value = e?.response?.data?.message ?? e?.message ?? String(e);
   } finally {
     loading.value = false;
   }
@@ -182,12 +190,8 @@ watch(range, fetchData);
 </script>
 
 <style scoped>
-/* ✅ BaseCard 외형은 공통. 여기서는 레이아웃만 */
-.risk-card {
-  width: 100%;
-}
+.risk-card { width: 100%; }
 
-/* 헤더 */
 .card-head {
   width: 100%;
   display: flex;
@@ -203,7 +207,6 @@ watch(range, fetchData);
   color: #111827;
 }
 
-/* 버튼 */
 .ghost-btn {
   border: 1px solid #e5e7eb;
   background: #fff;
@@ -214,17 +217,10 @@ watch(range, fetchData);
   font-weight: 800;
   cursor: pointer;
 }
-.ghost-btn:hover {
-  background: #f9fafb;
-}
+.ghost-btn:hover { background: #f9fafb; }
 
-/* 차트 */
-.risk-chart {
-  width: 100%;
-  height: 320px;
-}
+.risk-chart { width: 100%; height: 320px; }
 
-/* placeholder */
 .chart-placeholder {
   height: 320px;
   border: 1px dashed #e5e7eb;
@@ -237,35 +233,19 @@ watch(range, fetchData);
   background: #fafafa;
 }
 
-.hint {
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 700;
-}
-.error {
-  color: #ef4444;
-  font-size: 12px;
-  font-weight: 800;
-}
+.hint { color: #6b7280; font-size: 13px; font-weight: 700; }
+.error { color: #ef4444; font-size: 12px; font-weight: 800; }
 
-@media (max-width: 1100px) {
-  .risk-chart {
-    height: 300px;
-  }
-}
-
-/* ===== Modal ===== */
+/* ===== 기존 기준표 모달 ===== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(17, 24, 39, 0.45);
   z-index: 9999;
-
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
 .modal {
   width: 720px;
   max-width: calc(100vw - 32px);
@@ -273,11 +253,9 @@ watch(range, fetchData);
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-
   display: flex;
   flex-direction: column;
 }
-
 .modal-head {
   display: flex;
   justify-content: space-between;
@@ -285,13 +263,7 @@ watch(range, fetchData);
   padding: 16px 18px;
   border-bottom: 1px solid #eef2f7;
 }
-
-.modal-title {
-  font-size: 14px;
-  font-weight: 900;
-  color: #111827;
-}
-
+.modal-title { font-size: 14px; font-weight: 900; color: #111827; }
 .close-btn {
   border: 0;
   background: transparent;
@@ -300,12 +272,6 @@ watch(range, fetchData);
   cursor: pointer;
   color: #6b7280;
 }
-.close-btn:hover {
-  color: #111827;
-}
-
-.modal-body {
-  padding: 16px 18px;
-  overflow-y: auto;
-}
+.close-btn:hover { color: #111827; }
+.modal-body { padding: 16px 18px; overflow-y: auto; }
 </style>

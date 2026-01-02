@@ -1,6 +1,5 @@
 <template>
   <BaseCard class="segdist-card">
-    <!-- ✅ 헤더: 좌측 타이틀 / 우측 전체 배지 (정렬 보장 래퍼) -->
     <template #header>
       <div class="card-head">
         <h3 class="card-title">{{ title }}</h3>
@@ -12,7 +11,13 @@
     <div v-else-if="error" class="empty">{{ error }}</div>
     <div v-else-if="!hasData" class="empty">세그먼트 데이터가 없습니다.</div>
 
-    <v-chart v-else :option="option" autoresize class="chart chart-md" />
+    <v-chart
+      v-else
+      :option="option"
+      autoresize
+      class="chart chart-md"
+      @click="onChartClick"
+    />
   </BaseCard>
 </template>
 
@@ -29,6 +34,14 @@ import BaseCard from "@/components/common/BaseCard.vue";
 
 use([PieChart, TooltipComponent, LegendComponent, CanvasRenderer]);
 
+const emit = defineEmits(["select-segment"]);
+
+const props = defineProps({
+  title: { type: String, default: "고객 세그먼트 분석" },
+  segments: { type: Array, default: () => [] },
+  total: { type: [Number, String, null], default: null },
+});
+
 const loading = ref(false);
 const error = ref("");
 const localSegments = ref([]);
@@ -37,12 +50,6 @@ const localTotal = ref(0);
 /* ✅ 모바일 판단 */
 const isMobile = ref(false);
 const setIsMobile = () => (isMobile.value = window.innerWidth <= 900);
-
-const props = defineProps({
-  title: { type: String, default: "고객 세그먼트 분석" },
-  segments: { type: Array, default: () => [] },
-  total: { type: [Number, String, null], default: null },
-});
 
 const segments = computed(() =>
   props.segments?.length ? props.segments : localSegments.value
@@ -65,6 +72,7 @@ const getCount = (s) =>
   ) || 0;
 
 const getName = (s) => s?.segmentName ?? s?.name ?? "Unknown";
+const getId = (s) => s?.segmentId ?? s?.id ?? null;
 
 const hasData = computed(() => {
   if (!Array.isArray(segments.value) || segments.value.length === 0) return false;
@@ -97,12 +105,22 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", setIsMobile);
 });
 
+const onChartClick = (params) => {
+  const segId = params?.data?.segmentId;
+  if (!segId) return;
+  emit("select-segment", Number(segId));
+};
+
 const option = computed(() => {
+  // 여기서만 data 생성 (segmentId 포함)
   const data = (segments.value || [])
-    .map((s) => ({ value: getCount(s), name: getName(s) }))
+    .map((s) => ({
+      value: getCount(s),
+      name: getName(s),
+      segmentId: getId(s),
+    }))
     .filter((d) => d.value > 0);
 
-  // ✅ 모바일이면 legend를 아래로, 데스크탑이면 오른쪽 세로
   const legend = isMobile.value
     ? {
         bottom: 0,
@@ -117,6 +135,10 @@ const option = computed(() => {
         pageIconSize: 10,
         pageTextStyle: { fontSize: 11 },
         textStyle: { fontSize: 11, color: "#374151" },
+        formatter: (name) => {
+          const t = data.find((d) => d.name === name);
+          return `${name} · ${fmt(t?.value ?? 0)}개사`;
+        },
       }
     : {
         top: "middle",
@@ -130,9 +152,12 @@ const option = computed(() => {
         pageIconSize: 10,
         pageTextStyle: { fontSize: 11 },
         textStyle: { fontSize: 11, color: "#374151" },
+        formatter: (name) => {
+          const t = data.find((d) => d.name === name);
+          return `${name} · ${fmt(t?.value ?? 0)}개사`;
+        },
       };
 
-  // ✅ 모바일이면 아래 legend 공간 확보
   const grid = isMobile.value
     ? { left: 0, right: 0, top: 0, bottom: 56, containLabel: true }
     : { left: 0, right: 0, top: 0, bottom: 0, containLabel: true };
@@ -141,36 +166,36 @@ const option = computed(() => {
     tooltip: {
       trigger: "item",
       formatter: ({ name, value, percent }) =>
-        `${name}<br/>${fmt(value)}개사 (${percent}%)`,
+        `${name}<br/>${fmt(value)}개사 (${Math.round(percent)}%)`,
     },
-
     legend,
     grid,
-
     series: [
       {
         type: "pie",
         radius: ["58%", "82%"],
-
-        // ✅ 모바일은 정중앙(legend 아래), 데스크탑은 legend 때문에 왼쪽 치우치기
         center: isMobile.value ? ["50%", "45%"] : ["35%", "50%"],
 
         avoidLabelOverlap: true,
-label: {
-  show: true,
-  formatter: (p) => `${p.percent}%`,
-  fontSize: 12,
-  fontWeight: 800,
-  color: "#374151",
-},
-labelLine: {
-  show: false,
-},
-        labelLine: { show: true, length: 10, length2: 6 },
+        labelLayout: { hideOverlap: true },
 
-        // (원하면 hover를 더 티나게 하려면 여기 emphasis/itemStyle 강화 가능)
+        label: {
+          show: true,
+          formatter: (p) =>
+            `${Math.round(p.percent)}% (${fmt(p.value)}개사)`,
+          fontSize: 12,
+          fontWeight: 800,
+          color: "#374151",
+        },
+
+        labelLine: {
+          show: true,
+          length: 12,
+          length2: 8,
+          smooth: false,
+        },
+
         emphasis: { scale: true, scaleSize: 6 },
-
         data,
       },
     ],
@@ -183,7 +208,6 @@ labelLine: {
   width: 100%;
 }
 
-/* ✅ 헤더 정렬 보장 */
 .card-head {
   width: 100%;
   display: flex;
@@ -199,7 +223,6 @@ labelLine: {
   color: #111827;
 }
 
-/* ✅ 우측 상단 총합 배지 */
 .meta-badge {
   font-size: 12px;
   font-weight: 800;
@@ -211,13 +234,11 @@ labelLine: {
   white-space: nowrap;
 }
 
-/* ✅ 차트 규격 통일 */
 .chart-md {
   width: 100%;
   height: 260px;
 }
 
-/* 모바일: legend 아래로 내려가면 차트 높이 조금 확보 */
 @media (max-width: 900px) {
   .chart-md {
     height: 320px;

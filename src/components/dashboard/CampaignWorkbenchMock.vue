@@ -138,7 +138,6 @@ const go = (key) => {
 
 /* List */
 .wb-list {
-  border: 1px solid #f1f1f1;
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
@@ -191,11 +190,6 @@ const go = (key) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.wb-divider {
-  height: 1px;
-  background: #f1f1f1;
 }
 
 /* Dot */

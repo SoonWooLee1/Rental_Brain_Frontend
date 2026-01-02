@@ -32,7 +32,7 @@
           <template v-if="!loading">{{ fmtInt(kpi.payOverdueCount) }}건</template>
           <span v-else class="skeleton w60" />
         </p>
-        <p class="hint">수금 리스크 모니터링</p>
+        <p class="hint">입금이 지연된 계약</p>
       </article>
 
       <!-- 2) 향후 60일 만료 예정 계약 -> 계약(결재) 탭 -->
@@ -52,7 +52,7 @@
           <template v-if="!loading">{{ fmtInt(kpi.expiringContractCount) }}건</template>
           <span v-else class="skeleton w60" />
         </p>
-        <p class="hint">재계약/연장 우선 대상</p>
+        <p class="hint">곧 만료되는 계약</p>
       </article>
 
       <!-- 3) 문의 대기 -> 문의 관리 탭 -->
@@ -72,7 +72,7 @@
           <template v-if="!loading">{{ fmtInt(kpi.waitingInquiryCount) }}건</template>
           <span v-else class="skeleton w60" />
         </p>
-        <p class="hint">응대 병목 확인</p>
+        <p class="hint">아직 처리되지 않은 문의</p>
       </article>
 
       <!-- 4) 이번 달 매출 -> 계약(결재) 탭 -->
@@ -85,12 +85,12 @@
         @keydown.space.prevent="goTo('contractPay')"
       >
         <div class="top">
-          <p class="label">이번 달 매출</p>
-          <span class="meta">MoM</span>
+          <p class="label">이번 달 월 매출</p>
+          <span class="meta">이번 달</span>
         </div>
 
         <p class="value">
-          <template v-if="!loading">{{ fmtKRW(kpi.mtdRevenue) }}</template>
+          <template v-if="!loading">{{ fmtKRWCompact(kpi.mtdRevenue) }}</template>
           <span v-else class="skeleton w80" />
         </p>
 
@@ -142,6 +142,29 @@ function goTo(key) {
   router.push(target);
 }
 
+const fmtKRWCompact = (value) => {
+  const v = Number(value ?? 0);
+  if (!Number.isFinite(v) || v === 0) return "0원";
+
+  const abs = Math.abs(v);
+  const sign = v < 0 ? "-" : "";
+
+  const EOK = 100_000_000; // 억
+  const MAN = 10_000;      // 만
+
+  if (abs >= EOK) {
+    const eok = Math.floor(abs / EOK);
+    const man = Math.floor((abs % EOK) / MAN);
+    return sign + (man > 0 ? `${eok}억 ${man.toLocaleString()}만원` : `${eok}억`);
+  }
+
+  if (abs >= MAN) {
+    return sign + `${Math.floor(abs / MAN).toLocaleString()}만원`;
+  }
+
+  return sign + abs.toLocaleString("ko-KR") + "원";
+};
+
 // 필요하면 props로 month를 받아서 대시보드 기간 조회도 가능
 const props = defineProps({
   month: { type: String, default: "" }, // "2025-12" 같은 YYYY-MM (옵션)
@@ -169,14 +192,22 @@ const load = async () => {
       ? await getDashboardKpi(props.month)
       : await getDashboardKpi();
 
+    const rate =
+      data?.momRevenueRate ??
+      data?.momRate ??
+      data?.mom_revenue_rate ??
+      data?.mom_rate ??
+      0;
+
     kpi.value = {
-      month: data?.month ?? "",
-      expiringContractCount: Number(data?.expiringContractCount ?? 0),
-      payOverdueCount: Number(data?.payOverdueCount ?? 0),
-      waitingInquiryCount: Number(data?.waitingInquiryCount ?? 0),
-      mtdRevenue: Number(data?.mtdRevenue ?? 0),
-      momRevenueRate: Number(data?.momRevenueRate ?? 0),
+      month: data?.month ?? data?.currentMonth ?? "",
+      expiringContractCount: Number(data?.expiringContractCount ?? data?.expiring_contract_count ?? 0),
+      payOverdueCount: Number(data?.payOverdueCount ?? data?.pay_overdue_count ?? 0),
+      waitingInquiryCount: Number(data?.waitingInquiryCount ?? data?.waiting_inquiry_count ?? 0),
+      mtdRevenue: Number(data?.mtdRevenue ?? data?.curRevenue ?? data?.mtd_revenue ?? data?.cur_revenue ?? 0),
+      momRevenueRate: Number(rate ?? 0),
     };
+    console.log("dashboard/kpi response:", data);
   } catch (e) {
     console.error(e);
     errorMsg.value = "KPI를 불러오지 못했습니다. 백엔드/네트워크 상태를 확인해주세요.";

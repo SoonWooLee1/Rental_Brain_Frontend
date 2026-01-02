@@ -11,7 +11,7 @@
         @click="openSegment(c.segmentId)"
         @keydown.enter="openSegment(c.segmentId)"
       >
-      <!-- ✅ 카드 헤더 슬롯 -->
+      <!-- 카드 헤더 슬롯 -->
       <template #header>
         <div class="seg-head">
           <div class="seg-name">{{ c.segmentName }}</div>
@@ -19,7 +19,7 @@
         </div>
       </template>
 
-      <!-- ✅ 카드 바디 -->
+      <!-- 카드 바디 -->
       <div class="seg-metrics">
         <div class="metric-row">
           <span class="label">총 거래액</span>

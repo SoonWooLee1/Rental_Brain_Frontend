@@ -27,7 +27,7 @@
           <button class="apply-btn" @click="applyPickedMonth">적용</button>
         </div>
 
-        <div class="month-badge">{{ risk?.targetMonth ?? month }} 기준</div>
+        <div class="month-badge">{{ risk?.snapshotMonth ?? month }} 기준</div>
       </div>
     </div>
 
@@ -35,7 +35,7 @@
          KPI Summary
     ========================== -->
 
-        <!-- ✅ 한 줄 요약 -->
+        <!-- 한 줄 요약 -->
     <AnalysisSummary :text="segmentSummary.text" :tone="segmentSummary.tone" />
 
     <div class="grid-2">
@@ -44,12 +44,12 @@
         <div class="kpi-head">
           <div>
             <div class="kpi-title">이탈 위험 고객 비중</div>
-            <div class="kpi-value">{{ round1(risk?.currentRiskRate) }}%</div>
+            <div class="kpi-value">{{ round1(risk?.curRiskRate) }}%</div>
           </div>
         </div>
 
         <div class="kpi-subline">
-          {{ fmt(risk?.currentRiskCustomerCount) }}개사 관리 필요 / 전체 대비
+          {{ fmt(risk?.curRiskCustomerCount) }}개사 관리 필요 / 전체 대비
         </div>
 
         <div class="kpi-sub">
@@ -84,24 +84,18 @@
       </div>
     </div>
 
-    <!-- =========================
-         Insight Charts
-         ⚠️ 내부 컴포넌트가 카드 역할
-    ========================== -->
     <div class="grid-2 insight-charts">
-      <RiskMonthlyRate />
-      <SegmentDistribution />
+      <RiskMonthlyRate @monthClick="openRiskCustomersModal" />
+      <!-- 모달 컴포넌트 추가 -->
+      <RiskCustomersModal v-model:open="riskModalOpen" :month="selectedMonth" />
+
+      <SegmentDistribution @select-segment="openSegmentModal" />
     </div>
 
-    <!-- =========================
-         Detail Analysis
-    ========================== -->
-    <SegmentAnalysisChart />
-    <CustomerSegmentDetailCard />
+     <!-- 세그먼트 분석 차트 -->
+    <SegmentAnalysisChart @select-segment="openSegmentModal" />
 
-    <!-- =========================
-         Modals
-    ========================== -->
+  
     <SegmentCustomersModal
       :open="segModalOpen"
       :segmentId="segModalSegmentId"
@@ -117,17 +111,15 @@
     />
   </div>
 </template>
-
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getRiskKpi, getRiskReasonKpi } from "@/api/customeranalysis";
 
 import SegmentAnalysisChart from "@/components/analysis/SegmentAnalysisChart.vue";
-import CustomerSegmentDetailCard from "@/components/analysis/CustomerSegmentDetailCard.vue";
 import SegmentDistribution from "@/components/analysis/SegmentDistribution.vue";
 import RiskMonthlyRate from "@/components/analysis/RiskMonthlyRate.vue";
-
+import RiskCustomersModal from "@/components/analysis/RiskCustomersModal.vue";
 import SegmentCustomersModal from "@/components/analysis/SegmentCustomersModal.vue";
 import RiskReasonCustomersModal from "@/components/analysis/RiskReasonCustomersModal.vue";
 import AnalysisSummary from "@/components/analysis/AnalysisSummary.vue";
@@ -135,44 +127,53 @@ import AnalysisSummary from "@/components/analysis/AnalysisSummary.vue";
 const route = useRoute();
 const router = useRouter();
 
-// 한줄평
+/* =========================
+   ✅ 모달 상태 (정리)
+========================= */
+// ✅ 월별 위험고객 모달
+const riskModalOpen = ref(false);
+const selectedMonth = ref("");
+
+// ✅ 세그먼트 고객 리스트 모달
+const RISK_SEGMENT_ID = 4;
+const segModalOpen = ref(false);
+const segModalSegmentId = ref(RISK_SEGMENT_ID);
+
+// ✅ 사유별 위험고객 모달
+const reasonModalOpen = ref(false);
+const selectedReasonCode = ref("OVERDUE");
+
+const emit = defineEmits(["select-segment"]);
+
 
 /* =========================
-   One-line summary (front-only)
+   ✅ 차트 클릭 -> 위험고객 모달 오픈 (핵심 연결)
 ========================= */
-const segmentSummary = computed(() => {
-  const r = risk.value;
-  if (!r) return { text: "세그먼트 지표를 불러오는 중입니다.", tone: "neutral", icon: "ℹ️" };
+const openRiskCustomersModal = (m) => {
+  if (!m) return;
+  selectedMonth.value = m;     // YYYY-MM
+  riskModalOpen.value = true;  // ✅ 이것만으로 모달이 열리고,
+                               //    모달 내부 watch에서 fetch함
+};
 
-  const riskRate = Number(r?.riskRate ?? r?.rate ?? 0);
-  const momP = Number(r?.momDiffRate ?? r?.momDiffP ?? 0);
-  const riskCnt = Number(r?.riskCustomerCount ?? r?.customerCount ?? 0);
+/* =========================
+   KPI 클릭
+========================= */
+const openRiskSegmentModal = () => {
+  segModalSegmentId.value = RISK_SEGMENT_ID;
+  segModalOpen.value = true;
+};
 
-  if (riskRate >= 8 || momP >= 3) {
-    return {
-      text: `이탈 위험 고객 비중 ${round1(riskRate)}%(${fmt(riskCnt)}명/개사)로 증가 중입니다. 우선순위 케어 액션이 필요합니다.`,
-      tone: "danger",
-      icon: "🔴",
-    };
-  }
+const openRiskReasonModal = (code = "OVERDUE") => {
+  selectedReasonCode.value = code;
+  reasonModalOpen.value = true;
+};
 
-  if (riskRate >= 4) {
-    return {
-      text: `이탈 위험 고객 ${round1(riskRate)}%가 감지됩니다. 조기 케어/재계약 유도 액션을 추천합니다.`,
-      tone: "warn",
-      icon: "🟡",
-    };
-  }
-
-  return {
-    text: `현재 리스크 세그먼트 비중은 낮고, 고객 분포는 전반적으로 안정적입니다.`,
-    tone: "good",
-    icon: "🟢",
-  };
-});
-
-
-
+// 세그먼트 차트/카드 클릭 모달
+const openSegmentModal = (segmentId) => {
+  segModalSegmentId.value = Number(segmentId);
+  segModalOpen.value = true;
+};
 
 /* =========================
    Month (route.query.month)
@@ -192,30 +193,6 @@ const addMonths = (baseYM, diff) => {
   const [y, m] = String(baseYM).split("-").map(Number);
   const d = new Date(y, m - 1 + diff, 1);
   return ym(d);
-};
-
-const RISK_SEGMENT_ID = 4; // 이탈 위험 고객
-
-/* =========================
-   KPI1: 이탈 위험 고객 리스트(세그먼트 4) 모달
-========================= */
-const segModalOpen = ref(false);
-const segModalSegmentId = ref(RISK_SEGMENT_ID);
-
-const openRiskSegmentModal = () => {
-  segModalSegmentId.value = RISK_SEGMENT_ID;
-  segModalOpen.value = true;
-};
-
-/* =========================
-   KPI2: 이탈 사유별 고객 리스트 모달
-========================= */
-const reasonModalOpen = ref(false);
-const selectedReasonCode = ref("OVERDUE");
-
-const openRiskReasonModal = (code = "OVERDUE") => {
-  selectedReasonCode.value = code;
-  reasonModalOpen.value = true;
 };
 
 const setMonthQuery = (m) => {
@@ -274,6 +251,40 @@ onMounted(fetchAll);
 watch(month, fetchAll);
 
 /* =========================
+   One-line summary
+========================= */
+const segmentSummary = computed(() => {
+  const r = risk.value;
+  if (!r) return { text: "세그먼트 지표를 불러오는 중입니다.", tone: "neutral", icon: "ℹ️" };
+
+  const riskRate = Number(r?.curRiskRate ?? 0);
+  const momP = Number(r?.momDiffRate ?? r?.momDiffP ?? 0);
+  const riskCnt = Number(r?.curRiskCustomerCount ?? 0);
+
+  if (riskRate >= 8 || momP >= 3) {
+    return {
+      text: `이탈 위험 고객 비중 ${round1(riskRate)}%(${fmt(riskCnt)}개사)로 증가 중입니다. 우선순위 케어 액션이 필요합니다.`,
+      tone: "danger",
+      icon: "🔴",
+    };
+  }
+
+  if (riskRate >= 4) {
+    return {
+      text: `이탈 위험 고객 ${round1(riskRate)}%가 감지됩니다. 조기 케어/재계약 유도 액션을 추천합니다.`,
+      tone: "warn",
+      icon: "🟡",
+    };
+  }
+
+  return {
+    text: `현재 이탈 위험 고객 세그먼트 비중은 낮고, 고객 분포는 전반적으로 안정적입니다.`,
+    tone: "good",
+    icon: "🟢",
+  };
+});
+
+/* =========================
    Utils
 ========================= */
 const fmt = (n) => (Number(n) || 0).toLocaleString();
@@ -303,7 +314,7 @@ const reasonLabel = (code) => {
 
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 /* 헤더 */

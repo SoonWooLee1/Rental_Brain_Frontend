@@ -17,7 +17,13 @@
       <div class="hint">표시할 데이터가 없습니다.</div>
     </div>
 
-    <v-chart v-else :option="option" autoresize class="chart" />
+    <v-chart
+      v-else
+      :option="option"
+      autoresize
+      class="chart"
+      @click="onChartClick"
+    />
   </BaseCard>
 </template>
 
@@ -42,7 +48,10 @@ const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
 
-// ✅ month: query.month 있으면 사용, 없으면 현재월
+/** ✅ 파이차트처럼 부모와 이벤트명 통일 */
+const emit = defineEmits(["select-segment"]);
+
+/** ✅ month: query.month 있으면 사용, 없으면 현재월 */
 const month = computed(() => {
   const q = route.query.month;
   if (typeof q === "string" && /^\d{4}-\d{2}$/.test(q)) return q;
@@ -58,10 +67,10 @@ const hasData = computed(() => {
   );
 });
 
-// ✅ 원(₩) → "n억 m만원" 자동 포맷
+/** ✅ 원(₩) → "n억 m만원" 자동 포맷 */
 const fmtMoneyAuto = (won) => {
   const v = Number(won) || 0;
-  const man = Math.floor(v / 10000); // 원 → 만원
+  const man = Math.floor(v / 10000);
   if (man >= 10000) {
     const eok = Math.floor(man / 10000);
     const restMan = man % 10000;
@@ -70,11 +79,40 @@ const fmtMoneyAuto = (won) => {
   return `${man.toLocaleString()}만원`;
 };
 
+/** ✅ 클릭 → segId 찾아서 emit (파이차트랑 동일 패턴) */
+const onChartClick = (params) => {
+  if (!params || params.componentType !== "series") return;
+
+  const idx = params.dataIndex;
+
+  // 1) series data에 segmentId를 심어놨으면 그걸 우선 사용
+  const segIdFromSeries = params?.data?.segmentId;
+
+  // 2) 아니면 rows에서 꺼내기
+  const segIdFromRows = rows.value?.[idx]?.segmentId;
+
+  const segId = segIdFromSeries ?? segIdFromRows;
+  if (!segId) return;
+
+  emit("select-segment", Number(segId));
+};
+
 const option = computed(() => {
   const labels = (rows.value ?? []).map((r) => r.segmentName ?? "Unknown");
-  const customerCounts = (rows.value ?? []).map((r) => Number(r.customerCount) || 0);
-  const totalSales = (rows.value ?? []).map((r) => Number(r.totalTradeAmount) || 0);
-  const avgSales = (rows.value ?? []).map((r) => Number(r.avgTradeAmount) || 0);
+
+  // ✅ 중요: series data를 객체로 만들어 segmentId를 같이 심어둠
+  const customerCounts = (rows.value ?? []).map((r) => ({
+    value: Number(r.customerCount) || 0,
+    segmentId: r.segmentId,
+  }));
+  const totalSales = (rows.value ?? []).map((r) => ({
+    value: Number(r.totalTradeAmount) || 0,
+    segmentId: r.segmentId,
+  }));
+  const avgSales = (rows.value ?? []).map((r) => ({
+    value: Number(r.avgTradeAmount) || 0,
+    segmentId: r.segmentId,
+  }));
 
   return {
     tooltip: {
@@ -82,10 +120,12 @@ const option = computed(() => {
       formatter: (params) => {
         return params
           .map((p) => {
+            const val = typeof p.value === "object" ? p.value?.value : p.value;
+
             if (String(p.seriesName).includes("매출")) {
-              return `${p.marker}${p.seriesName}: ${fmtMoneyAuto(p.value)}`;
+              return `${p.marker}${p.seriesName}: ${fmtMoneyAuto(val)}`;
             }
-            return `${p.marker}${p.seriesName}: ${(Number(p.value) || 0).toLocaleString()}개사`;
+            return `${p.marker}${p.seriesName}: ${(Number(val) || 0).toLocaleString()}개사`;
           })
           .join("<br/>");
       },
@@ -95,15 +135,13 @@ const option = computed(() => {
     grid: { left: 40, right: 20, top: 20, bottom: 45, containLabel: true },
     xAxis: { type: "category", data: labels },
 
-    // ✅ 매출 축을 "억" 단위로 (차트 스케일 깔끔)
     yAxis: [
       { type: "value", name: "고객수" },
       {
         type: "value",
         name: "매출(억)",
         axisLabel: {
-          formatter: (v) =>
-            `${Math.floor((Number(v) || 0) / 100000000).toLocaleString()}`, // 원 → 억
+          formatter: (v) => `${Math.floor((Number(v) || 0) / 100000000).toLocaleString()}`,
         },
       },
     ],
@@ -135,23 +173,9 @@ watch(month, fetchChart);
 </script>
 
 <style scoped>
-/* ✅ BaseCard가 외형 담당. 여기선 레이아웃만 */
-.chart-card {
-  width: 100%;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 900;
-  color: #111827;
-}
-
-.chart {
-  width: 100%;
-  height: 280px;
-}
-
+.chart-card { width: 100%; }
+.card-title { margin: 0; font-size: 14px; font-weight: 900; color: #111827; }
+.chart { width: 100%; height: 280px; }
 .chart-placeholder {
   height: 280px;
   border: 1px dashed #e5e7eb;
@@ -163,16 +187,6 @@ watch(month, fetchChart);
   justify-content: center;
   gap: 6px;
 }
-
-.hint {
-  color: #9ca3af;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.error {
-  color: #ef4444;
-  font-size: 12px;
-  font-weight: 800;
-}
+.hint { color: #9ca3af; font-size: 12px; font-weight: 700; }
+.error { color: #ef4444; font-size: 12px; font-weight: 800; }
 </style>
