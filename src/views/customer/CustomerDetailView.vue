@@ -394,7 +394,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getCustomerDetail, updateCustomer, deleteCustomer, restoreCustomer } from '@/api/customerlist';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -484,20 +484,29 @@ const goQuoteDetail = (id) => {
   router.push(`/quote/${id}`); 
 };
 
-// [수정] 모달 오픈 핸들러 (ID 사용)
-const openAsDetail = (id) => {
-  selectedAsId.value = id;
-  showAsModal.value = true;
-};
-const openCouponDetail = (id) => {
-  selectedCouponId.value = id;
-  showCouponModal.value = true;
-};
-const openPromotionDetail = (id) => {
-  selectedPromotionId.value = id;
-  showPromotionModal.value = true;
+// [수정 1] AS 상세 모달 열기
+const openAsDetail = async (id) => {
+  selectedAsId.value = null;    // 1. 먼저 ID를 비워서 변경 상태를 만듦
+  showAsModal.value = true;     // 2. 모달을 띄움 (이때는 ID가 없는 상태로 생성)
+  await nextTick();             // 3. 모달이 DOM에 그려질 때까지 대기
+  selectedAsId.value = id;      // 4. ID 값 주입 -> 자식 컴포넌트의 watch가 '변경'을 감지하고 실행됨
 };
 
+// [수정 2] 쿠폰 상세 모달 열기
+const openCouponDetail = async (id) => {
+  selectedCouponId.value = null;
+  showCouponModal.value = true;
+  await nextTick();
+  selectedCouponId.value = id;
+};
+
+// [수정 3] 프로모션 상세 모달 열기
+const openPromotionDetail = async (id) => {
+  selectedPromotionId.value = null;
+  showPromotionModal.value = true;
+  await nextTick();
+  selectedPromotionId.value = id;
+};
 
 const fetchData = async () => {
   loading.value = true;
