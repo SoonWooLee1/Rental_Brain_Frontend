@@ -20,7 +20,15 @@
             <span class="txt">{{ blk.subtitle }}</span>
           </div>
 
-          <div class="list">
+          <!-- ✅ 블록 단위 Empty State -->
+          <div v-if="!hasItems(blk)" class="block-empty">
+            <el-empty
+              description="데이터가 없습니다"
+              :image-size="60"
+            />
+          </div>
+
+          <div v-else class="list">
             <div
               v-for="item in (blk.items ?? [])"
               :key="`${sIdx}-${bIdx}-${item.rank}-${item.label}`"
@@ -82,6 +90,10 @@ const barWidth = (items, count) => {
   const pct = Math.max(0, Math.min(100, (Number(count) / max) * 100));
   return `${pct.toFixed(0)}%`;
 };
+
+const hasItems = (blk) =>
+  Array.isArray(blk?.items) && blk.items.length > 0;
+
 </script>
 
 <style scoped>
@@ -146,6 +158,19 @@ const barWidth = (items, count) => {
   font-size: 12px;
   border: 1px solid #e5e7eb;
   background: #fff;
+}
+
+/* ✅ block empty */
+.block-empty {
+  display: flex;
+  align-items: center;      /* 세로 가운데 */
+  justify-content: center;  /* 가로 가운데 */
+  min-height: 120px;        /* 카드 안에서 숨 안 죽게 */
+  width: 100%;
+}
+
+.empty-icon {
+  font-size: 14px;
 }
 
 .list {

@@ -106,7 +106,11 @@ const routes = [
         name: 'quote-list',
         component: () => import('@/views/business/QuoteListView.vue'),
       },
-
+      {
+        path: 'quote/:id',
+        name: 'quote-detail',
+        component: () => import('@/views/business/QuoteDetailView.vue'),
+      },
       // --- 계약 ---
       {
         path: 'contracts',

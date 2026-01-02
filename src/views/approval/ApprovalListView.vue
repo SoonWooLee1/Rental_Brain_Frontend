@@ -25,17 +25,17 @@
     </span>
   </div>
 
+  <div class="kpi-box">
+    <span class="kpi-title">총 승인된 결재</span>
+    <span class="kpi-count success">
+      {{ status.total_approved }}건
+    </span>
+  </div>
+
   <div class="kpi-box reject-box">
     <span class="kpi-title">총 반려된 결재</span>
     <span class="kpi-count reject">
       {{ status.total_rejected }}건
-    </span>
-  </div>
-
-    <div class="kpi-box">
-    <span class="kpi-title">총 승인된 결재</span>
-    <span class="kpi-count success">
-      {{ status.total_approved }}건
     </span>
   </div>
 

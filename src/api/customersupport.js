@@ -34,3 +34,7 @@ export const getSupportKpi = () => {
 export const getInChargeList = () => {
   return api.get('/customersupports/in-charge');
 };
+
+export const getTopKeywords = (yearMonth) => {
+  return api.get('/ai/keyword',{params: {yearMonth}});
+};

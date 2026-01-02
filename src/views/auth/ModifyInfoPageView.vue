@@ -27,7 +27,7 @@
       <div class="profile-box">
         <el-avatar :size="72" class="avatar">
           <el-icon>
-            <User />
+            <Avatar />
           </el-icon>
         </el-avatar>
 
@@ -123,7 +123,7 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowLeft, User } from "@element-plus/icons-vue";
+import { ArrowLeft, Avatar, User } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import api from "@/api/axios";
 import { useAuthStore } from "@/store/auth.store";

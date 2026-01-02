@@ -38,7 +38,7 @@
             <div class="profile-box">
                 <el-avatar :size="72" class="avatar">
                     <el-icon>
-                        <User />
+                        <Avatar />
                     </el-icon>
                 </el-avatar>
 
@@ -125,7 +125,8 @@ import {
     ArrowLeft,
     Edit,
     User,
-    Lock
+    Lock,
+    Avatar
 } from "@element-plus/icons-vue";
 import dayjs from "dayjs";
 import api from "@/api/axios";

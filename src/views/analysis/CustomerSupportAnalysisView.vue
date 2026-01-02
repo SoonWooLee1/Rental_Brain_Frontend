@@ -179,6 +179,7 @@ import CustomerSatisfactionCard from "@/components/analysis/CustomerSatisfaction
 import SatisfactionDetailModal from "@/components/analysis/SatisfactionDetailModal.vue";
 import InsightTopListCard from "@/components/analysis/InsightTopListCard.vue";
 import AnalysisSummary from "@/components/analysis/AnalysisSummary.vue";
+import { getTopKeywords } from "@/api/customersupport";
 
 const route = useRoute();
 const router = useRouter();
@@ -238,21 +239,12 @@ const DEFAULT_INSIGHT_SECTIONS = [
     title: "견적 상담 성공/실패 요인",
     blocks: [
       {
-        subtitle: "성공 요인 TOP 3",
-        tone: "good",
+        subtitle: "",
+        tone: "neutral",
         items: [
           { rank: 1, label: "맞춤형 제품 제안", count: 28 },
           { rank: 2, label: "경쟁력 있는 가격", count: 24 },
           { rank: 3, label: "빠른 견적 응답", count: 21 },
-        ],
-      },
-      {
-        subtitle: "실패 요인 TOP 3",
-        tone: "bad",
-        items: [
-          { rank: 1, label: "예산 초과", count: 18 },
-          { rank: 2, label: "경쟁사 선택", count: 15 },
-          { rank: 3, label: "의사결정 지연", count: 12 },
         ],
       },
     ],
@@ -289,6 +281,48 @@ const DEFAULT_INSIGHT_SECTIONS = [
   },
 ];
 
+const buildInsightSections = (data) => {
+  const toItems = (arr = []) =>
+    arr.map((it, idx) => ({
+      rank: idx + 1,
+      label: it.keyword,
+      count: Number(it.count) || 0,
+    }));
+
+  return [
+    {
+      title: "문의 키워드 TOP",
+      blocks: [
+        {
+          subtitle: "",
+          tone: "neutral",
+          items: toItems(data?.inquiryKeywords),
+        },
+      ],
+    },
+    {
+      title: "긍정 피드백 키워드 TOP",
+      blocks: [
+        {
+          subtitle: "",
+          tone: "good",
+          items: toItems(data?.positiveFeedbackKeywords),
+        },
+      ],
+    },
+    {
+      title: "컴플레인 키워드 TOP",
+      blocks: [
+        {
+          subtitle: "",
+          tone: "bad",
+          items: toItems(data?.complaintKeywords),
+        },
+      ],
+    },
+  ];
+};
+
 const clone = (v) => {
   try {
     return structuredClone(v);
@@ -297,7 +331,7 @@ const clone = (v) => {
   }
 };
 
-const insightSections = ref(clone(DEFAULT_INSIGHT_SECTIONS));
+const insightSections = ref();
 
 // 모달 상태
 const satModalOpen = ref(false);
@@ -505,8 +539,18 @@ const fetchSatisfactionDist = async () => {
   }
 };
 
+const fetchTopKeywords = async ()=>{
+  try{
+    const res = await getTopKeywords(month.value);
+    console.log(res);
+    insightSections.value = buildInsightSections(res.data);
+  } catch(e){
+    console.error("인사이트 키워드 조회 실패", e);
+  }
+}
+
 const fetchAll = async () => {
-  await Promise.all([fetchKpi(), fetchSatisfactionDist()]);
+  await Promise.all([fetchKpi(), fetchSatisfactionDist(), fetchTopKeywords()]);
 };
 
 onMounted(fetchAll);

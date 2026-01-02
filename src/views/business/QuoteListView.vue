@@ -161,14 +161,6 @@
       @refresh="fetchData"
     />
 
-    <QuoteDetailModal
-        v-if="isDetailModalOpen && selectedQuoteId"
-        v-model="isDetailModalOpen"
-        :quote-id="selectedQuoteId"
-        @close="closeDetailModal"
-        @refresh="fetchData"
-        @request-edit="handleEditRequest" 
-      />
   </div>
 </template>
 
@@ -179,7 +171,6 @@ import { ElMessage } from 'element-plus';
 import { Search, Plus } from '@element-plus/icons-vue';
 
 import { getQuoteList, getQuoteKpi } from '@/api/quote';
-import QuoteDetailModal from './QuoteDetailModal.vue';
 // 등록 모달 import
 import QuoteCreateModal from './QuoteCreateModal.vue';
 
@@ -190,10 +181,6 @@ const quoteList = ref([]);
 const totalCount = ref(0);
 const pageSize = ref(10);
 const currentPage = ref(1);
-
-// 모달 열고 닫는것
-const isDetailModalOpen = ref(false);
-const selectedQuoteId = ref(null);
 
 // 등록 모달 상태
 const isCreateModalOpen = ref(false);
@@ -302,13 +289,10 @@ const closeCreateModal = () => {
 const openDetailModal = (row) => {
   console.log('상세보기 row=', row);
 
-  const id = row.quoteId ?? row.id ?? row.quote_id;
+  const id = row.quoteId ?? row.id;
   console.log('상세보기 id 확정=', id);           // ✅ 추가
 
-  selectedQuoteId.value = id;
-  isDetailModalOpen.value = true;
-
-  console.log('모달 open 상태=', isDetailModalOpen.value, '선택 id=', selectedQuoteId.value); // ✅ 추가
+  router.push(`/quote/${id}`);
 };
 
 const closeDetailModal = () => {

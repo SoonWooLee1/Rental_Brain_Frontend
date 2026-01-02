@@ -43,7 +43,7 @@
                         <div class="left">
                             <div class="avatar">
                                 <el-icon>
-                                    <User />
+                                    <Avatar />
                                 </el-icon>
                             </div>
                             <div class="meta">

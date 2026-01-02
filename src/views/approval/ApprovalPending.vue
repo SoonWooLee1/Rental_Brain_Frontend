@@ -65,7 +65,7 @@
           <el-button
             size="small"
             type="success"
-            @click="openApproveModal(row)"
+            @click.stop="openApproveModal(row)"
           >
             승인
           </el-button>
@@ -73,7 +73,7 @@
           <el-button
             size="small"
             type="danger"
-            @click="openRejectModal(row)"
+            @click.stop="openRejectModal(row)"
           >
             반려
           </el-button>

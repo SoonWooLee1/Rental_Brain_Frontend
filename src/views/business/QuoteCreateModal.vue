@@ -192,20 +192,20 @@ const querySearchCustomer = async (queryString, cb) => {
     return;
   }
   try {
-    const res = await getCustomerList({ 
-        customerName: queryString, 
-        page: 1, 
-        size: 20 
-    });
-    const dataList = res.data?.contents || res.data || [];
-    const results = dataList.map(item => ({
-      ...item,
-      value: item.name || item.customerName, 
-      id: item.id || item.customerId,        
-      phone: item.phone || item.callNum,     
-      ceo: item.ceoName || item.inCharge || '' 
-    }));
-    cb(results);
+  const res = await getCustomerList({
+    name: queryString,
+    status: 'ACTIVE'
+  });
+
+  const dataList = res.data?.contents || res.data || [];
+
+  const results = dataList.map(item => ({
+  value: item.name,
+  id: item.id,
+  phone: item.phone || item.callNum,
+  ceo: item.inCharge || '',
+}));
+  cb(results);
   } catch (e) {
     console.error('기업 검색 실패:', e);
     cb([]);

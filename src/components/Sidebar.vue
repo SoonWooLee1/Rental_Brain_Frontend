@@ -9,7 +9,9 @@
 
     <!-- 사용자 정보 -->
     <div class="user-section">
-      <el-avatar size="large" src="https://via.placeholder.com/80" />
+      <el-avatar size="large" class="avatar">
+        <el-icon><Avatar /></el-icon>
+      </el-avatar>
       <div class="user-info" @click="goToMyPage">
         <span class="name">{{ authStore.name }}</span>
         <span class="role">{{ authStore.dept }}</span>
@@ -260,6 +262,7 @@ import {
   PieChart,
   Headset,
   Ticket,
+  Avatar,
 } from "@element-plus/icons-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -409,6 +412,12 @@ const getIcon = (type) => {
   gap: 10px;
   position: relative;
 }
+
+.avatar {
+  background-color: #2563eb; /* Tailwind blue-600 느낌 */
+  color: #ffffff;           /* 아이콘 흰색 */
+}
+
 
 .user-info {
   transition-duration: 0.2s;
