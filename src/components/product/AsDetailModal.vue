@@ -99,10 +99,23 @@
             placement="top"
             :disabled="detail.status !== 'C'" >
             <span>
-                <el-button v-if="!editMode" type="primary"
-                :disabled="detail.status === 'C'"
-                @click="editMode = true" > 수정하기
-                </el-button>
+                <el-tooltip
+  content="점검 수정 권한이 없습니다"
+  placement="top"
+  :disabled="canUpdateAs"
+>
+  <span>
+    <el-button
+      v-if="!editMode"
+      type="primary"
+      :disabled="detail.status === 'C' || !canUpdateAs"
+      @click="canUpdateAs && (editMode = true)"
+    >
+      수정하기
+    </el-button>
+  </span>
+</el-tooltip>
+
             </span>
             </el-tooltip>
 
@@ -118,6 +131,7 @@ import dayjs from 'dayjs'
 import axios from '@/api/axios'
 import { fetchAsDetail } from '@/api/as/as'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '@/store/auth.store'
 
 const props = defineProps({ asId: Number, modelValue: Boolean })
 
@@ -125,6 +139,11 @@ const emit = defineEmits(['update:modelValue', 'updated', 'closed'])
 
 const editMode = ref(false)
 const detail = ref({})
+const authStore = useAuthStore();
+
+const canUpdateAs = computed(() =>
+  authStore.hasAuth('AS_SCHEDULE')
+)
 
 const form = ref({engineer: '', dueDate: '', status: '', contents: '' })
 

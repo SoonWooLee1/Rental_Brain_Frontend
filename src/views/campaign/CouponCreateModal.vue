@@ -179,6 +179,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  recommendId: [Number, String, null]
 });
 
 const emit = defineEmits(['update:visible', 'created']);
@@ -199,6 +200,24 @@ const form = reactive({
   maxNum: null,
   segmentName: '',
 });
+
+const fetchRecommendCoupon = async (id) => {
+  try {
+    const res = await api.get(`/recommend/coupon/read-one/${id}`)
+    const data = res.data
+    
+    // 입력창 초기값 세팅
+    form.name = data.name
+    form.rate = data.rate
+    form.content = data.content || ''
+    form.segmentName = data.segmentName
+    
+    ElMessage.success('추천 데이터를 불러왔습니다')
+  } catch (e) {
+    ElMessage.error('추천 데이터를 불러오지 못했습니다')
+    console.error(e)
+  }
+}
 
 // 유효기간 설정 방식: RANGE(기간 설정) / PERIOD(발급 후 기간)
 const periodMode = ref('RANGE');
@@ -246,13 +265,6 @@ const rules = {
   ],
 };
 
-// 모달 열릴 때 초기화
-watch(
-  () => props.visible,
-  (v) => {
-    if (v) resetForm();
-  }
-);
 
 const resetForm = () => {
   form.name = '';
@@ -269,6 +281,14 @@ const resetForm = () => {
   dateRange.value = [null, null];
   formRef.value && formRef.value.clearValidate();
 };
+
+watch([() => props.recommendId, () => props.visible], async ([newId, isVisible]) => {
+  if (newId && isVisible) {
+    await fetchRecommendCoupon(newId)
+  } else if (!isVisible) {
+    resetForm()
+  }
+}, { immediate: true })
 
 const handleClose = () => {
   emit('update:visible', false);
@@ -317,6 +337,9 @@ const handleSubmit = () => {
         maxNum: form.maxNum,
         segmentName: form.segmentName,
       });
+      if (props.recommendId) {
+        await api.put(`/recommend/coupon/update/${props.recommendId}`);
+      }
       ElMessage.success('쿠폰이 등록되었습니다.');
       emit('created');
       emit('update:visible', false);

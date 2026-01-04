@@ -1,10 +1,5 @@
 <template>
-  <el-dialog
-    :model-value="visible"
-    width="540px"
-    :title="detail?.name || '프로모션 상세'"
-    @close="handleClose"
-  >
+  <el-dialog :model-value="visible" width="540px" :title="detail?.name || '프로모션 상세'" @close="handleClose">
     <el-skeleton v-if="loading" rows="6" animated />
 
     <div v-else-if="detail">
@@ -64,41 +59,29 @@
     <template #footer>
       <div class="dialog-footer">
         <!-- 자동 프로모션일 때만 시작/정지 버튼 -->
-        <div class="left-actions" v-if="detail && detail.type === 'A'">
-          <el-button
-            v-if="detail.status === 'H'"
-            type="primary"
-            :loading="statusChanging"
-            @click="changeStatus('A')"
-          >
+        <div class="left-actions" v-if="detail && detail.type === 'A' && canUpdatePromotion">
+          <el-button v-if="detail.status === 'H'" type="primary" :loading="statusChanging" @click="changeStatus('A')">
             시작
           </el-button>
-          <el-button
-            v-else-if="detail.status === 'A'"
-            type="warning"
-            :loading="statusChanging"
-            @click="changeStatus('H')"
-          >
+          <el-button v-else-if="detail.status === 'A'" type="warning" :loading="statusChanging"
+            @click="changeStatus('H')">
             정지
           </el-button>
         </div>
 
         <div class="right-actions">
-          <el-button @click="handleEdit" :disabled="!detail">
+          <el-button @click="handleEdit" :disabled="!detail || !canUpdatePromotion">
             수정
           </el-button>
-          <el-button type="danger" @click="handleDelete" :disabled="deleting || !detail">
+
+          <el-button type="danger" @click="handleDelete" :disabled="!detail || deleting || !canUpdatePromotion">
             삭제
           </el-button>
         </div>
       </div>
     </template>
   </el-dialog>
-  <PromotionEditModal
-  v-model:visible="editModalVisible"
-  :promotion="detail"
-  @updated="handleEdited"
-/>
+  <PromotionEditModal v-model:visible="editModalVisible" :promotion="detail" @updated="handleEdited" />
 </template>
 
 <script setup>
@@ -106,6 +89,13 @@ import { computed, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import api from '@/api/axios';
 import PromotionEditModal from './PromotionEditModal.vue';
+import { useAuthStore } from '@/store/auth.store';
+
+const authStore = useAuthStore();
+
+const canUpdatePromotion = computed(() =>
+  authStore.hasAuth('CAMPAIGN_MANAGE')
+);
 
 const props = defineProps({
   visible: {
@@ -267,23 +257,28 @@ const handleClose = () => {
   display: flex;
   margin-bottom: 8px;
 }
+
 .label {
   width: 100px;
   color: #909399;
 }
+
 .value {
   flex: 1;
 }
+
 .dialog-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
 }
+
 .left-actions {
   display: flex;
   gap: 8px;
 }
+
 .right-actions {
   display: flex;
   margin-left: auto;

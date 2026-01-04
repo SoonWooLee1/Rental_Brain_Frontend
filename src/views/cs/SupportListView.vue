@@ -3,9 +3,27 @@
     
     <div class="header-row">
       <h2 class="page-title">문의 관리</h2>
-      <el-button type="primary" class="btn-register" @click="openCreateModal">
+
+      <el-tooltip v-if="!canCreateSupport" content="신규 문의 등록 권한이 없습니다" placement="bottom">
+            <span>
+              <el-button type="primary" class="btn-register" :disabled="true">
+                <el-icon>
+                  <Plus />
+                </el-icon> 신규 문의 등록
+              </el-button>
+            </span>
+          </el-tooltip>
+
+          <el-button v-else type="primary" class="btn-register" @click="openCreateModal">
+            <el-icon>
+              <Plus />
+            </el-icon> 신규 문의 등록
+          </el-button>
+
+
+      <!-- <el-button type="primary" class="btn-register" @click="openCreateModal">
         <el-icon><Plus /></el-icon> 신규 문의 등록
-      </el-button>
+      </el-button> -->
     </div>
 
     <div class="search-area card-box">
@@ -222,12 +240,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import { Search, Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getSupportList, getSupportKpi, createSupport, updateSupport, deleteSupport, getInChargeList } from '@/api/customersupport';
 import { getCustomerList } from '@/api/customerlist'; 
 import { useRouter } from 'vue-router'; // 추가
+import { useAuthStore } from '@/store/auth.store';
 const router = useRouter(); // 추가
 
 // 상태 변수들
@@ -237,6 +256,11 @@ const kpi = ref({ total: 0, processing: 0, resolutionRate: 0 });
 const customerSearchLoading = ref(false);
 const customerOptions = ref([]); 
 const inChargeList = ref([]); 
+const authStore = useAuthStore();
+
+const canCreateSupport = computed(() =>
+  authStore.hasAuth("CS_PROCESS")
+);
 
 // 수정 모드 상태
 const isEditMode = ref(false);

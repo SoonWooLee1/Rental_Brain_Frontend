@@ -44,9 +44,28 @@
         <el-option label="기간 만료" value="C" />
       </el-select>
 
-      <el-button style="display: flex; margin-left: auto;" type="primary" @click="openCreateModal">
-        + 프로모션 등록
-      </el-button>
+      <!-- 권한 없을 때 -->
+<el-tooltip
+  v-if="!canCreatePromotion"
+  content="프로모션 등록 권한이 없습니다"
+  placement="top"
+>
+  <span style="margin-left:auto">
+    <el-button type="primary" disabled>
+      + 프로모션 등록
+    </el-button>
+  </span>
+</el-tooltip>
+
+<!-- 권한 있을 때 -->
+<el-button
+  v-else
+  style="display: flex; margin-left: auto;"
+  type="primary"
+  @click="openCreateModal"
+>
+  + 프로모션 등록
+</el-button>
     </div>
 
     <el-card shadow="never" :body-style="{ padding: '0' }">
@@ -93,12 +112,6 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="혜택" min-width="200">
-        <template #default="{ row }">
-          {{ row.content }}
-        </template>
-      </el-table-column>
-
       <el-table-column label="액션" width="120" align="center">
         <template #default="{ row }">
           <el-button type="primary" style="font-size: 12px;" link @click="openDetailModal(row)">
@@ -129,17 +142,21 @@
 
     <PromotionCreateModal
       v-model:visible="createModalVisible"
+      :recommend-id="recommendId"
       @created="fetchPromotionList"
+      @close="handleModalClose"
     />
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Search } from '@element-plus/icons-vue';
 import api from '@/api/axios';
 import PromotionCreateModal from './PromotionCreateModal.vue';
 import PromotionDetailModal from './PromotionDetailModal.vue';
+import { useAuthStore } from '@/store/auth.store';
 
 const promotionList = ref([]);
 const loading = ref(false);
@@ -151,6 +168,16 @@ const selectedType = ref('ALL');
 const createModalVisible = ref(false);
 const detailModalVisible = ref(false);
 const selectedPromotionCode = ref(null);
+
+const route = useRoute()
+const router = useRouter()
+
+const recommendId = ref(null)
+const authStore = useAuthStore();
+
+const canCreatePromotion = computed(() =>
+  authStore.hasAuth('CAMPAIGN_MANAGE')
+)
 
 
 // 상태 / 유형 라벨 매핑
@@ -289,9 +316,36 @@ const openCreateModal = () => {
   createModalVisible.value = true;
 };
 
-onMounted(() => {
+const handleModalClose = () => {
+  createModalVisible.value = false
+  recommendId.value = null
+  
+  router.replace({ 
+    query: {} 
+  })
+}
+
+onMounted(async () => {
+  // [추가 3] 파라미터 자동 검색 로직
+  if (route.query.keyword) {
+    searchKeyword.value = route.query.keyword;
+    page.value = 1;
+  }
+
+  await nextTick();
+
   fetchPromotionList();
 });
+
+watch(() => route.query.recommendId, async (newVal) => {
+  if (newVal) {
+    recommendId.value = Number(newVal)
+    createModalVisible.value = true  // 모달 자동 열기
+  } else {
+    recommendId.value = null
+    createModalVisible.value = false
+  }
+}, { immediate: true })  // mounted 시점에도 실행
 </script>
 
 

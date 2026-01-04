@@ -1,18 +1,25 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from '@/api/axios'
 import StatusBadge from '@/components/overdue/StatusBadge.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '@/store/auth.store'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore();
 
 const overdueId = route.params.overdueId
 const detail = ref(null)
 const loading = ref(false)
 
 const paidDate = ref(new Date())
+
+/** 연체 해결 처리 권한 */
+const canProcessOverdue = computed(() =>
+  authStore.hasAuth("OVERDUE_PROCESS")
+);
 
 /* 상세 조회 */
 const fetchDetail = async () => {
@@ -116,11 +123,31 @@ onMounted(fetchDetail)
             <h3>{{ detail?.payOverdueCode }}</h3>
             <StatusBadge :status="detail?.status" />
         </div>
+        
+<!-- 권한 없음 -->
+<el-tooltip
+  v-if="detail?.status === 'P' && !canProcessOverdue"
+  content="연체 처리 권한이 없습니다"
+  placement="top"
+>
+  <span>
+    <el-button
+      type="primary"
+      :disabled="true"
+    >
+      해결 처리
+    </el-button>
+  </span>
+</el-tooltip>
 
-        <el-button
-            v-if="detail?.status === 'P'"
-            type="primary"
-            @click="resolveOverdue" > 해결 처리 </el-button>
+<!-- 권한 있음 -->
+<el-button
+  v-else-if="detail?.status === 'P'"
+  type="primary"
+  @click="resolveOverdue"
+>
+  해결 처리
+</el-button>
     </div>
 
     <!-- 상세 정보 -->

@@ -61,21 +61,83 @@
         </el-tab-pane>
 
         <!-- 추천 -->
-        <el-tab-pane :label="`추천 (${ai?.recommendations?.length || 0})`" name="reco">
-          <el-empty v-if="!ai?.recommendations?.length" description="추천 데이터가 없습니다" />
+        <el-tab-pane :label="`추천 (${promotionList.length + couponList.length})`" name="reco">
+          <el-empty 
+            v-if="!promotionList.length && !couponList.length" 
+            description="추천 데이터가 없습니다" 
+          />
 
           <div v-else class="reco">
-            <el-card v-for="(r, i) in ai.recommendations" :key="i" shadow="never" class="reco-card">
-              <div class="reco-title">{{ r.title }}</div>
-              <div class="reco-desc">{{ r.description }}</div>
-              <div class="reco-tags" v-if="r.tags?.length">
-                <el-tag v-for="(t, idx) in r.tags" :key="idx" type="info" class="tag">
-                  {{ t }}
-                </el-tag>
-              </div>
-            </el-card>
+            <!-- 🎯 프로모션 섹션 -->
+            <div v-if="promotionList.length" class="recommend-section">
+              <div class="section-title">추천 프로모션</div>
+              <el-card 
+                v-for="p in promotionList" 
+                :key="p.id" 
+                shadow="never" 
+                class="reco-card"
+              >
+                <div class="reco-title">{{ p.name }}</div>
+                <div class="reco-desc">{{ p.content || '내용 없음' }}</div>
+                <div class="reco-segment">
+                  <el-tag type="warning">프로모션</el-tag>
+                  <el-tag type="success"
+                  :style="{ marginLeft: '8px' }">{{ p.segmentName }}</el-tag>
+                </div>
+                <div class="reco-actions">
+                  <el-button 
+                    type="primary"
+                    @click="goToPromotion(p.id)"
+                    class="move-btn"
+                    :disabled="p.isUsed === 'Y'"
+                  >
+                    프로모션 생성
+                  </el-button>
+                </div>
+              </el-card>
+            </div>
+
+            <!-- 🎯 쿠폰 섹션 -->
+            <div v-if="couponList.length" class="recommend-section">
+              <div class="section-title">추천 쿠폰</div>
+              <el-card 
+                v-for="c in couponList" 
+                :key="c.id" 
+                shadow="never" 
+                class="reco-card"
+              >
+                <div class="reco-title">{{ c.name }}</div>
+                <div class="reco-desc">
+                  {{ c.content || '내용 없음' }}
+                </div>
+                <div class="reco-segment">
+                  <el-tag type="warning">쿠폰</el-tag>
+                  <el-tag type="success"
+                  :style="{ marginLeft: '8px' }">{{ c.segmentName }}</el-tag>
+                  <el-tag 
+                    v-if="c.rate" 
+                    type="danger" 
+                    class="discount-tag"
+                    :style="{ marginLeft: '8px' }"
+                  >
+                    {{ c.rate }}% 할인
+                  </el-tag>
+                </div>
+                <div class="reco-actions">
+                  <el-button 
+                    type="primary"
+                    @click="goToCoupon(c.id)"
+                    class="move-btn"
+                    :disabled="c.isUsed === 'Y'"
+                  >
+                    쿠폰 생성
+                  </el-button>
+                </div>
+              </el-card>
+            </div>
           </div>
         </el-tab-pane>
+
 
         <!-- 원본 JSON -->
         <el-tab-pane label="원본 JSON" name="raw">
@@ -94,6 +156,9 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
 import api from '@/api/axios'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 /* =========================
    ECharts 설정
@@ -177,7 +242,8 @@ watch(
   () => [props.modelValue, props.surveyId],
   ([open, id]) => {
     if (open && id) {
-      fetchAiResponse()
+      fetchAiResponse(),
+      initRecommendData()
     }
   }
 )
@@ -293,9 +359,81 @@ function toEChartOption(chart) {
     }))
   }
 }
+const promotionList = ref([]);
+const couponList = ref([]);
+
+const fetchRecommendPromotionList = async () => {
+  loading.value = true;
+  try {
+    const res = await api.get(`/recommend/promotion/all-read/${props.surveyId}`);
+    promotionList.value = res.data || [];
+  } catch (e) {
+    ElMessage.error('추천 프로모션 목록을 불러오지 못했습니다.');
+    console.error(e);
+  } finally {
+    loading.value = false;
+  }
+};
+const fetchRecommendCouponList = async () => {
+  loading.value = true;
+  try {
+    const res = await api.get(`/recommend/coupon/all-read/${props.surveyId}`);
+    couponList.value = res.data || [];
+  } catch (e) {
+    ElMessage.error('추천 프로모션 목록을 불러오지 못했습니다.');
+    console.error(e);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const initRecommendData = async () => {
+  await Promise.all([
+    fetchRecommendPromotionList(),
+    fetchRecommendCouponList()
+  ])
+}
+
+const goToPromotion = (promotionId) => {
+  router.push({
+    name: 'promotion-list',
+    query: { recommendId: promotionId }
+  })
+}
+
+const goToCoupon = (couponId) => {
+  router.push({
+    name: 'coupon-list',
+    query: { recommendId: couponId }
+  })
+}
 </script>
 
 <style scoped>
+
+.reco-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1f2329;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+  
+.reco-desc {
+  color: #636e72;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+.move-btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    display: flex;
+    margin-left: auto;
+}
+  
 .mb-12 {
   margin-bottom: 12px;
 }

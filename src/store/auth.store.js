@@ -12,7 +12,6 @@ export const useAuthStore = defineStore(
     const dept = ref('');
     const positionId = ref('');
 
-
     const setUserInfo = (getId, getEmployeeCode, getEmpId, getName, getAuth, getDept, getPositionId, getToken) => {
       id.value = getId
       employeeCode.value = getEmployeeCode
@@ -34,7 +33,16 @@ export const useAuthStore = defineStore(
       positionId.value = ''
       token.value = ''
     }
-    return { id, employeeCode, empId, name, auth, token, dept, positionId ,setUserInfo, logout };
+
+    const hasAuth = (code) => {
+      return auth.value.some(p =>
+        typeof p === "string"
+          ? p === code
+          : p.auth === code
+      );
+    };
+
+    return { id, employeeCode, empId, name, auth, token, dept, positionId ,setUserInfo, logout, hasAuth };
   },
   {
     persist: {

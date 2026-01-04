@@ -2,32 +2,31 @@
   <div class="wb-card">
     <!-- Header -->
     <div class="wb-head">
-      <div class="wb-title">프로모션 워크벤치</div>
+      <div class="wb-title">쿠폰 워크벤치</div>
     </div>
 
     <!-- List -->
     <div class="wb-list">
-      <!-- Row 1 (HIGH) -->
+
+      <!-- Row 2 (MEDIUM) -->
       <div class="wb-row">
         <div class="wb-left">
-          <span class="dot dot-high" aria-hidden="true"></span>
+          <span class="dot dot-mid" aria-hidden="true"></span>
 
           <div class="wb-text">
-            <div class="wb-main">{{ promotion.name }}</div>
-            <div class="wb-sub">대상: {{ promotion.segmentName }}</div>
+            <div class="wb-main">{{ coupon.name }}</div>
+            <div class="wb-sub">대상: {{ coupon.segmentName }}</div>
           </div>
         </div>
 
         <button
-          class="wb-btn wb-btn--primary"
+          class="wb-btn"
           type="button"
-          @click.stop="go('PROMOTION_CREATE')"
+          @click.stop="go('COUPON_CREATE')"
         >
-          프로모션 생성
+          쿠폰 생성
         </button>
       </div>
-
-      <div class="wb-divider"></div>
     </div>
   </div>
 </template>
@@ -40,24 +39,23 @@ import api from '@/api/axios';
 
 const router = useRouter();
 const loading = ref(false);
-const promotion = ref([]);
+const coupon = ref([]);
 
-const fetchPromotionList = async () => {
+const fetchCouponList = async () => {
   loading.value = true;
   try {
-    const res = await api.get('/recommend/promotion/read-one');
-    promotion.value = res.data;
+    const res = await api.get('/recommend/coupon/read-one');
+    coupon.value = res.data;
   } catch (e) {
-    ElMessage.error('추천 프로모션 목록을 불러오지 못했습니다.');
+    ElMessage.error('추천 쿠폰 목록을 불러오지 못했습니다.');
     console.error(e);
   } finally {
     loading.value = false;
   }
 };
 
-
 onMounted(() => {
-  fetchPromotionList()
+  fetchCouponList();
 });
 
 /**
@@ -65,7 +63,7 @@ onMounted(() => {
  * 👉 실제 프로젝트의 router name에 맞게 name만 조정하면 됨
  */
 const routeMap = {
-  PROMOTION_CREATE: { name: "promotion-list" }, // 프로모션 생성
+  COUPON_CREATE: { name: "coupon-list" },       // 쿠폰 생성
 };
 
 const go = (key) => {
@@ -83,7 +81,7 @@ const go = (key) => {
   height: 48%;
   width: 100%;
   padding: 16px 16px 14px;
-  margin-bottom: 12px;
+  margin-top: 10px;
 }
 
 /* Header */
@@ -101,6 +99,7 @@ const go = (key) => {
   color: #111827;
   letter-spacing: -0.2px;
 }
+
 
 /* List */
 .wb-list {

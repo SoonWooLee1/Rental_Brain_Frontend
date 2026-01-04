@@ -7,12 +7,19 @@
           <h2>{{ itemName }}</h2>
           <p>{{ categoryName }}</p>
         </div>
+        <el-tooltip
+  content="수정 권한이 없습니다"
+  placement="top"
+  :disabled="canUpdateItem"
+>
         <button
-                  class="edit-btn"
-                  @click="openNameEditModal(itemName, monthlyPrice, categoryName)"
-                >
-                  수정
-                </button>
+  class="edit-btn"
+  :disabled="!canUpdateItem"
+  @click="canUpdateItem && openNameEditModal(itemName, monthlyPrice, categoryName)"
+>
+  수정
+</button>
+</el-tooltip>
         <button class="icon-btn" @click="emitClose">✕</button>
       </div>
 
@@ -69,18 +76,32 @@
               <td>{{ formatDate(unit.startDate) }}</td>
               <td>{{ formatDate(unit.lastInspectDate) }}</td>
               <td>
+                <el-tooltip
+  content="수정 권한이 없습니다"
+  placement="top"
+  :disabled="canUpdateItem"
+>
                 <button
-                  class="text-btn"
-                  @click="openEditModal(unit)"
-                >
-                  수정
-                </button>
+  class="text-btn"
+  :disabled="!canUpdateItem"
+  @click="canUpdateItem && openEditModal(unit)"
+>
+  수정
+</button>
+</el-tooltip>
+<el-tooltip
+  content="삭제 권한이 없습니다"
+  placement="top"
+  :disabled="canDeleteItem"
+>
                 <button
-                  class="text-btn danger"
-                  @click="deleteUnit(unit)"
-                >
-                  삭제
-                </button>
+  class="text-btn danger"
+  :disabled="!canDeleteItem"
+  @click="canDeleteItem && deleteUnit(unit)"
+>
+  삭제
+</button>
+</el-tooltip>
               </td>
             </tr>
             <tr v-if="unitList.length === 0">
@@ -120,10 +141,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import api from '@/api/axios';
 import ProductUnitEditModal from "./ProductUnitEditModal.vue";
 import ProductEditModal from './ProductEditModal.vue';
+import { useAuthStore } from "@/store/auth.store";
+
+const authStore = useAuthStore();
+
+const canUpdateItem = computed(() =>
+  authStore.hasAuth('ASSET_WRITE')
+);
+
+const canDeleteItem = computed(() =>
+  authStore.hasAuth('ASSET_DELETE')
+);
 
 const props = defineProps({
   itemName: {
@@ -497,4 +529,15 @@ watch(
   border: none;
   cursor: pointer;
 }
+
+.text-btn:disabled {
+  color: #9ca3af;
+  cursor: unset; 
+}
+
+.edit-btn:disabled {
+  color: #9ca3af;
+  cursor: unset; 
+}
+
 </style>

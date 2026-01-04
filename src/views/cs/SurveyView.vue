@@ -7,9 +7,28 @@
         <p>진행 중이거나 종료된 설문조사를 확인할 수 있습니다</p>
       </div>
 
-      <el-button type="primary" @click.stop="goCreate">
-        설문조사 생성
-      </el-button>
+      <el-tooltip
+  v-if="!canCreateSurvey"
+  content="설문조사 생성 권한이 없습니다"
+  placement="bottom"
+>
+  <span>
+    <el-button
+      type="primary"
+      :disabled="true"
+    >
+      설문조사 생성
+    </el-button>
+  </span>
+</el-tooltip>
+
+<el-button
+  v-else
+  type="primary"
+  @click.stop="goCreate"
+>
+  설문조사 생성
+</el-button>
     </div>
 
     <!-- 고객목록과 동일한 검색/필터 영역 -->
@@ -139,6 +158,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import SurveyAiResult from './SurveyAiResultView.vue'
+import { useAuthStore } from '@/store/auth.store'
 
 const selectedSurveyId = ref(null)
 const aiDialogVisible = ref(false)
@@ -146,6 +166,7 @@ const aiDialogVisible = ref(false)
 const router = useRouter()
 const surveys = ref([])
 const loading = ref(false)
+const authStore = useAuthStore();
 
 // 페이지네이션
 const searchKeyword = ref('')
@@ -160,6 +181,11 @@ const sortState = ref({
   sortBy: "",       // 기본은 빈 값(정렬 없음)
   sortOrder: ""     // "asc" | "desc"
 })
+
+/** 설문 생성 권한 */
+const canCreateSurvey = computed(() =>
+  authStore.hasAuth("CS_PROCESS")
+);
 
 onMounted(() => {
   fetchSurveys()

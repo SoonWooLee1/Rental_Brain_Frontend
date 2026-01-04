@@ -42,10 +42,27 @@
 
         <el-button type="primary" @click="fetchList">검색</el-button>
       </div>
-      <el-button type="primary" @click="goToCreateContract">
-        <el-icon><Plus /></el-icon>
-        계약 생성
-      </el-button>
+      <el-tooltip
+  v-if="!canCreateContract"
+  content="계약 생성 권한이 없습니다"
+  placement="top"
+>
+  <span>
+    <el-button type="primary" disabled>
+      <el-icon><Plus /></el-icon>
+      계약 생성
+    </el-button>
+  </span>
+</el-tooltip>
+
+<el-button
+  v-else
+  type="primary"
+  @click="goToCreateContract"
+>
+  <el-icon><Plus /></el-icon>
+  계약 생성
+</el-button>
     </div>
 
     <!-- ===== KPI ===== -->
@@ -133,13 +150,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import { getContractList, getContractStatus } from '@/api/contract'
 import { Search, Plus } from '@element-plus/icons-vue'
+import { useAuthStore } from '@/store/auth.store'
 
 const router = useRouter()
+const authStore = useAuthStore();
 
 const page = ref(1)
 const size = ref(10)
@@ -185,6 +204,10 @@ const fetchList = async () => {
     loading.value = false
   }
 }
+
+const canCreateContract = computed(() =>
+  authStore.hasAuth('CONTRACT_WRITE')
+)
 
 const goToCreateContract = () => {
   router.push('/contracts/new')

@@ -1,16 +1,18 @@
 <template>
   <div class="page-container" v-loading="loading">
-    
+
     <div class="detail-header">
       <div class="header-left">
         <el-button @click="goList" circle plain>
-          <el-icon><ArrowLeft /></el-icon>
+          <el-icon>
+            <ArrowLeft />
+          </el-icon>
         </el-button>
         <h2 class="company-name">
           {{ customer.name }}
           <el-tag v-if="customer.isDeleted === 'Y'" type="danger" effect="dark" class="ml-2">비활성</el-tag>
         </h2>
-        
+
         <template v-if="isEditMode">
           <el-select v-model="editForm.segmentId" placeholder="세그먼트 선택" class="ml-2" style="width: 220px;">
             <el-option label="잠재 고객" value="1" />
@@ -23,12 +25,8 @@
           </el-select>
         </template>
         <template v-else>
-          <el-tag 
-            :color="getSegmentHexColor(customer.segmentName)" 
-            effect="dark" 
-            class="segment-tag" 
-            style="border: none; color: #fff;"
-          >
+          <el-tag :color="getSegmentHexColor(customer.segmentName)" effect="dark" class="segment-tag"
+            style="border: none; color: #fff;">
             {{ customer.segmentName || '일반 고객' }}
           </el-tag>
         </template>
@@ -36,18 +34,30 @@
 
       <div class="header-right">
         <template v-if="!isEditMode && customer.isDeleted !== 'Y'">
-          <el-button type="primary" @click="enableEditMode">
-            <el-icon><Edit /></el-icon> 정보 수정
-          </el-button>
-          <el-button type="danger" plain @click="handleDelete">
-            <el-icon><Delete /></el-icon> 고객 삭제
-          </el-button>
+          <el-tooltip content="수정 권한이 없습니다" placement="top" :disabled="canUpdateCustomer">
+            <el-button type="primary" :disabled="!canUpdateCustomer" @click="canUpdateCustomer && enableEditMode()">
+              <el-icon>
+                <Edit />
+              </el-icon> 정보 수정
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="삭제 권한이 없습니다" placement="top" :disabled="canDeleteCustomer">
+            <el-button type="danger" plain :disabled="!canDeleteCustomer" @click="canDeleteCustomer && handleDelete()">
+              <el-icon>
+                <Delete />
+              </el-icon> 고객 삭제
+            </el-button>
+          </el-tooltip>
         </template>
 
         <template v-if="customer.isDeleted === 'Y'">
-          <el-button type="success" @click="handleRestore">
-            <el-icon><RefreshLeft /></el-icon> 고객 복구
-          </el-button>
+          <el-tooltip content="복구 권한이 없습니다" placement="top" :disabled="canDeleteCustomer">
+            <el-button type="success" :disabled="!canDeleteCustomer" @click="canDeleteCustomer && handleRestore()">
+              <el-icon>
+                <RefreshLeft />
+              </el-icon> 고객 복구
+            </el-button>
+          </el-tooltip>
         </template>
       </div>
     </div>
@@ -62,7 +72,7 @@
         <div class="info-grid two-columns">
           <el-card class="info-card basic-info" shadow="never">
             <template #header><span class="card-title">기본 정보</span></template>
-            
+
             <el-descriptions :column="1" border v-if="!isEditMode">
               <el-descriptions-item label="고객 코드">{{ customer.customerCode }}</el-descriptions-item>
               <el-descriptions-item label="담당자">{{ customer.inCharge }}</el-descriptions-item>
@@ -82,7 +92,8 @@
               <el-form-item label="연락처"><el-input v-model="editForm.callNum" /></el-form-item>
               <el-form-item label="이메일"><el-input v-model="editForm.email" /></el-form-item>
               <el-form-item label="주소"><el-input v-model="editForm.addr" /></el-form-item>
-              <el-form-item label="기업명" required><el-input v-model="editForm.name" :disabled="!isEditMode" /></el-form-item>
+              <el-form-item label="기업명" required><el-input v-model="editForm.name"
+                  :disabled="!isEditMode" /></el-form-item>
               <div class="edit-buttons">
                 <el-button @click="cancelEdit">취소</el-button>
                 <el-button type="primary" @click="saveEdit">저장</el-button>
@@ -92,14 +103,8 @@
 
           <el-card class="info-card memo-info" shadow="never">
             <template #header><span class="card-title">고객 메모</span></template>
-            <el-input
-              v-model="customer.memo"
-              type="textarea"
-              :rows="12"
-              placeholder="메모 내용이 없습니다."
-              :readonly="!isEditMode"
-              class="memo-textarea"
-            />
+            <el-input v-model="customer.memo" type="textarea" :rows="12" placeholder="메모 내용이 없습니다."
+              :readonly="!isEditMode" class="memo-textarea" />
             <div v-if="isEditMode" class="tip-text text-right mt-2">* '저장' 클릭 시 반영됩니다.</div>
           </el-card>
         </div> 
@@ -278,7 +283,7 @@
             <el-table :data="customer.couponList" border stripe class="mb-20">
               <el-table-column prop="couponCode" label="쿠폰 코드" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="openCouponDetail(row.id)">
+                   <span class="clickable-link" @click="goCouponList(row.couponCode)">
                      {{ row.couponCode }}
                    </span>
                 </template>
@@ -300,7 +305,7 @@
             <el-table :data="customer.promotionList" border stripe>
               <el-table-column prop="promotionCode" label="프로모션 코드" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="openPromotionDetail(row.id)">
+                   <span class="clickable-link" @click="goPromotionList(row.promotionCode)">
                      {{ row.promotionCode }}
                    </span>
                 </template>
@@ -318,7 +323,7 @@
             <el-table :data="customer.asList" border stripe>
               <el-table-column prop="after_service_code" label="관리 번호" width="140" align="center">
                 <template #default="{ row }">
-                   <span class="clickable-link" @click="openAsDetail(row.id)">
+                   <span class="clickable-link" @click="goAsList">
                      {{ row.after_service_code }}
                    </span>
                 </template>
@@ -345,24 +350,22 @@
 
       <el-tab-pane label="세그먼트 변경 이력" name="main_segment">
         <el-timeline style="padding: 20px;">
-          <el-timeline-item
-            v-for="(item, index) in customer.segmentHistoryList"
-            :key="index"
-            :timestamp="formatDate(item.historyChangedAt)" 
-            placement="top"
-            :color="getSegmentHexColor(item.currentSegmentName)" 
-          >
+          <el-timeline-item v-for="(item, index) in customer.segmentHistoryList" :key="index"
+            :timestamp="formatDate(item.historyChangedAt)" placement="top"
+            :color="getSegmentHexColor(item.currentSegmentName)">
             <el-card shadow="hover">
               <div class="history-item">
                 <strong>
-                  {{ item.previousSegmentName || '가입' }} 
-                  <el-icon style="vertical-align: middle;"><Right /></el-icon> 
+                  {{ item.previousSegmentName || '가입' }}
+                  <el-icon style="vertical-align: middle;">
+                    <Right />
+                  </el-icon>
                   <span :style="{ color: getSegmentHexColor(item.currentSegmentName) }">
                     {{ item.currentSegmentName }}
                   </span>
                 </strong>
                 <p class="history-reason">
-                  사유: {{ item.historyReason }} 
+                  사유: {{ item.historyReason }}
                 </p>
               </div>
             </el-card>
@@ -371,61 +374,29 @@
       </el-tab-pane>
 
     </el-tabs>
-
-    <AsDetailModal 
-      v-if="showAsModal" 
-      v-model="showAsModal" 
-      :asId="selectedAsId" 
-    />
-
-    <CouponDetailModal 
-      v-if="showCouponModal" 
-      v-model:visible="showCouponModal" 
-      :couponId="selectedCouponId" 
-    />
-
-    <PromotionDetailModal 
-      v-if="showPromotionModal" 
-      v-model:visible="showPromotionModal" 
-      :promotionId="selectedPromotionId" 
-    />
-
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getCustomerDetail, updateCustomer, deleteCustomer, restoreCustomer } from '@/api/customerlist';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft, Edit, Delete, RefreshLeft, Right, Search } from '@element-plus/icons-vue';
-
-// [수정] 모달 Import 경로 수정 (components 폴더 확인)
-import AsDetailModal from '@/components/product/AsDetailModal.vue';
-import CouponDetailModal from '@/views/campaign/CouponDetailModal.vue';
-import PromotionDetailModal from '@/views/campaign/PromotionDetailModal.vue';
+import { useAuthStore } from '@/store/auth.store';
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 const customerId = route.params.id;
 
 const loading = ref(false);
 const activeTab = ref(route.query.tab || 'general');
 
-// [수정] 모달 상태 변수 (견적 모달은 제거됨)
-const showAsModal = ref(false);
-const selectedAsId = ref(null);
-
-const showCouponModal = ref(false);
-const selectedCouponId = ref(null);
-
-const showPromotionModal = ref(false);
-const selectedPromotionId = ref(null);
-
 const isEditMode = ref(false);
 const customer = ref({
-    historyList: [], segmentHistoryList: [], supportList: [], quoteList: [],
-    contractList: [], asList: [], feedbackList: [], couponList: [], promotionList: []
+  historyList: [], segmentHistoryList: [], supportList: [], quoteList: [],
+  contractList: [], asList: [], feedbackList: [], couponList: [], promotionList: []
 });
 const editForm = ref({});
 
@@ -469,43 +440,35 @@ const activeBizTab = computed({
   set: (val) => updateUrlTab(val)
 });
 
-// [수정] 상세 이동 핸들러 (라우터 경로 및 파라미터 수정)
-// * 주의: row.id (숫자)를 넘겨받아 해당 ID 경로로 이동합니다.
-const goContractDetail = (id) => {
-  router.push(`/contracts/${id}`); 
-};
-const goSupportDetail = (id) => {
-  router.push(`/cs/supports/${id}`); 
-};
-const goFeedbackDetail = (id) => {
-  router.push(`/cs/feedbacks/${id}`);
-};
-const goQuoteDetail = (id) => {
-  router.push(`/quote/${id}`); 
+// 페이지 이동 핸들러
+const goContractDetail = (id) => { router.push(`/contracts/${id}`); };
+const goSupportDetail = (id) => { router.push(`/cs/supports/${id}`); };
+const goFeedbackDetail = (id) => { router.push(`/cs/feedbacks/${id}`); };
+const goQuoteDetail = (id) => { router.push(`/quote/${id}`); };
+
+// [수정] 목록 페이지로 이동하며 키워드 전달
+// 경로는 src/router/index.js 기준이며, keyword 쿼리를 넘깁니다.
+const goCouponList = (code) => {
+    router.push({ 
+        path: '/campaign/coupons', 
+        query: { keyword: code } 
+    });
 };
 
-// [수정 1] AS 상세 모달 열기
-const openAsDetail = async (id) => {
-  selectedAsId.value = null;    // 1. 먼저 ID를 비워서 변경 상태를 만듦
-  showAsModal.value = true;     // 2. 모달을 띄움 (이때는 ID가 없는 상태로 생성)
-  await nextTick();             // 3. 모달이 DOM에 그려질 때까지 대기
-  selectedAsId.value = id;      // 4. ID 값 주입 -> 자식 컴포넌트의 watch가 '변경'을 감지하고 실행됨
+const goPromotionList = (code) => {
+    router.push({ 
+        path: '/campaign/promotions', 
+        query: { keyword: code } 
+    });
 };
 
-// [수정 2] 쿠폰 상세 모달 열기
-const openCouponDetail = async (id) => {
-  selectedCouponId.value = null;
-  showCouponModal.value = true;
-  await nextTick();
-  selectedCouponId.value = id;
-};
-
-// [수정 3] 프로모션 상세 모달 열기
-const openPromotionDetail = async (id) => {
-  selectedPromotionId.value = null;
-  showPromotionModal.value = true;
-  await nextTick();
-  selectedPromotionId.value = id;
+const goAsList = () => {
+    // AS는 코드 대신 '고객사 이름'으로 검색한다고 가정
+    const companyName = customer.value.name;
+    router.push({ 
+        path: '/as', 
+        query: { keyword: companyName } 
+    });
 };
 
 const fetchData = async () => {
@@ -625,18 +588,18 @@ const getEmptyDescription = computed(() => {
   return '검색 결과가 없습니다.';
 });
 
-const enableEditMode = () => { 
-    editForm.value = { ...customer.value }; 
-    isEditMode.value = true; 
+const enableEditMode = () => {
+  editForm.value = { ...customer.value };
+  isEditMode.value = true;
 };
 const cancelEdit = () => { isEditMode.value = false; editForm.value = {}; };
 const saveEdit = async () => {
-  try { 
-    editForm.value.memo = customer.value.memo; 
-    await updateCustomer(customerId, editForm.value); 
-    ElMessage.success('저장되었습니다.'); 
-    isEditMode.value = false; 
-    fetchData(); 
+  try {
+    editForm.value.memo = customer.value.memo;
+    await updateCustomer(customerId, editForm.value);
+    ElMessage.success('저장되었습니다.');
+    isEditMode.value = false;
+    fetchData();
   } catch (e) { ElMessage.error('저장 실패: ' + e.message); }
 };
 const handleDelete = () => { ElMessageBox.confirm('정말 삭제(비활성화) 하시겠습니까?', '경고', { type: 'warning' }).then(async () => { try { await deleteCustomer(customerId); ElMessage.success('비활성화 되었습니다.'); fetchData(); } catch (e) { ElMessage.error('삭제 실패'); } }); };
@@ -645,28 +608,28 @@ const goList = () => router.push('/customers');
 
 // 상태 및 유틸 함수들
 const formatContractStatus = (status) => {
-    const map = { P: '진행 중', C: '완료', W: '승인 대기', R: '반려', T: '해지', I: '만료 임박' };
-    return map[status] || status;
+  const map = { P: '진행 중', C: '완료', W: '승인 대기', R: '반려', T: '해지', I: '만료 임박' };
+  return map[status] || status;
 };
 const getContractStatusTag = (status) => {
-    const map = { P: 'primary', C: 'success', W: 'warning', R: 'danger', T: 'info', I: 'danger' };
-    return map[status] || 'info';
+  const map = { P: 'primary', C: 'success', W: 'warning', R: 'danger', T: 'info', I: 'danger' };
+  return map[status] || 'info';
 };
 const formatSupportStatus = (status) => {
-    const map = { P: '처리 중', C: '완료', W: '대기' };
-    return map[status] || status;
+  const map = { P: '처리 중', C: '완료', W: '대기' };
+  return map[status] || status;
 };
 const getSupportStatusTag = (status) => {
-    const map = { P: 'primary', C: 'success', W: 'warning' };
-    return map[status] || 'info';
+  const map = { P: 'primary', C: 'success', W: 'warning' };
+  return map[status] || 'info';
 };
 const formatAsStatus = (status) => {
-    const map = { P: '방문 예정', C: '처리 완료', R: '접수됨' };
-    return map[status] || status;
+  const map = { P: '방문 예정', C: '처리 완료', R: '접수됨' };
+  return map[status] || status;
 };
 const getAsStatusTag = (status) => {
-    const map = { P: 'warning', C: 'success', R: 'info' };
-    return map[status] || 'info';
+  const map = { P: 'warning', C: 'success', R: 'info' };
+  return map[status] || 'info';
 };
 const getChannelTagStyle = (name) => {
   const styles = {
@@ -680,15 +643,15 @@ const getChannelTagStyle = (name) => {
   return styles[name] || styles['방문'];
 };
 const getSegmentHexColor = (s) => {
-  if(!s) return '#409EFF'; 
-  if(s.includes('VIP')) return '#E6A23C';       
-  if(s.includes('이탈')) return '#F56C6C';      
-  if(s.includes('블랙')) return '#909399';      
-  if(s.includes('신규')) return '#67C23A';      
-  if(s.includes('확장')) return '#409EFF'; 
-  if(s.includes('잠재')) return '#909399';      
-  if(s.includes('일반')) return '#409EFF';      
-  return '#409EFF'; 
+  if (!s) return '#409EFF';
+  if (s.includes('VIP')) return '#E6A23C';
+  if (s.includes('이탈')) return '#F56C6C';
+  if (s.includes('블랙')) return '#909399';
+  if (s.includes('신규')) return '#67C23A';
+  if (s.includes('확장')) return '#409EFF';
+  if (s.includes('잠재')) return '#909399';
+  if (s.includes('일반')) return '#409EFF';
+  return '#409EFF';
 };
 const formatDate = (d) => d ? d.substring(0, 10) : '';
 const dateFormatter = (row, col, val) => formatDate(val);
@@ -733,13 +696,22 @@ onMounted(fetchData);
 /* 2단 그리드 레이아웃 */
 .info-grid.two-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 1:1 비율 */
+  grid-template-columns: 1fr 1fr;
+  /* 1:1 비율 */
   gap: 20px;
   align-items: stretch;
 }
 
-.info-card { height: 100%; display: flex; flex-direction: column; }
-.card-title { font-weight: 700; font-size: 16px; }
+.info-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-weight: 700;
+  font-size: 16px;
+}
 
 /* 히스토리 카드 헤더 스타일 */
 .history-header-row {
@@ -761,10 +733,23 @@ onMounted(fetchData);
 .memo-textarea :deep(.el-textarea__inner) {
     resize: none; border: none; background-color: #f9f9f9; font-size: 14px; line-height: 1.6; padding: 15px;
 }
-.tip-text { font-size: 12px; color: #999; }
-.text-right { text-align: right; }
-.mt-2 { margin-top: 10px; }
-.mb-20 { margin-bottom: 20px; }
+
+.tip-text {
+  font-size: 12px;
+  color: #999;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mt-2 {
+  margin-top: 10px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
 
 /* 히스토리 아이템 스타일 */
 .history-item-card { margin-bottom: 5px; transition: all 0.2s; } 

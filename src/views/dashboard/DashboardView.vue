@@ -1,6 +1,15 @@
 <template>
   <div class="page-container">
-    <div class="dashboard-grid">
+<!-- ❌ 권한 없음 -->
+    <div v-if="!canViewDashboard" class="no-permission">
+      <el-icon class="lock-icon"><Lock /></el-icon>
+      <h2>대시보드 접근 권한이 없습니다</h2>
+      <p>
+        이 페이지를 이용하려면 관리자에게<br />
+        권한 요청을 해주세요.
+      </p>
+    </div>
+    <div v-else class="dashboard-grid">
       <!-- 1단: KPI -->
       <section class="row-full">
         <DashboardKpi />
@@ -58,6 +67,7 @@
         </div>
         <div>
           <CampaignWorkbenchMock />
+          <CouponWorkbenchMock />
         </div>
 
       </section>
@@ -66,7 +76,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/store/auth.store'
 import { useRouter } from "vue-router";
+import { Lock } from '@element-plus/icons-vue'
+
 
 import DashboardKpi from "@/components/dashboard/DashboardKpi.vue";
 import ProductStatus from "@/components/dashboard/ProductStatus.vue";
@@ -74,8 +88,14 @@ import SegmentAnalysisChart from "@/components/analysis/SegmentAnalysisChart.vue
 import QuarterCustomerChart from "@/components/dashboard/QuarterCustomerChart.vue";
 import SegmentDistribution from "@/components/analysis/SegmentDistribution.vue";
 import CampaignWorkbenchMock from "@/components/dashboard/CampaignWorkbenchMock.vue";
+import CouponWorkbenchMock from "@/components/dashboard/CouponWorkbenchMock.vue";
 
+const authStore = useAuthStore();
 const router = useRouter();
+
+const canViewDashboard = computed(() =>
+  authStore.hasAuth('DASHBOARD_READ')
+)
 
 function goTo(key) {
   const map = {
@@ -93,6 +113,39 @@ function goTo(key) {
 </script>
 
 <style scoped>
+  .no-permission {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  background: #f9fafb;
+  border-radius: 16px;
+  border: 1px dashed #e5e7eb;
+
+  text-align: center;
+}
+
+.lock-icon {
+  font-size: 56px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.no-permission h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.no-permission p {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
 .page-container {
   padding: 24px;
   max-width: 1440px;

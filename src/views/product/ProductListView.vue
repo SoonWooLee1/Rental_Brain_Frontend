@@ -1,12 +1,12 @@
 <template>
-    <div class="product-list-page">
+  <div class="product-list-page">
     <!-- 상단 타이틀 및 버튼 -->
     <div class="header">
       <div>
         <h1>렌탈 제품 목록</h1>
         <p>전체 제품 현황 및 수익성 관리</p>
       </div>
-      <button class="primary-btn" @click="openCreateModal">
+      <button class="primary-btn" :disabled="!canCreateItem" @click="canCreateItem && openCreateModal()">
         신규 제품 등록
       </button>
     </div>
@@ -14,159 +14,128 @@
     <!-- 검색 / 카테고리 / 필터 -->
     <div class="search-area card-box">
       <div class="filter-wrapper">
-       <!-- 검색 -->
-       <el-input
-        v-model="searchKeyword"
-        placeholder="제품명으로 검색..."
-        class="search-input"
-        @keyup.enter="handleSearch"
-        clearable
-        style="width: 500px;"
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
+        <!-- 검색 -->
+        <el-input v-model="searchKeyword" placeholder="제품명으로 검색..." class="search-input" @keyup.enter="handleSearch"
+          clearable style="width: 500px;">
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
 
-      <!-- 카테고리 필터 -->
-      <el-select
-        v-model="selectedCategory"
-        placeholder="전체 카테고리"
-        style="width: 180px;"
-        @change="handleCategoryFilter"
-      >
-        <el-option label="전체 카테고리" value="" />
-        <el-option
-          v-for="category in categoryOptions"
-          :key="category"
-          :label="category"
-          :value="category"
-        />
-      </el-select>
+        <!-- 카테고리 필터 -->
+        <el-select v-model="selectedCategory" placeholder="전체 카테고리" style="width: 180px;"
+          @change="handleCategoryFilter">
+          <el-option label="전체 카테고리" value="" />
+          <el-option v-for="category in categoryOptions" :key="category" :label="category" :value="category" />
+        </el-select>
 
-      <!-- 검색 버튼 -->
-      <el-button type="primary" @click="handleSearch">검색</el-button>
-  </div>
+        <!-- 검색 버튼 -->
+        <el-button type="primary" @click="handleSearch">검색</el-button>
+      </div>
 
- </div>
+    </div>
 
 
 
     <el-card shadow="never" :body-style="{ padding: '0' }">
-    <!-- 자산 목록 테이블 -->
-     <el-table :data="itemList" style="width: 100%" v-loading="loading">
-  <!-- 제품명 -->
-  <el-table-column prop="itemName" label="제품명" min-width="140" />
+      <!-- 자산 목록 테이블 -->
+      <el-table :data="itemList" style="width: 100%" v-loading="loading">
+        <!-- 제품명 -->
+        <el-table-column prop="itemName" label="제품명" min-width="140" />
 
-  <!-- 카테고리 -->
-  <el-table-column prop="categoryName" label="카테고리" min-width="120" />
+        <!-- 카테고리 -->
+        <el-table-column prop="categoryName" label="카테고리" min-width="120" />
 
-  <!-- 월 렌탈료 -->
-  <el-table-column label="월 렌탈료" min-width="120">
-    <template #default="{ row }">
-      {{ formatToManWon(row.monthlyPrice) }}
-    </template>
-  </el-table-column>
+        <!-- 월 렌탈료 -->
+        <el-table-column label="월 렌탈료" min-width="120">
+          <template #default="{ row }">
+            {{ formatToManWon(row.monthlyPrice) }}
+          </template>
+        </el-table-column>
 
-  <!-- 재고 현황 -->
-  <el-table-column label="재고 현황" min-width="180">
-    <template #default="{ row }">
-      <div class="stock-line">
-        <span class="label">총</span>
-        <span class="value">{{ row.stockAmount }}개</span>
+        <!-- 재고 현황 -->
+        <el-table-column label="재고 현황" min-width="180">
+          <template #default="{ row }">
+            <div class="stock-line">
+              <span class="label">총</span>
+              <span class="value">{{ row.stockAmount }}개</span>
+            </div>
+            <div class="stock-line blue">
+              <span class="label">렌탈</span>
+              <span class="value">{{ row.rentalAmount }}개</span>
+              <span class="label">가능</span>
+              <span class="value">{{ row.possibleAmount }}개</span>
+            </div>
+            <div class="stock-line green">
+              <span class="label">수리</span>
+              <span class="value">{{ row.repairAmount }}개</span>
+              <span class="label">연체</span>
+              <span class="value">{{ row.overdueAmount }}개</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <!-- 총 매출 -->
+        <el-table-column label="총 매출" min-width="120">
+          <template #default="{ row }">
+            {{ formatToManWon(row.wholeSales) }}
+          </template>
+        </el-table-column>
+
+        <!-- 수리비 -->
+        <el-table-column label="수리비" min-width="120">
+          <template #default="{ row }">
+            {{ formatToManWon(row.wholeRepairCost) }}
+          </template>
+        </el-table-column>
+
+        <!-- 운용률 -->
+        <el-table-column label="운용률" min-width="160">
+          <template #default="{ row }">
+            <div class="usage-cell">
+              <div class="usage-bar-bg">
+                <div class="usage-bar-fill" :style="{ width: row.utilizationRate + '%' }"></div>
+              </div>
+              <span class="usage-text">{{ row.utilizationRate }}%</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <!-- 목록 / 상세보기 -->
+        <el-table-column label="목록" width="120" align="center">
+          <template #default="{ row }">
+            <el-button class="link-btn" link type="primary" size="small" @click="openDetailModal(row)">
+              상세보기
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+
+      <!-- 페이지네이션 -->
+      <div class="pagination-area">
+        <el-pagination layout="prev, pager, next" :total="totalCount" v-model:current-page="page" :page-size="pageSize"
+          @current-change="fetchItemList" />
       </div>
-      <div class="stock-line blue">
-        <span class="label">렌탈</span>
-        <span class="value">{{ row.rentalAmount }}개</span>
-        <span class="label">가능</span>
-        <span class="value">{{ row.possibleAmount }}개</span>
-      </div>
-      <div class="stock-line green">
-        <span class="label">수리</span>
-        <span class="value">{{ row.repairAmount }}개</span>
-        <span class="label">연체</span>
-        <span class="value">{{ row.overdueAmount }}개</span>
-      </div>
-    </template>
-  </el-table-column>
-
-  <!-- 총 매출 -->
-  <el-table-column label="총 매출" min-width="120">
-    <template #default="{ row }">
-      {{ formatToManWon(row.wholeSales) }}
-    </template>
-  </el-table-column>
-
-  <!-- 수리비 -->
-  <el-table-column label="수리비" min-width="120">
-    <template #default="{ row }">
-      {{ formatToManWon(row.wholeRepairCost) }}
-    </template>
-  </el-table-column>
-
-  <!-- 운용률 -->
-  <el-table-column label="운용률" min-width="160">
-    <template #default="{ row }">
-      <div class="usage-cell">
-        <div class="usage-bar-bg">
-          <div
-            class="usage-bar-fill"
-            :style="{ width: row.utilizationRate + '%' }"
-          ></div>
-        </div>
-        <span class="usage-text">{{ row.utilizationRate }}%</span>
-      </div>
-    </template>
-  </el-table-column>
-
-  <!-- 목록 / 상세보기 -->
-  <el-table-column label="목록" width="120" align="center">
-    <template #default="{ row }">
-      <el-button class="link-btn" link type="primary" size="small" @click="openDetailModal(row)">
-        상세보기
-      </el-button>
-    </template>
-  </el-table-column>
-</el-table>
-
-
-    <!-- 페이지네이션 -->
-    <div class="pagination-area">
-        <el-pagination 
-          layout="prev, pager, next" 
-          :total="totalCount" 
-          v-model:current-page="page"
-          :page-size="pageSize"
-          @current-change="fetchItemList"
-        />
-      </div>
-      </el-card>
+    </el-card>
 
     <!-- 등록 모달 -->
-    <ProductCreateModal
-      v-if="isCreateModalOpen"
-      @close="isCreateModalOpen = false"
-      @success="reloadList"
-    />
+    <ProductCreateModal v-if="isCreateModalOpen" @close="isCreateModalOpen = false" @success="reloadList" />
 
     <!-- 상세/수정/삭제 모달 -->
-    <ProductDetailModal
-      v-if="isDetailModalOpen"
-      :item-name="selectedItemName"
-      :monthly-price="selectedMonthlyPrice"
-      :category-name="selectedCategoryName"
-      @close="closeDetailModal"
-      @updated="reloadList"
-      @deleted="reloadList"
-    />
+    <ProductDetailModal v-if="isDetailModalOpen" :item-name="selectedItemName" :monthly-price="selectedMonthlyPrice"
+      :category-name="selectedCategoryName" @close="closeDetailModal" @updated="reloadList" @deleted="reloadList" />
   </div>
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue';
-  import api from '@/api/axios';
-  import ProductCreateModal from './ProductCreateModal.vue';
-  import ProductDetailModal from './ProductDetailModal.vue';
+import { ref, onMounted, computed } from 'vue';
+import api from '@/api/axios';
+import ProductCreateModal from './ProductCreateModal.vue';
+import ProductDetailModal from './ProductDetailModal.vue';
+import { useAuthStore } from '@/store/auth.store';
 
 const itemList = ref([]);
 const searchKeyword = ref('');
@@ -184,18 +153,24 @@ const totalCount = ref(0);
 const page = ref(1);
 const pageSize = ref(5);
 
+const authStore = useAuthStore();
+
+const canCreateItem = computed(() =>
+  authStore.hasAuth('ASSET_WRITE')
+)
+
 // 기본 목록 조회
 async function fetchItemList() {
   try {
-    const res = await api.get('/item/read-groupby-name',{
-    params: {
+    const res = await api.get('/item/read-groupby-name', {
+      params: {
         page: page.value,
         size: pageSize.value,
       }
-      });
+    });
     console.log('기본 목록 조회 결과:', res.data);
     console.log('기본 목록 조회 결과:', res.data.contents);
-    
+
     itemList.value = res.data.contents;
     totalCount.value = res.data.totalCount;
     fetchCategory();
@@ -212,12 +187,12 @@ async function handleSearch() {
     return;
   }
   try {
-    const res = await api.get(`/item/search/${encodeURIComponent(keyword)}`,{
-    params: {
+    const res = await api.get(`/item/search/${encodeURIComponent(keyword)}`, {
+      params: {
         page: page.value,
         size: pageSize.value,
       }
-      });
+    });
     itemList.value = res.data.contents;
     totalCount.value = res.data.totalCount;
   } catch (err) {
@@ -234,12 +209,12 @@ async function handleCategoryFilter() {
   }
   try {
     const res = await api.get(
-      `/item/filtering/${encodeURIComponent(category)}`,{
-    params: {
+      `/item/filtering/${encodeURIComponent(category)}`, {
+      params: {
         page: page.value,
         size: pageSize.value,
       }
-      });
+    });
     itemList.value = res.data.contents;
     totalCount.value = res.data.totalCount;
   } catch (err) {
@@ -305,8 +280,8 @@ function closeDetailModal() {
 }
 
 const changePage = (p) => {
-    page.value.current = p
-    fetchList()
+  page.value.current = p
+  fetchList()
 }
 
 // 목록 리로드 (모달에서 성공 이벤트 발생 시 사용)
@@ -362,11 +337,30 @@ onMounted(async () => {
   font-size: 12px;
   color: #999;
 }
-.search-area { 
-    display: flex; justify-content: space-between; align-items: center; 
-    margin-bottom: 20px; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #eee;
+
+.primary-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
-.filter-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.search-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.filter-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
 .toolbar {
   display: flex;
@@ -436,7 +430,7 @@ onMounted(async () => {
   line-height: 1.4;
 }
 
-.stock-line + .stock-line {
+.stock-line+.stock-line {
   margin-top: 2px;
 }
 
@@ -509,6 +503,9 @@ onMounted(async () => {
 }
 
 .pagination-area {
-    display: flex; justify-content: center; margin-top: 10px; margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 </style>

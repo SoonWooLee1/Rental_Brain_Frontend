@@ -54,10 +54,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="foot">
-      <button class="btn" type="button">자산 캠페인 생성</button>
-    </div>
   </div>
 </template>
 

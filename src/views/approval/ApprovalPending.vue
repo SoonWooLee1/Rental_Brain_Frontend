@@ -3,78 +3,35 @@
 
     <!-- Search -->
     <div class="search-area">
-      <el-input
-        v-model="keyword"
-        placeholder="결재 코드 / 제목 검색"
-        clearable
-        @keyup.enter="onSearch"
-        style="width: 260px"
-      />
-      <el-button
-        type="primary"
-        @click="onSearch"
-      >
+      <el-input v-model="keyword" placeholder="결재 코드 / 제목 검색" clearable @keyup.enter="onSearch" style="width: 260px" />
+      <el-button type="primary" @click="onSearch">
         검색
       </el-button>
     </div>
     <!-- Table -->
-    <el-table
-      :data="list"
-      v-loading="loading"
-      style="width: 100%"
-      empty-text="대기 중인 결재가 없습니다."
-      @row-click="goContractDetail"
-    >
-      <el-table-column
-        prop="approvalCode"
-        label="결재 코드"
-        width="160"
-      />
+    <el-table :data="list" v-loading="loading" style="width: 100%" empty-text="대기 중인 결재가 없습니다."
+      @row-click="goContractDetail">
+      <el-table-column prop="approvalCode" label="결재 코드" width="160" />
 
-      <el-table-column
-        prop="approvalTitle"
-        label="제목"
-      />
+      <el-table-column prop="approvalTitle" label="제목" />
 
-      <el-table-column
-        prop="employeeName"
-        label="요청자"
-        width="120"
-      />
+      <el-table-column prop="employeeName" label="요청자" width="120" />
 
-      <el-table-column
-        prop="positionName"
-        label="직위"
-        width="140"
-      />
+      <el-table-column prop="positionName" label="직위" width="140" />
 
-      <el-table-column
-        label="요청일"
-        width="160"
-      >
+      <el-table-column label="요청일" width="160">
         <template #default="{ row }">
           {{ formatDate(row.requestDate) }}
         </template>
       </el-table-column>
 
-      <el-table-column
-        label="결재"
-        width="180"
-      >
+      <el-table-column label="결재" width="180">
         <template #default="{ row }">
-          <el-button
-            size="small"
-            type="success"
-            @click.stop="openApproveModal(row)"
-          >
+          <el-button size="small" type="success" @click.stop="openApproveModal(row)">
             승인
           </el-button>
-        
-          <el-button
-            size="small"
-            type="danger"
-            @click.stop="openRejectModal(row)"
-          >
+
+          <el-button size="small" type="danger" @click.stop="openRejectModal(row)">
             반려
           </el-button>
         </template>
@@ -83,63 +40,40 @@
 
     <!-- Pagination -->
     <div class="pagination-area">
-      <el-pagination
-        layout="prev, pager, next"
-        :total="total"
-        :page-size="size"
-        v-model:current-page="page"
-        @current-change="fetchList"
-      />
+      <el-pagination layout="prev, pager, next" :total="total" :page-size="size" v-model:current-page="page"
+        @current-change="fetchList" />
     </div>
   </el-card>
   <!-- 승인 확인 모달 -->
-<el-dialog
-  v-model="approveVisible"
-  title="결재 승인"
-  width="360px"
->
-  <div class="approve-message">
-    <p><strong>결재 코드:</strong> {{ selectedApproval?.approvalCode }}</p>
-    <p>해당 결재를 승인하시겠습니까?</p>
-  </div>
+  <el-dialog v-model="approveVisible" title="결재 승인" width="360px">
+    <div class="approve-message">
+      <p><strong>결재 코드:</strong> {{ selectedApproval?.approvalCode }}</p>
+      <p>해당 결재를 승인하시겠습니까?</p>
+    </div>
 
-  <template #footer>
-    <el-button @click="approveVisible = false">취소</el-button>
-    <el-button
-      type="success"
-      :loading="approveLoading"
-      @click="confirmApprove"
-    >
-      승인
-    </el-button>
-  </template>
-</el-dialog>
+    <template #footer>
+      <el-button @click="approveVisible = false">취소</el-button>
+      <el-button type="success" :loading="approveLoading" @click="confirmApprove">
+        승인
+      </el-button>
+    </template>
+  </el-dialog>
   <!-- 반려 사유 입력 모달 -->
-<el-dialog
-  v-model="rejectVisible"
-  title="결재 반려"
-  width="400px"
->
-  <el-form>
-    <el-form-item label="반려 사유">
-      <el-input
-        v-model="rejectReason"
-        type="textarea"
-        rows="4"
-        placeholder="반려 사유를 입력하세요"
-        maxlength="200"
-        show-word-limit
-      />
-    </el-form-item>
-  </el-form>
+  <el-dialog v-model="rejectVisible" title="결재 반려" width="400px">
+    <el-form>
+      <el-form-item label="반려 사유">
+        <el-input v-model="rejectReason" type="textarea" rows="4" placeholder="반려 사유를 입력하세요" maxlength="200"
+          show-word-limit />
+      </el-form-item>
+    </el-form>
 
-  <template #footer>
-    <el-button @click="rejectVisible = false">취소</el-button>
-    <el-button type="danger" :loading="rejectLoading" @click="confirmReject">
-      반려 처리
-    </el-button>
-  </template>
-</el-dialog>
+    <template #footer>
+      <el-button @click="rejectVisible = false">취소</el-button>
+      <el-button type="danger" :loading="rejectLoading" @click="confirmReject">
+        반려 처리
+      </el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -147,7 +81,7 @@ import { ref, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import { getApprovalPending } from '@/api/approval'
 import { approveApproval, rejectApproval } from '@/api/approval'
-import { ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useToastStore } from '@/store/useToast'
 import { useRouter } from 'vue-router'
 
@@ -171,7 +105,7 @@ const approveVisible = ref(false)
 const approveLoading = ref(false)
 const selectedApproval = ref(null)
 const rejectVisible = ref(false)
-const rejectLoading= ref(false)
+const rejectLoading = ref(false)
 const rejectReason = ref('')
 
 const onSearch = () => {
@@ -184,7 +118,7 @@ const fetchList = async () => {
   loading.value = true
   try {
     // interceptor로 response.data가 이미 벗겨진 상태
-    const res = await getApprovalPending(page.value, size.value,keyword.value)
+    const res = await getApprovalPending(page.value, size.value, keyword.value)
     console.log('pending res:', res)
 
     const data = res.contents ? res : res.data ?? res
@@ -285,9 +219,11 @@ onMounted(fetchList)
   line-height: 1.6;
   font-size: 14px;
 }
+
 .approve-message p {
   margin: 6px 0;
 }
+
 .search-area {
   display: flex;
   justify-content: flex-end;

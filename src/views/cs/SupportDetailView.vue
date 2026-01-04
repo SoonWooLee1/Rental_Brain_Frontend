@@ -50,25 +50,102 @@
 
       <div class="action-footer mt-4">
         <div class="button-group-right">
-           <el-button type="danger" plain @click="handleDelete" class="mr-2">삭제</el-button>
-           <el-button type="primary" plain @click="openEditModal" class="mr-2">수정</el-button>
-           
-           <el-button 
-            v-if="supportInfo.status === 'C' || supportInfo.status === '완료'"
-            type="warning" 
-            @click="handleReopen"
-          >
-            진행 중으로 변경
-          </el-button>
 
-          <el-button 
-            v-else
-            type="success" 
-            @click="handleComplete"
-          >
-            처리 완료로 변경
-          </el-button>
-        </div>
+  <!-- 삭제 -->
+  <el-tooltip
+    v-if="!canProcessSupport"
+    content="문의 처리 권한이 없습니다"
+    placement="top"
+  >
+    <span>
+      <el-button
+        type="danger"
+        plain
+        :disabled="true"
+        class="mr-2"
+      >
+        삭제
+      </el-button>
+    </span>
+  </el-tooltip>
+
+  <el-button
+    v-else
+    type="danger"
+    plain
+    class="mr-2"
+    @click="handleDelete"
+  >
+    삭제
+  </el-button>
+
+  <!-- 수정 -->
+  <el-tooltip
+    v-if="!canProcessSupport"
+    content="문의 처리 권한이 없습니다"
+    placement="top"
+  >
+    <span>
+      <el-button
+        type="primary"
+        plain
+        :disabled="true"
+        class="mr-2"
+      >
+        수정
+      </el-button>
+    </span>
+  </el-tooltip>
+
+  <el-button
+    v-else
+    type="primary"
+    plain
+    class="mr-2"
+    @click="openEditModal"
+  >
+    수정
+  </el-button>
+
+  <!-- 상태 변경 -->
+  <el-tooltip
+    v-if="!canProcessSupport"
+    content="문의 처리 권한이 없습니다"
+    placement="top"
+  >
+    <span>
+      <el-button
+        :type="supportInfo.status === 'C' || supportInfo.status === '완료'
+          ? 'warning'
+          : 'success'"
+        :disabled="true"
+      >
+        {{
+          supportInfo.status === 'C' || supportInfo.status === '완료'
+            ? '진행 중으로 변경'
+            : '처리 완료로 변경'
+        }}
+      </el-button>
+    </span>
+  </el-tooltip>
+
+  <el-button
+    v-else
+    :type="supportInfo.status === 'C' || supportInfo.status === '완료'
+      ? 'warning'
+      : 'success'"
+    @click="supportInfo.status === 'C' || supportInfo.status === '완료'
+      ? handleReopen()
+      : handleComplete()"
+  >
+    {{
+      supportInfo.status === 'C' || supportInfo.status === '완료'
+        ? '진행 중으로 변경'
+        : '처리 완료로 변경'
+    }}
+  </el-button>
+
+</div>
       </div>
     </el-card>
 
@@ -101,11 +178,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getSupportDetail, updateSupport, deleteSupport, getInChargeList } from '@/api/customersupport';
+import { useAuthStore } from '@/store/auth.store';
 
 const route = useRoute();
 const router = useRouter();
@@ -113,6 +191,7 @@ const loading = ref(false);
 const supportInfo = ref({});
 const editModalVisible = ref(false);
 const inChargeList = ref([]);
+const authStore = useAuthStore();
 
 const editForm = reactive({
   empId: null,
@@ -120,6 +199,11 @@ const editForm = reactive({
   content: '',
   action: '',
 });
+
+/** 문의 처리 권한 */
+const canProcessSupport = computed(() =>
+  authStore.hasAuth("CS_PROCESS")
+);
 
 const fetchData = async () => {
   loading.value = true;

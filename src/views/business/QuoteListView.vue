@@ -6,9 +6,30 @@
         <p class="page-subtitle">기업 고객 문의 및 상담 관리</p>
       </div>
 
-      <el-button type="primary" class="btn-register" @click="handleCreate">
-        <el-icon><Plus /></el-icon> 상담 추가
-      </el-button>
+      <el-tooltip
+  v-if="!canCreateQuote"
+  content="상담 등록 권한이 없습니다"
+  placement="top"
+>
+  <span>
+    <el-button
+      type="primary"
+      class="btn-register"
+      :disabled="true"
+    >
+      <el-icon><Plus /></el-icon> 상담 추가
+    </el-button>
+  </span>
+</el-tooltip>
+
+<el-button
+  v-else
+  type="primary"
+  class="btn-register"
+  @click="handleCreate"
+>
+  <el-icon><Plus /></el-icon> 상담 추가
+</el-button>
     </div>
 
     <div class="kpi-wrapper">
@@ -165,7 +186,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive} from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Search, Plus } from '@element-plus/icons-vue';
@@ -173,14 +194,21 @@ import { Search, Plus } from '@element-plus/icons-vue';
 import { getQuoteList, getQuoteKpi } from '@/api/quote';
 // 등록 모달 import
 import QuoteCreateModal from './QuoteCreateModal.vue';
+import { useAuthStore } from '@/store/auth.store';
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const loading = ref(false);
 const quoteList = ref([]);
 const totalCount = ref(0);
 const pageSize = ref(10);
 const currentPage = ref(1);
+
+/** 상담(견적) 등록 권한 */
+const canCreateQuote = computed(() =>
+  authStore.hasAuth('QUOTE_WRITE')
+)
 
 // 등록 모달 상태
 const isCreateModalOpen = ref(false);

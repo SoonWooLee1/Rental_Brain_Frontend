@@ -33,7 +33,7 @@
             <span class="chip-dot" :style="{ background: segColor(c.segmentId) }"></span>
 
             <span class="chip-name">{{ c.segmentName }}</span>
-            <span class="chip-count">{{ fmt(c.customerCount) }}개사</span>
+            <!-- <span class="chip-count">{{ fmt(c.customerCount) }}개사</span> 숫자 is_delete 때문에 안맞는거 수정 -->
           </button>
         </div>
       </el-scrollbar>

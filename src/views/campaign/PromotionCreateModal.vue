@@ -130,6 +130,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  recommendId: [Number, String, null]
 });
 
 const emit = defineEmits(['update:visible', 'created']);
@@ -151,6 +152,25 @@ const form = reactive({
   content: '',
   segmentName: '',
 });
+
+// 추천 프로모션 단건 조회
+const fetchRecommendPromotion = async (id) => {
+  try {
+    const res = await api.get(`/recommend/promotion/read-one/${id}`)
+    const data = res.data
+    
+    // 입력창 초기값 세팅
+    form.type = 'M'
+    form.name = data.name
+    form.content = data.content || ''
+    form.segmentName = data.segmentName
+    
+    ElMessage.success('추천 데이터를 불러왔습니다')
+  } catch (e) {
+    ElMessage.error('추천 데이터를 불러오지 못했습니다')
+    console.error(e)
+  }
+}
 
 // 유효성 검사 rules
 const rules = {
@@ -180,16 +200,6 @@ const rules = {
   ],
 };
 
-// props.visible 변화 감지
-watch(
-  () => props.visible,
-  (v) => {
-    if (v) {
-      resetForm();
-    }
-  }
-);
-
 const resetForm = () => {
   form.name = '';
   form.startDate = null;
@@ -201,6 +211,14 @@ const resetForm = () => {
   dateRange.value = [];
   formRef.value && formRef.value.clearValidate();
 };
+
+watch([() => props.recommendId, () => props.visible], async ([newId, isVisible]) => {
+  if (newId && isVisible) {
+    await fetchRecommendPromotion(newId)
+  } else if (!isVisible) {
+    resetForm()
+  }
+}, { immediate: true })
 
 const handleClose = () => {
   emit('update:visible', false);
@@ -257,6 +275,9 @@ const handleSubmit = () => {
         content: form.content,
         segmentName: form.segmentName,
       });
+      if (props.recommendId) {
+        await api.put(`/recommend/promotion/update/${props.recommendId}`);
+      }
       ElMessage.success('프로모션이 등록되었습니다.');
       emit('created');           // 부모에서 목록 재조회
       emit('update:visible', false);
@@ -265,6 +286,7 @@ const handleSubmit = () => {
       console.error(e);
     } finally {
       saving.value = false;
+      recommendId = ref(null);
     }
   });
 };

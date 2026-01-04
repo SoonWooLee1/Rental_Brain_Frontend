@@ -89,16 +89,51 @@
       <div class="dialog-footer">
         <div class="left-actions"></div>
         <div class="right-actions">
-          <el-button @click="openEdit" :disabled="!detail">수정</el-button>
-          <el-button
-            type="danger"
-            @click="handleDelete"
-            :loading="deleting"
-            :disabled="!detail"
-          >
-            삭제
-          </el-button>
-        </div>
+
+  <!-- 수정 버튼 -->
+  <el-tooltip
+    v-if="!canUpdateCoupon"
+    content="쿠폰 수정 권한이 없습니다"
+    placement="top"
+  >
+    <span>
+      <el-button disabled>수정</el-button>
+    </span>
+  </el-tooltip>
+
+  <el-button
+    v-else
+    @click="openEdit"
+    :disabled="!detail"
+  >
+    수정
+  </el-button>
+
+  <!-- 삭제 버튼 -->
+  <el-tooltip
+    v-if="!canUpdateCoupon"
+    content="쿠폰 삭제 권한이 없습니다"
+    placement="top"
+  >
+    <span>
+      <el-button type="danger" disabled>
+        삭제
+      </el-button>
+    </span>
+  </el-tooltip>
+
+  <el-button
+    v-else
+    type="danger"
+    :loading="deleting"
+    :disabled="!detail"
+    @click="handleDelete"
+  >
+    삭제
+  </el-button>
+
+</div>
+
       </div>
 
       <!-- 수정 모달 -->
@@ -116,6 +151,9 @@ import { ref, computed, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import api from '@/api/axios';
 import CouponEditModal from './CouponEditModal.vue';
+import { useAuthStore } from '@/store/auth.store'
+
+const authStore = useAuthStore();
 
 const props = defineProps({
   visible: {
@@ -134,6 +172,10 @@ const detail = ref(null);
 const loading = ref(false);
 const deleting = ref(false);
 const editVisible = ref(false);
+
+const canUpdateCoupon = computed(() =>
+  authStore.hasAuth('CAMPAIGN_MANAGE')
+)
 
 const typeLabel = computed(() => {
   if (!detail.value) return '';

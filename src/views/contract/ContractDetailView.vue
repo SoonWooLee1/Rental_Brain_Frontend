@@ -14,14 +14,33 @@
         </div>
       </div>
       <div class="header-right">
-        <el-button
-          v-if="vm.contractStatus === 'P' || vm.contractStatus === 'I'"
-          type="danger"
-          plain
-          @click="openTerminateModal"
-        >
-          계약 해지
-        </el-button>
+        <!-- 계약 해지 가능 상태 -->
+<template v-if="vm.contractStatus === 'P' || vm.contractStatus === 'I'">
+
+  <!-- 권한 없음 -->
+  <el-tooltip
+    v-if="!canTerminateContract"
+    content="계약 해지 권한이 없습니다"
+    placement="top"
+  >
+    <span>
+      <el-button type="danger" plain disabled>
+        계약 해지
+      </el-button>
+    </span>
+  </el-tooltip>
+
+  <!-- 권한 있음 -->
+  <el-button
+    v-else
+    type="danger"
+    plain
+    @click="openTerminateModal"
+  >
+    계약 해지
+  </el-button>
+
+</template>
       </div>
     </div>
 
@@ -264,6 +283,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useToastStore } from '@/store/useToast'
 import { getContractBasic, getContractItems, getContractPayments, patchCompletePayment, patchTerminateContract} from '@/api/contract'
+import { useAuthStore } from '@/store/auth.store'
+import { ElMessage } from 'element-plus'
 
 const terminateDialogVisible = ref(false)
 const terminateLoading = ref(false)
@@ -278,6 +299,8 @@ const loading = ref(false)
 const activeTab = ref('overview')
 
 const toastStore = useToastStore();
+const authStore = useAuthStore();
+
 /* =========================
    State
 ========================= */
@@ -308,11 +331,13 @@ function initVm() {
   }
 }
 
-
-
 /* =========================
    API
 ========================= */
+const canTerminateContract = computed(() =>
+  authStore.hasAuth('CONTRACT_APPROVE')
+)
+
 function openTerminateModal() {
   terminateDialogVisible.value = true
 }
@@ -323,7 +348,7 @@ async function confirmTerminate() {
 
     await patchTerminateContract(route.params.id)
 
-    toastStore.showToast('계약이 해지되었습니다.')
+    ElMessage.success('계약이 해지되었습니다.');
 
     terminateDialogVisible.value = false
 
