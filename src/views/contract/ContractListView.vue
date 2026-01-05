@@ -7,6 +7,27 @@
         <h1 class="page-title">계약 목록</h1>
         <p class="page-subtitle">계약 현황 및 진행 상태 관리</p>
       </div>
+      <el-tooltip
+  v-if="!canCreateContract"
+  content="계약 생성 권한이 없습니다"
+  placement="top"
+>
+  <span>
+    <el-button type="primary" disabled>
+      <el-icon><Plus /></el-icon>
+      계약 생성
+    </el-button>
+  </span>
+</el-tooltip>
+
+<el-button
+  v-else
+  type="primary"
+  @click="goToCreateContract"
+>
+  <el-icon><Plus /></el-icon>
+  계약 생성
+</el-button>
     </div>
 
      <!-- ===== Search / Filter ===== -->
@@ -42,27 +63,6 @@
 
         <el-button type="primary" @click="fetchList">검색</el-button>
       </div>
-      <el-tooltip
-  v-if="!canCreateContract"
-  content="계약 생성 권한이 없습니다"
-  placement="top"
->
-  <span>
-    <el-button type="primary" disabled>
-      <el-icon><Plus /></el-icon>
-      계약 생성
-    </el-button>
-  </span>
-</el-tooltip>
-
-<el-button
-  v-else
-  type="primary"
-  @click="goToCreateContract"
->
-  <el-icon><Plus /></el-icon>
-  계약 생성
-</el-button>
     </div>
 
     <!-- ===== KPI ===== -->

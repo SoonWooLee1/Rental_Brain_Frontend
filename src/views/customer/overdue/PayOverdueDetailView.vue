@@ -5,6 +5,7 @@ import axios from '@/api/axios'
 import StatusBadge from '@/components/overdue/StatusBadge.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/auth.store'
+import { ArrowLeft } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,134 +111,157 @@ onMounted(fetchDetail)
 </script>
 
 <template>
-    <div class="detail-page" v-loading="loading">
+  <div class="page-container" v-loading="loading">
     <!-- 헤더 -->
-        <div class="header">
-        <h2>수납 연체 상세</h2>
-            <el-button @click="router.back()">목록으로</el-button>
-        </div>
+    <div class="header-row">
+      <div class="title-area">
+        <el-button @click="$router.go(-1)" circle class="mr-3">
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <h2 class="page-title">수납 연체 상세</h2>
+      </div>
 
-    <!-- 요약 카드 -->
-    <div class="summary">
-        <div class="summary-left">
-            <h3>{{ detail?.payOverdueCode }}</h3>
-            <StatusBadge :status="detail?.status" />
-        </div>
-        
-<!-- 권한 없음 -->
-<el-tooltip
-  v-if="detail?.status === 'P' && !canProcessOverdue"
-  content="연체 처리 권한이 없습니다"
-  placement="top"
->
-  <span>
-    <el-button
-      type="primary"
-      :disabled="true"
-    >
-      해결 처리
-    </el-button>
-  </span>
-</el-tooltip>
+      <!-- 액션 버튼 -->
+      <div>
+        <!-- 권한 없음 -->
+        <el-tooltip
+          v-if="detail?.status === 'P' && !canProcessOverdue"
+          content="연체 처리 권한이 없습니다"
+          placement="bottom"
+        >
+          <span>
+            <el-button type="primary" disabled>해결 처리</el-button>
+          </span>
+        </el-tooltip>
 
-<!-- 권한 있음 -->
-<el-button
-  v-else-if="detail?.status === 'P'"
-  type="primary"
-  @click="resolveOverdue"
->
-  해결 처리
-</el-button>
+        <!-- 권한 있음 -->
+        <el-button
+          v-else-if="detail?.status === 'P'"
+          type="primary"
+          @click="resolveOverdue"
+        >
+          해결 처리
+        </el-button>
+      </div>
     </div>
 
-    <!-- 상세 정보 -->
-    <el-descriptions
-        :column="2"
-        border
-        class="desc-box">
+    <!-- 상세 카드 -->
+    <el-card shadow="never" class="detail-card">
+      <!-- 요약 -->
+      <div class="summary-box">
+        <h3>{{ detail?.payOverdueCode }}</h3>
+        <StatusBadge :status="detail?.status" />
+      </div>
+
+      <!-- 기본 정보 -->
+      <el-descriptions :column="2" border size="large">
         <el-descriptions-item label="기업명">
-            {{ detail?.customerName }}
+          {{ detail?.customerName }}
         </el-descriptions-item>
 
         <el-descriptions-item label="담당자">
-            {{ detail?.inCharge }}
+          {{ detail?.inCharge }}
         </el-descriptions-item>
 
         <el-descriptions-item label="연락처">
-            {{ formatPhone(detail?.callNum) }}
+          {{ formatPhone(detail?.callNum) }}
         </el-descriptions-item>
 
         <el-descriptions-item label="계약 ID">
-            {{ detail?.contractCode }}
+          {{ detail?.contractCode }}
         </el-descriptions-item>
 
         <el-descriptions-item label="월 납부 금액">
-            {{ formatMoneyMan(detail?.monthlyPayment) }}
+          {{ formatMoneyMan(detail?.monthlyPayment) }}
         </el-descriptions-item>
 
         <el-descriptions-item label="납부 예정일">
-            {{ formatDate(detail?.dueDate) }}1
+          {{ formatDate(detail?.dueDate) }}
         </el-descriptions-item>
 
         <el-descriptions-item label="연체 기간">
-            <span class="danger">
-            {{ detail?.overduePeriod }}일
-            </span>
+          <span class="danger">{{ detail?.overduePeriod }}일</span>
         </el-descriptions-item>
 
         <el-descriptions-item label="납부 완료일">
-    <!-- 미해결 상태: 날짜 선택 -->
-    <el-date-picker
-        v-if="detail?.status === 'P'"
-        v-model="paidDate"
-        type="date"
-        placeholder="납부 완료일 선택"
-        :disabled-date="disableFutureDate" />
+          <!-- 미해결 -->
+          <el-date-picker
+            v-if="detail?.status === 'P'"
+            v-model="paidDate"
+            type="date"
+            placeholder="납부 완료일 선택"
+            :disabled-date="disableFutureDate"
+          />
+          <!-- 해결 완료 -->
+          <span v-else>
+            {{ formatDate(detail?.paidDate) }}
+          </span>
+        </el-descriptions-item>
 
-    <!-- 해결 완료 상태: 날짜 표시 -->
-    <span v-else> {{ formatDate(detail?.paidDate) }} </span>
-    </el-descriptions-item>
-    </el-descriptions>
-    </div>
+        <el-descriptions-item label="상태">
+          <StatusBadge :status="detail?.status" />
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-card>
+  </div>
 </template>
 
+
 <style scoped>
-.detail-page { padding: 24px; }
-
-/* 헤더 */
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-
-/* 요약 */
-.summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    background: #fafafa;
-    border-radius: 12px;
-    margin-bottom: 20px;
+.page-container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-.summary-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-.summary h3 { margin: 0 }
-
-/* 설명 */
-.desc-box { background: #fff; }
-
-/* 강조 */
-.danger { color: #ff4d4f; font-weight: 600; }
-
-/* 반응형 */
-@media (max-width: 768px) {
-    .summary {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-    }
+.title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+
+.page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #333;
+}
+
+.detail-card {
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.summary-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
+}
+
+.danger {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+.mr-3 {
+  margin-right: 12px;
+}
+
 </style>

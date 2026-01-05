@@ -4,6 +4,28 @@
         <h1>프로모션</h1>
         <p>자동 · 일반 프로모션 통합 관리</p>
       </div>
+            <!-- 권한 없을 때 -->
+      <el-tooltip
+        v-if="!canCreatePromotion"
+        content="프로모션 등록 권한이 없습니다"
+        placement="top"
+      >
+        <span style="margin-left:auto">
+          <el-button type="primary" disabled>
+            + 프로모션 등록
+          </el-button>
+        </span>
+      </el-tooltip>
+
+      <!-- 권한 있을 때 -->
+      <el-button
+        v-else
+        style="display: flex; margin-left: auto;"
+        type="primary"
+        @click="openCreateModal"
+      >
+        + 프로모션 등록
+      </el-button>
     </div>
 
       <div class="promotion-page">
@@ -44,28 +66,7 @@
         <el-option label="기간 만료" value="C" />
       </el-select>
 
-      <!-- 권한 없을 때 -->
-<el-tooltip
-  v-if="!canCreatePromotion"
-  content="프로모션 등록 권한이 없습니다"
-  placement="top"
->
-  <span style="margin-left:auto">
-    <el-button type="primary" disabled>
-      + 프로모션 등록
-    </el-button>
-  </span>
-</el-tooltip>
-
-<!-- 권한 있을 때 -->
-<el-button
-  v-else
-  style="display: flex; margin-left: auto;"
-  type="primary"
-  @click="openCreateModal"
->
-  + 프로모션 등록
-</el-button>
+    <el-button type="primary" @click="handleSearch">검색</el-button>
     </div>
 
     <el-card shadow="never" :body-style="{ padding: '0' }">
@@ -114,7 +115,7 @@
 
       <el-table-column label="액션" width="120" align="center">
         <template #default="{ row }">
-          <el-button type="primary" style="font-size: 12px;" link @click="openDetailModal(row)">
+          <el-button size="small" @click="openDetailModal(row)">
             상세보기
           </el-button>
         </template>
@@ -158,6 +159,8 @@ import PromotionCreateModal from './PromotionCreateModal.vue';
 import PromotionDetailModal from './PromotionDetailModal.vue';
 import { useAuthStore } from '@/store/auth.store';
 
+
+
 const promotionList = ref([]);
 const loading = ref(false);
 
@@ -169,7 +172,7 @@ const createModalVisible = ref(false);
 const detailModalVisible = ref(false);
 const selectedPromotionCode = ref(null);
 
-const route = useRoute()
+const route = useRoute();
 const router = useRouter()
 
 const recommendId = ref(null)
@@ -353,6 +356,7 @@ watch(() => route.query.recommendId, async (newVal) => {
 .header {
   display: flex;
   padding-left: 24px;
+  padding-right: 24px;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;

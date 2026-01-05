@@ -91,7 +91,7 @@ const submit = async () => {
 
         const loading = ElLoading.service({
             lock: true,
-            text: 'AI가 설문을 생성 중입니다...',
+            text: 'AI가 설문조사 결과를 분석하는 중입니다...',
             background: 'rgba(0,0,0,0.4)'
         })
 
@@ -153,7 +153,7 @@ const submit = async () => {
             ),
             ])
 
-            ElMessage.success('설문이 시작되었습니다')
+            ElMessage.success('설문이 생성되었습니다')
             router.push('/cs/survey')
         } catch (e) {
             console.error(e)

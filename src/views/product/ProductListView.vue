@@ -106,7 +106,7 @@
         <!-- 목록 / 상세보기 -->
         <el-table-column label="목록" width="120" align="center">
           <template #default="{ row }">
-            <el-button class="link-btn" link type="primary" size="small" @click="openDetailModal(row)">
+            <el-button size="small" @click="openDetailModal(row)">
               상세보기
             </el-button>
           </template>
@@ -492,13 +492,6 @@ onMounted(async () => {
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
-  cursor: pointer;
-}
-
-.link-btn {
-  background: none;
-  border: none;
-  color: #248efff2;
   cursor: pointer;
 }
 

@@ -133,7 +133,13 @@ import { fetchAsDetail } from '@/api/as/as'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/auth.store'
 
-const props = defineProps({ asId: Number, modelValue: Boolean })
+const props = defineProps({
+  asId: {
+    type: Number,
+    required: true
+  },
+  modelValue: Boolean
+})
 
 const emit = defineEmits(['update:modelValue', 'updated', 'closed'])
 
@@ -148,26 +154,46 @@ const canUpdateAs = computed(() =>
 const form = ref({engineer: '', dueDate: '', status: '', contents: '' })
 
 watch(
-    () => props.modelValue,
-    async (v) => {
-        if (v && props.asId) {
-        const { data } = await fetchAsDetail(props.asId)
-        detail.value = data
-        form.value = {
-                engineer: data.engineer,
-                dueDate: data.dueDate,
-                status: data.status,
-                contents: data.contents
-            }
-        }
+  () => [props.modelValue, props.asId],
+  async ([open, asId]) => {
+    if (!open || !asId) return
+
+    try {
+      const { data } = await fetchAsDetail(asId)
+
+      detail.value = data
+      form.value = {
+        engineer: data.engineer,
+        dueDate: data.dueDate,
+        status: data.status,
+        contents: data.contents
+      }
+    } catch (e) {
+      console.error('AS 상세 조회 실패', e)
+      ElMessage.error('점검 상세 정보를 불러오지 못했습니다.')
+      emit('update:modelValue', false)
     }
+  },
+  { immediate: true }
 )
+
 
 watch(editMode, (v) => {
     if (v && detail.value.status === 'C') {
         editMode.value = false
     }
 })
+
+const safeFetchDetail = async () => {
+  if (!props.asId) return
+
+  try {
+    const { data } = await fetchAsDetail(props.asId)
+    detail.value = data
+  } catch (e) {
+    console.error(e)
+  }
+}
 
 const close = () => {
     editMode.value = false

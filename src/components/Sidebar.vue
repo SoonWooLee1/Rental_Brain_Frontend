@@ -4,7 +4,7 @@
     <aside class="sidebar" :class="{ collapsed: isCollapsed }">
 
     <!-- 로고 영역 -->
-    <div class="logo">
+    <div class="logo" @click="goToMain">
       <div v-if="!isCollapsed">
           <h1>Rental Brain</h1>
           <p>CRM · ERP Platform</p>
@@ -57,7 +57,7 @@
           <!-- 리스트 -->
           <div class="noti-list">
             <template v-if="isExist">
-              <div v-for="item in notifications" :key="item.id" class="noti-item" @click.stop="goToNotificationCenter">
+              <div v-for="item in notifications" :key="item.id" class="noti-item" @click.stop="markRead(item)">
                 <!-- 아이콘 -->
                 <div class="icon" :class="item.notice.type">
                   <el-icon>
@@ -339,6 +339,13 @@ onMounted(async () => {
   noticeStore.fetchUnread(authStore.id);
 })
 
+watch(
+  () => router.currentRoute.value.fullPath,
+  () => {
+    noticeStore.fetchUnread(authStore.id);
+  }
+);
+
 watch(vis, (open) => {
   if (open) {
     noticeStore.fetchUnread(authStore.id);
@@ -367,6 +374,12 @@ const getIcon = (type) => {
   switch (type) {
     case "APPROVAL":
       return Check;
+    case "REJECT":
+      return Close;
+    case "CUSTOMER_REGIST":
+      return User;
+    case "PRODUCT_REGIST":
+      return Box;
     case "AS_DUE":
       return WarningFilled;
     case "CONTRACT_EXPIRE":
@@ -383,6 +396,21 @@ const isCollapsed = ref(false);
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;
 };
+
+
+const markRead = async (item) => {
+  try {
+    // 1️⃣ 읽음 처리 API 직접 호출
+    await api.put(`/notice/read`,{noticeId: [item.id]});
+
+    // 2️⃣ unread 다시 조회 → store 갱신
+    await noticeStore.fetchUnread(authStore.id);
+
+  } catch (e) {
+    console.error("알림 읽음 처리 실패", e);
+  }
+};
+
 
 const hasAdminPermission = computed(() => {
   const list = authStore.auth || [];
@@ -686,6 +714,10 @@ const hasAdminPermission = computed(() => {
 .noti-item:hover {
   transition-duration: 0.2s;
   background: #f9fafb;
+}
+
+.noti-item:active {
+  transform: scale(0.98);
 }
 
 /* 아이콘 */

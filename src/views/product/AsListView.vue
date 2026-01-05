@@ -76,7 +76,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="dueDate" label="예정일" width="120" align="center" />
+        <el-table-column label="예정일" width="120" align="center" >
+          <template #default="{ row }">
+            {{ formatDate(row.dueDate) }}
+          </template>
+        </el-table-column>
 
         <el-table-column prop="engineer" label="담당 기사" width="120" align="center" />
 
@@ -135,27 +139,26 @@
       </el-col>
     </el-row>
 
-    <AsDetailModal v-model="showDetail" :as-id="selectedAsId" @closed="onDetailClosed" />
+    <AsDetailModal
+        v-if="showDetail && selectedAsId !== null"
+        v-model="showDetail"
+        :as-id="selectedAsId"
+        @closed="onDetailClosed" />
 
     <AsCreateModal v-model="showCreate" @created="onCreated" />
   </div>
 </template>
 
-
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/api/axios'
-import dayjs from 'dayjs'
 import SummaryCard from '@/components/product/SummaryCard.vue'
 import AsDetailModal from '@/components/product/AsDetailModal.vue'
 import AsCreateModal from '@/components/product/AsCreateModal.vue'
 import { useAuthStore } from '@/store/auth.store'
-
-// [추가 1]
 import { useRoute } from 'vue-router';
 
-// [추가 2]
 const route = useRoute();
 
 // 상태
@@ -183,6 +186,11 @@ const search = ref({
   keyword: '',
   summaryType: null
 })
+
+const formatDate = (iso) => {
+  if (!iso) return '';
+  return iso.slice(0, 10);
+};
 
 const nextWeekList = ref([])
 const nextWeekCount = ref(0)
@@ -379,6 +387,25 @@ onMounted(() => {
   .filter-wrapper .el-input {
     width: 100% !important;
   }
+}
+
+.due-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+}
+
+.due-date .date {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.due-date .time {
+  font-size: 12px;
+  color: #666;
 }
 
 @media (max-width: 640px) {

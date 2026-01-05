@@ -39,12 +39,30 @@
     </div>
 
     <!-- 알림 리스트 -->
-    <div class="noti-list" v-loading="noticeStore.loading" element-loading-text="알림을 불러오는 중입니다"
-      element-loading-background="rgba(255, 255, 255, 0.6)">
-      <div v-for="item in notifications" :key="item.id" class="noti-card">
-        <el-checkbox class="noti-check" :model-value="noticeStore.isSelected(item.id)"
-          @change="() => noticeStore.toggleSelect(item.id)" />
+    <div
+  class="noti-list"
+  v-loading="noticeStore.loading"
+  element-loading-text="알림을 불러오는 중입니다"
+  element-loading-background="rgba(255, 255, 255, 0.6)"
+>
+  <!-- 🔔 알림 있음 -->
+  <template v-if="notifications.length > 0">
+    <div
+      v-for="item in notifications"
+      :key="item.id"
+      class="noti-card"
+      :class="{ read: item.isRead === 'Y' }"
+    >
+      <!-- LEFT -->
+      <div class="noti-left">
+        <el-checkbox
+          :model-value="noticeStore.isSelected(item.id)"
+          @change="() => noticeStore.toggleSelect(item.id)"
+        />
+      </div>
 
+      <!-- RIGHT -->
+      <div class="noti-right" @click="onClickNotice(item)">
         <div class="icon" :class="item.notice.type">
           <el-icon>
             <component :is="getIcon(item.notice.type)" />
@@ -61,39 +79,31 @@
         </div>
       </div>
     </div>
+  </template>
 
-    <!-- 페이징 -->
-    <!-- 페이징 -->
-<div class="pagination-bar">
-  <!-- 페이지 크기 선택 -->
-  <div class="page-size">
-    <el-select
-      v-model="size"
-      size="small"
-      style="width: 110px"
-      :disabled="noticeStore.loading"
-      @change="onSizeChange"
-    >
-      <el-option
-        v-for="s in pageSizeOptions"
-        :key="s"
-        :label="`${s}개씩`"
-        :value="s"
-      />
-    </el-select>
-  </div>
-
-  <!-- 페이지 이동 -->
-  <el-pagination
-    background
-    layout="prev, pager, next"
-    :page-size="size"
-    :current-page="page"
-    :total="totalCount"
-    :disabled="noticeStore.loading"
-    @current-change="onPageChange"
-  />
+  <!-- 📭 알림 없음 -->
+  <template v-else>
+    <div class="empty-wrapper">
+      <el-empty description="알림이 없습니다" />
+    </div>
+  </template>
 </div>
+
+
+    <!-- 페이징 -->
+    <div class="pagination-bar">
+      <!-- 페이지 크기 선택 -->
+      <div class="page-size">
+        <el-select v-model="size" size="small" style="width: 110px" :disabled="noticeStore.loading"
+          @change="onSizeChange">
+          <el-option v-for="s in pageSizeOptions" :key="s" :label="`${s}개씩`" :value="s" />
+        </el-select>
+      </div>
+
+      <!-- 페이지 이동 -->
+      <el-pagination background layout="prev, pager, next" :page-size="size" :current-page="page" :total="totalCount"
+        :disabled="noticeStore.loading" @current-change="onPageChange" />
+    </div>
 
     <div class="footer">
       <el-button round type="primary" @click="router.back()">뒤로 가기</el-button>
@@ -104,7 +114,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Bell, Check, Calendar, WarningFilled, DocumentCopy } from "@element-plus/icons-vue";
+import { Bell, Check, Calendar, WarningFilled, DocumentCopy, Close, User, Box } from "@element-plus/icons-vue";
 import dayjs from "dayjs";
 import { ElMessageBox } from "element-plus";
 
@@ -130,7 +140,7 @@ const unreadCount = computed(() =>
 );
 const selectedCount = computed(() => noticeStore.selectedCount);
 const onSizeChange = (newSize) => {
-  page.value = 1;              // 🔥 무조건 1페이지
+  page.value = 1;              // 무조건 1페이지
   noticeStore.clearSelected(); // 선택 초기화 (추천 UX)
   fetchPage();
 };
@@ -149,6 +159,14 @@ onMounted(() => {
   fetchPage();
   noticeStore.fetchUnread(authStore.id);
 });
+
+watch(
+  () => noticeStore.unreadCount,
+  () => {
+    fetchPage();
+  }
+);
+
 
 watch(activeTab, () => {
   page.value = 1;
@@ -220,14 +238,17 @@ const deleteSelected = async () => {
 const tabs = [
   { key: "ALL", label: "전체" },
   { key: "APPROVAL", label: "결재 승인" },
-  { key: "AS_DUE", label: "연체" },
-  { key: "CONTRACT_EXPIRE", label: "계약 만료" },
-  { key: "QUOTE_INSERT", label: "견적(상담)" }
+  { key: "REJECT", label: "결재 반려" },
+  { key: "CUSTOMER_REGIST", label: "고객 등록" },
+  { key: "PRODUCT_REGIST", label: "제품 등록" },
+  { key: "QUOTE_INSERT", label: "견적(상담)" },
+  // { key: "AS_DUE", label: "연체" },
+  // { key: "CONTRACT_EXPIRE", label: "계약 만료" },
 ];
 
 /* utils */
 const timeAgo = (date) => {
-const now = dayjs();
+  const now = dayjs();
   const target = dayjs(date);
   const diffSec = now.diff(target, "second");
   const diffMin = now.diff(target, "minute");
@@ -247,12 +268,36 @@ const now = dayjs();
 const getIcon = (type) => {
   switch (type) {
     case "APPROVAL": return Check;
+    case "REJECT": return Close;
+    case "CUSTOMER_REGIST": return User;
+    case "PRODUCT_REGIST": return Box;
     case "AS_DUE": return WarningFilled;
     case "CONTRACT_EXPIRE": return Calendar;
     case "QUOTE_INSERT": return DocumentCopy;
     default: return Bell;
   }
 };
+
+// 알림 읽음 처리
+const onClickNotice = async (item) => {
+  // 이미 읽은 알림이면 패스
+  if (item.isRead === "Y") return;
+
+  try {
+    await api.put("/notice/read", {
+      noticeId: [item.id],
+    });
+
+    // UX 즉시 반영 (리스트에서 NEW 제거)
+    item.isRead = "Y";
+
+    // unread 카운트 갱신
+    noticeStore.fetchUnread(authStore.id);
+  } catch (e) {
+    console.error("알림 읽음 처리 실패", e);
+  }
+};
+
 </script>
 
 
@@ -310,12 +355,53 @@ const getIcon = (type) => {
 
 .noti-card {
   display: flex;
-  gap: 12px;
   background: #fff;
   border-radius: 10px;
-  padding: 14px;
   margin-bottom: 10px;
+  overflow: hidden;
 }
+
+/* LEFT */
+.noti-left {
+  width: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 40px;
+  flex-shrink: 0;
+}
+
+/* RIGHT */
+.noti-right {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+/* hover */
+.noti-right:hover {
+  background: #f8fafc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* active */
+.noti-right:active {
+  transform: scale(0.985);
+}
+
+/* 읽은 알림 */
+.noti-card.read .noti-right {
+  opacity: 0.6;
+}
+
+
 
 .icon {
   width: 36px;
@@ -344,6 +430,21 @@ const getIcon = (type) => {
 .icon.AS_DUE {
   background: #fee2e2;
   color: #ef4444;
+}
+
+.icon.REJECT {
+  background: #fee2e2;
+  color: #e85e5e;
+}
+
+.icon.CUSTOMER_REGIST {
+  background: #fdffe3;
+  color: #363636;
+}
+
+.icon.PRODUCT_REGIST {
+  background: #c5ffd0;
+  color: #0000007b;
 }
 
 .content .title-line {
@@ -400,7 +501,15 @@ const getIcon = (type) => {
 
 .noti-check {
   margin-top: 6px;
+  pointer-events: auto;
+  z-index: 2;
 }
+
+.noti-check:hover {
+  background: transparent;
+}
+
+
 
 :deep(.noti-check) {
   transform: scale(1.2);
@@ -413,10 +522,20 @@ const getIcon = (type) => {
   align-items: flex-start;
 }
 
+.empty-wrapper {
+  height: 100%;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
 .read-all.disabled {
   color: #9ca3af;
   cursor: not-allowed;
 }
+
 
 .select-toolbar {
   display: flex;

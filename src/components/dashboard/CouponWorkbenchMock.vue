@@ -14,12 +14,18 @@
           <span class="dot dot-mid" aria-hidden="true"></span>
 
           <div class="wb-text">
-            <div class="wb-main">{{ coupon.name }}</div>
-            <div class="wb-sub">대상: {{ coupon.segmentName }}</div>
+            <div v-if="coupon">
+              <div class="wb-main">{{ coupon.name }}</div>
+              <div class="wb-sub">대상: {{ coupon.segmentName }}</div>
+            </div>
+
+            <el-empty v-else description="추천 쿠폰이 없습니다"/>
+
           </div>
         </div>
 
         <button
+          v-if="coupon"
           class="wb-btn"
           type="button"
           @click.stop="go('COUPON_CREATE')"
@@ -39,7 +45,7 @@ import api from '@/api/axios';
 
 const router = useRouter();
 const loading = ref(false);
-const coupon = ref([]);
+const coupon = ref(null);
 
 const fetchCouponList = async () => {
   loading.value = true;

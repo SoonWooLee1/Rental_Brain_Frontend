@@ -13,12 +13,18 @@
           <span class="dot dot-high" aria-hidden="true"></span>
 
           <div class="wb-text">
-            <div class="wb-main">{{ promotion.name }}</div>
-            <div class="wb-sub">대상: {{ promotion.segmentName }}</div>
+            <div v-if="promotion">
+              <div class="wb-main">{{ promotion.name }}</div>
+              <div class="wb-sub">대상: {{ promotion.segmentName }}</div>
+            </div>
+
+            <el-empty v-else description="추천 프로모션이 없습니다" />
+
           </div>
         </div>
 
         <button
+          v-if="promotion"
           class="wb-btn wb-btn--primary"
           type="button"
           @click.stop="go('PROMOTION_CREATE')"
@@ -40,7 +46,7 @@ import api from '@/api/axios';
 
 const router = useRouter();
 const loading = ref(false);
-const promotion = ref([]);
+const promotion = ref(null);
 
 const fetchPromotionList = async () => {
   loading.value = true;

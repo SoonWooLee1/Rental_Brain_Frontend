@@ -190,11 +190,11 @@ onMounted(fetchList)
     </div>
 
     <!-- 테이블 -->
+  <el-card shadow="never" class="table-card">
     <el-table
       :data="list"
       v-loading="loading"
-      @row-click="goDetail"
-      style="margin-top: 12px" >
+      style="width: 100%" >
       <el-table-column
         :prop="activeTab === 'pay' ? 'payOverdueCode' : 'itemOverdueCode'"
         label="연체 ID" 
@@ -238,30 +238,144 @@ onMounted(fetchList)
           <StatusBadge :status="row.status" />
         </template>
       </el-table-column>
+
+      <el-table-column label="관리" width="110" align="center">
+      <template #default="{ row }">
+        <el-button
+          size="small"
+          @click.stop="goDetail(row)" >
+          상세보기
+        </el-button>
+      </template>
+    </el-table-column>
     </el-table>
 
     <!-- 페이징 -->
-    <div class="pagination">
+    <div class="pagination-wrapper">
       <el-pagination
-        background
         layout="prev, pager, next"
         :total="totalCount"
         :page-size="criteria.amount"
         @current-change="onPageChange" />
     </div>
+  </el-card>
   </div>
 </template>
 
 <style scoped>
-.risk-page { padding: 24px; }
+.risk-page {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
-.desc { color: #888; margin-bottom: 12px; }
+/* 페이지 타이틀 */
+.risk-page h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 4px;
+}
 
-.search-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.desc {
+  color: #888;
+  margin-bottom: 20px;
+}
 
-.pagination { display: flex; justify-content: center; margin-top: 16px; }
+/* 탭 영역 */
+:deep(.el-tabs__header) {
+  margin-bottom: 16px;
+}
 
-.danger { color: #ff4d4f; font-weight: 600; }
+/* 검색 영역 (고객 목록 search-area 스타일 차용) */
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
 
-@media (max-width: 768px) { .search-row { flex-direction: column; }}
+/* 테이블 카드화 */
+:deep(.el-table) {
+  border-radius: 8px;
+}
+
+:deep(.el-table__header th) {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #555;
+}
+
+/* row hover 톤 */
+:deep(.el-table__row:hover) {
+  background-color: #f9fafb;
+}
+
+/* 상태 강조 */
+.danger {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* 페이징 */
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+/* 테이블 카드 */
+.table-card {
+  margin-top: 12px;
+  border-radius: 8px;
+}
+
+/* pagination 위치 */
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Element Plus pagination 버튼 톤 */
+:deep(.el-pagination) {
+  --el-pagination-button-bg-color: transparent;
+  --el-pagination-button-color: #333;
+  --el-pagination-button-disabled-color: #bbb;
+  --el-pagination-button-disabled-bg-color: transparent;
+}
+
+/* 페이지 버튼 */
+:deep(.el-pager li) {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* 활성 페이지 */
+:deep(.el-pager li.is-active) {
+  background-color: #409eff;
+  color: #fff;
+}
+
+/* hover */
+:deep(.el-pager li:hover) {
+  color: #409eff;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .risk-page h2 {
+    font-size: 20px;
+  }
+}
 </style>

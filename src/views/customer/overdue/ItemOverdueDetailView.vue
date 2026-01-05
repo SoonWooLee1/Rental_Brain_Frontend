@@ -5,6 +5,7 @@ import axios from '@/api/axios'
 import StatusBadge from '@/components/overdue/StatusBadge.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/auth.store'
+import { ArrowLeft } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -96,132 +97,162 @@ onMounted(fetchDetail)
 </script>
 
 <template>
-    <div class="detail-page" v-loading="loading">
-        <!-- 헤더 -->
-        <div class="header">
-            <h2>제품 연체 상세</h2>
-            <el-button @click="router.back()">목록으로</el-button>
-        </div>
+  <div class="page-container" v-loading="loading">
+    <!-- 헤더 -->
+    <div class="header-row">
+      <div class="title-area">
+        <el-button @click="$router.go(-1)" circle class="mr-3">
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <h2 class="page-title">제품 연체 상세</h2>
+      </div>
 
-        <!-- 요약 -->
-        <div class="summary">
-            <div class="summary-left">
-                <h3>{{ detail?.itemOverdueCode }}</h3>
-                <StatusBadge :status="detail?.status" />
-            </div>
+      <!-- 액션 버튼 -->
+      <div>
+        <!-- 권한 없음 -->
+        <el-tooltip
+          v-if="detail?.status === 'P' && !canProcessItemOverdue"
+          content="제품 연체 처리 권한이 없습니다"
+          placement="bottom"
+        >
+          <span>
+            <el-button type="primary" disabled>수정 저장</el-button>
+          </span>
+        </el-tooltip>
 
-            <!-- 권한 없음 -->
-            <el-tooltip v-if="detail?.status === 'P' && !canProcessItemOverdue" content="제품 연체 처리 권한이 없습니다"
-                placement="top">
-                <span>
-                    <el-button type="primary" :disabled="true">
-                        수정 저장
-                    </el-button>
-                </span>
-            </el-tooltip>
-
-            <!-- 권한 있음 -->
-            <el-button v-else-if="editable" type="primary" @click="saveCount">
-                수정 저장
-            </el-button>
-        </div>
-
-        <!-- 기본 정보 -->
-        <el-descriptions :column="2" border class="desc-box">
-            <el-descriptions-item label="기업명">
-                {{ detail?.customerName }}
-            </el-descriptions-item>
-
-            <el-descriptions-item label="담당자">
-                {{ detail?.inCharge }}
-            </el-descriptions-item>
-
-            <el-descriptions-item label="연락처">
-                {{ formatPhone(detail?.callNum) }}
-            </el-descriptions-item>
-
-            <el-descriptions-item label="계약 ID">
-                {{ detail?.contractCode }}
-            </el-descriptions-item>
-
-            <el-descriptions-item label="반납 예정일">
-                {{ formatDate(detail?.dueDate) }}
-            </el-descriptions-item>
-
-            <el-descriptions-item label="연체 기간">
-                <span class="danger">{{ detail?.overduePeriod }}일</span>
-            </el-descriptions-item>
-
-            <!-- 연체 수량 -->
-            <el-descriptions-item label="연체 수량">
-                <el-input-number v-if="editable" v-model="editCount" :min="0" />
-                <span v-else>{{ detail?.count }}개</span>
-            </el-descriptions-item>
-
-            <el-descriptions-item label="상태">
-                <StatusBadge :status="detail?.status" />
-            </el-descriptions-item>
-        </el-descriptions>
-
-        <!-- 연체 제품 목록 -->
-        <h3 class="section-title">연체된 제품 목록</h3>
-
-        <el-table :data="items">
-            <el-table-column prop="itemCode" label="제품 코드" />
-            <el-table-column prop="itemName" label="제품명" />
-            <el-table-column prop="itemStatus" label="상태" />
-        </el-table>
+        <!-- 권한 있음 -->
+        <el-button
+          v-else-if="editable"
+          type="primary"
+          @click="saveCount"
+        >
+          수정 저장
+        </el-button>
+      </div>
     </div>
+
+    <!-- 상세 카드 -->
+    <el-card shadow="never" class="detail-card">
+      <!-- 요약 -->
+      <div class="summary-box">
+        <h3>{{ detail?.itemOverdueCode }}</h3>
+        <StatusBadge :status="detail?.status" />
+      </div>
+
+      <!-- 기본 정보 -->
+      <el-descriptions :column="2" border size="large">
+        <el-descriptions-item label="기업명">
+          {{ detail?.customerName }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="담당자">
+          {{ detail?.inCharge }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="연락처">
+          {{ formatPhone(detail?.callNum) }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="계약 ID">
+          {{ detail?.contractCode }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="반납 예정일">
+          {{ formatDate(detail?.dueDate) }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="연체 기간">
+          <span class="danger">{{ detail?.overduePeriod }}일</span>
+        </el-descriptions-item>
+
+        <el-descriptions-item label="연체 수량">
+          <el-input-number
+            v-if="editable"
+            v-model="editCount"
+            :min="0"
+          />
+          <span v-else>{{ detail?.count }}개</span>
+        </el-descriptions-item>
+
+        <el-descriptions-item label="상태">
+          <StatusBadge :status="detail?.status" />
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <!-- 연체 제품 목록 -->
+      <div class="content-section mt-4">
+        <h3 class="section-title">연체된 제품 목록</h3>
+        <el-table :data="items">
+          <el-table-column prop="itemCode" label="제품 코드" />
+          <el-table-column prop="itemName" label="제품명" />
+          <el-table-column prop="itemStatus" label="상태" />
+        </el-table>
+      </div>
+    </el-card>
+  </div>
 </template>
 
 
+
 <style scoped>
-.detail-page {
-    padding: 24px;
+.page-container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-/* 헤더 */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-/* 요약 */
-.summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    background: #fafafa;
-    border-radius: 12px;
-    margin-bottom: 20px;
+.title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.summary-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #333;
 }
 
-/* 강조 */
-.danger {
-    color: #ff4d4f;
-    font-weight: 600;
+.detail-card {
+  border-radius: 8px;
+  padding: 20px;
 }
 
-/* 섹션 */
+.summary-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
 .section-title {
-    margin: 24px 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+  border-left: 4px solid #409eff;
+  padding-left: 10px;
 }
 
-/* 반응형 */
-@media (max-width: 768px) {
-    .summary {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-    }
+.danger {
+  color: #ff4d4f;
+  font-weight: 600;
 }
+
+.mt-4 {
+  margin-top: 24px;
+}
+
+.mr-3 {
+  margin-right: 12px;
+}
+
 </style>
