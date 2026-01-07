@@ -7,17 +7,13 @@
       <el-tooltip v-if="!canCreateSupport" content="신규 문의 등록 권한이 없습니다" placement="bottom">
             <span>
               <el-button type="primary" class="btn-register" :disabled="true">
-                <el-icon>
-                  <Plus />
-                </el-icon> 신규 문의 등록
+                신규 문의 등록
               </el-button>
             </span>
           </el-tooltip>
 
           <el-button v-else type="primary" class="btn-register" @click="openCreateModal">
-            <el-icon>
-              <Plus />
-            </el-icon> 신규 문의 등록
+            신규 문의 등록
           </el-button>
 
 

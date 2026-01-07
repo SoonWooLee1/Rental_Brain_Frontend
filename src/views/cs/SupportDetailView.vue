@@ -14,7 +14,11 @@
       <el-descriptions :column="2" border size="large">
         <el-descriptions-item label="문의 번호">{{ supportInfo.customerSupportCode }}</el-descriptions-item>
         <el-descriptions-item label="담당자">{{ supportInfo.empName || '미배정' }}</el-descriptions-item>
-        <el-descriptions-item label="기업명">{{ supportInfo.customerName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="기업명">
+          <a v-if="supportInfo.customerName" class="cusName" @click="goToCustomerPage">
+            {{ supportInfo.customerName || '-' }}
+          </a>
+        </el-descriptions-item>
         <el-descriptions-item label="카테고리">{{ supportInfo.categoryName }}</el-descriptions-item>
         
         <el-descriptions-item label="유입 채널">{{ supportInfo.channelName }}</el-descriptions-item>
@@ -200,6 +204,10 @@ const editForm = reactive({
   action: '',
 });
 
+const goToCustomerPage = ()=>{
+  router.push(`/customers/${supportInfo.value.cumId}`);
+}
+
 /** 문의 처리 권한 */
 const canProcessSupport = computed(() =>
   authStore.hasAuth("CS_PROCESS")
@@ -212,6 +220,7 @@ const fetchData = async () => {
     const res = await getSupportDetail(id);
     if (res.data) {
       supportInfo.value = res.data;
+      console.log(supportInfo);
     }
   } catch (e) {
     ElMessage.error('상세 정보를 불러오지 못했습니다.');
@@ -308,6 +317,10 @@ onMounted(() => {
 .section-title { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 10px; border-left: 4px solid #409eff; padding-left: 10px; }
 .content-box { padding: 20px; border: 1px solid #eee; border-radius: 4px; min-height: 100px; white-space: pre-wrap; line-height: 1.6; color: #555; }
 .bg-gray { background-color: #f9fafb; }
+
+.cusName{
+  cursor: pointer;
+}
 
 /* [변경] 버튼을 우측 정렬하기 위한 스타일 */
 .action-footer { display: flex; justify-content: flex-end; border-top: 1px solid #eee; padding-top: 20px; }

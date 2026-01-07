@@ -58,6 +58,12 @@ export const getContractApprovers = () => {
   return api.get('/contract/emp')
 }
 
+// 계약 해지 status변경
 export const patchTerminateContract = (contractId) => {
   return api.patch(`/contract/${contractId}/terminate`)
+}
+
+// 계약 삭제 is_deleted변경
+export const patchDeleteContract = (contractId) => {
+  return api.patch(`/contract/${contractId}/delete`)
 }

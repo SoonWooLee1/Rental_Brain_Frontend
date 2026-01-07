@@ -17,13 +17,7 @@
       <div class="hint">표시할 데이터가 없습니다.</div>
     </div>
 
-    <v-chart
-      v-else
-      :option="option"
-      autoresize
-      class="chart"
-      @click="onChartClick"
-    />
+    <v-chart v-else :option="option" autoresize class="chart" @click="onChartClick" />
   </BaseCard>
 </template>
 
@@ -132,17 +126,54 @@ const option = computed(() => {
     },
 
     legend: { bottom: 0 },
-    grid: { left: 40, right: 20, top: 20, bottom: 45, containLabel: true },
-    xAxis: { type: "category", data: labels },
+    grid: {
+      left: 40,
+      right: 60,   // ✅ 기존 20 → 최소 50~60
+      top: 31,
+      bottom: 60,  // 라벨 여유
+      containLabel: true,
+    },
+    xAxis: {
+      type: "category",
+      data: labels,
+      boundaryGap: true,
+      axisTick: { alignWithLabel: true },
+
+      // ✅ 끝 잘림 방지용 (체감 효과 큼)
+      axisLabel: {
+        interval: 0,
+        hideOverlap: false,
+        formatter: (value) =>
+          value.length > 6
+            ? value.replace(" ", "\n")
+            : value,
+      },
+    },
 
     yAxis: [
-      { type: "value", name: "고객수" },
+      { type: "value",
+       name: "고객수(점선)",
+       splitLine: {
+      show: true,
+      lineStyle: {
+        color: "rgba(17, 24, 39, 0.2)",   
+        type: "dashed",     // 점선 (solid / dashed / dotted)
+      },
+    },
+      },
       {
         type: "value",
-        name: "매출(억)",
+        name: "매출(억)(실선)",
         axisLabel: {
           formatter: (v) => `${Math.floor((Number(v) || 0) / 100000000).toLocaleString()}`,
         },
+         splitLine: {
+      show: true,
+      lineStyle: {
+        color: "rgba(17, 24, 39, 0.2)",   
+        type: "solid",
+      },
+    },
       },
     ],
 
@@ -173,11 +204,24 @@ watch(month, fetchChart);
 </script>
 
 <style scoped>
-.chart-card { width: 100%; }
-.card-title { margin: 0; font-size: 14px; font-weight: 900; color: #111827; }
-.chart { width: 100%; height: 280px; }
+.chart-card {
+  width: 100%;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.chart {
+  width: 100%;
+  height: 300px;
+}
+
 .chart-placeholder {
-  height: 280px;
+  height: 300px;
   border: 1px dashed #e5e7eb;
   border-radius: 10px;
   background: #fafafa;
@@ -187,6 +231,16 @@ watch(month, fetchChart);
   justify-content: center;
   gap: 6px;
 }
-.hint { color: #9ca3af; font-size: 12px; font-weight: 700; }
-.error { color: #ef4444; font-size: 12px; font-weight: 800; }
+
+.hint {
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 800;
+}
 </style>

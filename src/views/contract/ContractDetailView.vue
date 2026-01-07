@@ -15,32 +15,51 @@
       </div>
       <div class="header-right">
         <!-- 계약 해지 가능 상태 -->
-<template v-if="vm.contractStatus === 'P' || vm.contractStatus === 'I'">
+        <template v-if="vm.contractStatus === 'P' || vm.contractStatus === 'I'">
+        
+          <!-- 권한 없음 -->
+          <el-tooltip
+            v-if="!canTerminateContract"
+            content="계약 해지 권한이 없습니다"
+            placement="top"
+          >
+            <span>
+              <el-button type="warning" plain disabled>
+                계약 해지
+              </el-button>
+            </span>
+          </el-tooltip>
+        
+          <!-- 권한 있음 -->
+          <el-button
+            v-else
+            type="warning"
+            plain
+            @click="openTerminateModal"
+          >
+            계약 해지
+          </el-button>
+        </template>
 
-  <!-- 권한 없음 -->
-  <el-tooltip
-    v-if="!canTerminateContract"
-    content="계약 해지 권한이 없습니다"
-    placement="top"
-  >
-    <span>
-      <el-button type="danger" plain disabled>
-        계약 해지
-      </el-button>
-    </span>
-  </el-tooltip>
-
-  <!-- 권한 있음 -->
-  <el-button
-    v-else
-    type="danger"
-    plain
-    @click="openTerminateModal"
-  >
-    계약 해지
-  </el-button>
-
-</template>
+        <el-tooltip
+         v-if="!isAdmin"
+         content="관리자만 계약 삭제가 가능합니다"
+         placement="top"
+       >
+         <span>
+           <el-button type="danger" disabled>
+             계약 삭제
+           </el-button>
+         </span>
+       </el-tooltip>
+     
+       <el-button
+         v-else
+         type="danger"
+         @click="openDeleteModal"
+       >
+         계약 삭제
+       </el-button>
       </div>
     </div>
 
@@ -275,6 +294,35 @@
       </el-button>
     </template>
   </el-dialog>
+
+  <el-dialog
+  v-model="deleteDialogVisible"
+  title="계약 삭제 확인"
+  width="420px"
+  :close-on-click-modal="false"
+>
+  <div class="terminate-desc">
+    <p><strong>해당 계약을 삭제하시겠습니까?</strong></p>
+    <p class="warn">
+      ⚠ 관리자만 계약 삭제가 가능하며<br />
+      삭제된 계약은 목록에서 제거됩니다.
+    </p>
+  </div>
+
+  <template #footer>
+    <el-button @click="deleteDialogVisible = false">
+      취소
+    </el-button>
+    <el-button
+      type="danger"
+      :loading="deleteLoading"
+      @click="confirmDelete"
+    >
+      삭제
+    </el-button>
+  </template>
+</el-dialog>
+
 </template>
 
 <script setup>
@@ -282,7 +330,12 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useToastStore } from '@/store/useToast'
-import { getContractBasic, getContractItems, getContractPayments, patchCompletePayment, patchTerminateContract} from '@/api/contract'
+import { getContractBasic, 
+  getContractItems, 
+  getContractPayments, 
+  patchCompletePayment, 
+  patchTerminateContract,
+  patchDeleteContract} from '@/api/contract'
 import { useAuthStore } from '@/store/auth.store'
 import { ElMessage } from 'element-plus'
 
@@ -300,6 +353,9 @@ const activeTab = ref('overview')
 
 const toastStore = useToastStore();
 const authStore = useAuthStore();
+
+const deleteDialogVisible = ref(false)
+const deleteLoading = ref(false)
 
 /* =========================
    State
@@ -328,6 +384,30 @@ function initVm() {
     productCount: 0,
     progressRate: 0,
     overdueCount: 0
+  }
+}
+
+const isAdmin = computed(() => authStore.positionId === 1)
+
+function openDeleteModal() {
+  deleteDialogVisible.value = true
+}
+
+async function confirmDelete() {
+  try {
+    deleteLoading.value = true
+
+    await patchDeleteContract(route.params.id)
+
+    ElMessage.success('계약이 삭제되었습니다.')
+
+    deleteDialogVisible.value = false
+    router.push({ name: 'contract-list' })
+
+  } catch (e) {
+    console.error(e)
+  } finally {
+    deleteLoading.value = false
   }
 }
 

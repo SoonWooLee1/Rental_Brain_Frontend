@@ -61,7 +61,10 @@
       <div class="section-title">고객 정보</div>
       <el-descriptions :column="2" border size="large">
         <el-descriptions-item label="기업명">
-          {{ quote.customerName || '-' }}
+          <a v-if="quote.customerName" class="cusName" @click="goToCustomerPage">
+            {{ quote.customerName || '-' }}
+          </a>
+          
         </el-descriptions-item>
 
         <el-descriptions-item label="담당자">
@@ -205,6 +208,10 @@ const handleDelete = () => {
   })
 }
 
+const goToCustomerPage = ()=>{
+  router.push(`/customers/${quote.value.quoteCumId}`)
+}
+
 /* =========================
    Utils
 ========================= */
@@ -329,6 +336,9 @@ onMounted(fetchData)
   white-space: pre-wrap;
 }
 
+.cusName{
+  cursor: pointer;
+}
 /* Meta */
 .meta {
   font-size: 12px;

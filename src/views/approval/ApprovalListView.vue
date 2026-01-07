@@ -4,7 +4,7 @@
     <div class="header">
       <h1>내 결재 내역</h1>
       <p class="subtitle">
-        내가 처리해야 할 결재와 전체 결재 진행 현황
+        내가 처리해야 할 결재
       </p>
     </div>
 

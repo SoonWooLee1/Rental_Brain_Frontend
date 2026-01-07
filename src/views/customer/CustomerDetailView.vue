@@ -66,6 +66,7 @@
       v-model="activeMainTab" 
       type="border-card" 
       class="detail-tabs main-tabs"
+      :before-leave="handleTabLeave"
     >
       
       <el-tab-pane label="종합 정보" name="main_general">
@@ -111,10 +112,25 @@
 
         <el-card class="info-card history-info mt-20" shadow="never">
           <template #header>
-            <div class="history-header-row">
-              <span class="card-title">고객 대응 히스토리</span>
-              
-              <div class="history-filter-group">
+            <div class="history-header-wrapper">
+              <div class="history-top-row">
+                <span class="card-title" style="margin-right: 20px;">고객 대응 히스토리</span>
+                <div class="category-filter-group">
+                  <el-button
+                    v-for="cat in historyCategories"
+                    :key="cat.value"
+                    :type="selectedHistoryFilters.includes(cat.value) ? 'primary' : ''"
+                    :plain="!selectedHistoryFilters.includes(cat.value)"
+                    size="small"
+                    round
+                    @click="toggleHistoryCategory(cat.value)"
+                  >
+                    {{ cat.label }}
+                  </el-button>
+                </div>
+              </div>
+
+              <div class="history-filter-group mt-2">
                 <el-date-picker
                   v-model="historyFilterDate"
                   type="daterange"
@@ -122,12 +138,12 @@
                   start-placeholder="시작일"
                   end-placeholder="종료일"
                   size="small"
-                  style="width: 240px;"
+                  style="width: 230px;"
                   value-format="YYYY-MM-DD"
                 />
                 
                 <el-select v-model="historyFilterStatus" placeholder="상태" size="small" style="width: 100px;">
-                  <el-option label="전체" value="ALL" />
+                  <el-option label="상태 전체" value="ALL" />
                   <el-option label="진행 중" value="ING" />
                   <el-option label="완료" value="DONE" />
                 </el-select>
@@ -136,7 +152,7 @@
                   v-model="historySearchKeyword"
                   placeholder="내용, 유형, 담당자 검색"
                   size="small"
-                  style="width: 200px;"
+                  style="width: 600px;"
                   clearable
                 >
                   <template #prefix><el-icon><Search /></el-icon></template>
@@ -405,6 +421,20 @@ const historyFilterDate = ref(null);
 const historyFilterStatus = ref('ALL');
 const historySearchKeyword = ref('');
 
+// [신규] 히스토리 카테고리 정의
+const historyCategories = [
+  { label: '전체', value: 'ALL' },
+  { label: '문의', value: 'SUPPORT' },
+  { label: '피드백', value: 'FEEDBACK' },
+  { label: '견적', value: 'QUOTE' },
+  { label: '계약', value: 'CONTRACT' },
+  { label: '캠페인', value: 'CAMPAIGN' },
+  { label: 'AS', value: 'AS' },
+];
+
+// 선택된 히스토리 필터 (초기값: 선택 없음 -> 아무것도 안 보임)
+const selectedHistoryFilters = ref([]);
+
 const canUpdateCustomer = computed(() =>
   authStore.hasAuth('CUSTOMER_WRITE')
 )
@@ -454,8 +484,6 @@ const goSupportDetail = (id) => { router.push(`/cs/supports/${id}`); };
 const goFeedbackDetail = (id) => { router.push(`/cs/feedbacks/${id}`); };
 const goQuoteDetail = (id) => { router.push(`/quote/${id}`); };
 
-// [수정] 목록 페이지로 이동하며 키워드 전달
-// 경로는 src/router/index.js 기준이며, keyword 쿼리를 넘깁니다.
 const goCouponList = (code) => {
     router.push({ 
         path: '/campaign/coupons', 
@@ -471,7 +499,6 @@ const goPromotionList = (code) => {
 };
 
 const goAsList = () => {
-    // AS는 코드 대신 '고객사 이름'으로 검색한다고 가정
     const companyName = customer.value.name;
     router.push({ 
         path: '/as', 
@@ -485,21 +512,24 @@ const fetchData = async () => {
     const res = await getCustomerDetail(customerId);
     customer.value = res.data;
 
-    // 계약 내역 히스토리 병합
-    if (customer.value.contractList && customer.value.contractList.length > 0) {
-      const contractHistory = customer.value.contractList.map(c => ({
-        date: c.startDate ? c.startDate + ' 00:00:00' : null, 
-        type: '계약',
-        performer: c.empName || customer.value.inCharge || '-',
-        content: `계약 체결: ${c.conName} (월 ${formatMoneyMan(c.monthlyPayment)})`,
-        status: c.status 
-      })).filter(item => item.date);
+    // if (customer.value.contractList && customer.value.contractList.length > 0) {
+    //   const contractHistory = customer.value.contractList.map(c => ({
+    //     date: c.startDate ? c.startDate + ' 00:00:00' : null, 
+    //     type: '계약',
+    //     performer: c.empName || customer.value.inCharge || '-',
+    //     content: `계약 체결: ${c.conName} (월 ${formatMoneyMan(c.monthlyPayment)})`,
+    //     status: c.status 
+    //   })).filter(item => item.date);
 
-      if (!customer.value.historyList) {
-        customer.value.historyList = [];
-      }
-      customer.value.historyList.push(...contractHistory);
-      customer.value.historyList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    //   if (!customer.value.historyList) {
+    //     customer.value.historyList = [];
+    //   }
+    //   customer.value.historyList.push(...contractHistory);
+    //   customer.value.historyList.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // }
+
+    if (!customer.value.historyList) {
+      customer.value.historyList = [];
     }
   } catch (error) {
     ElMessage.error('데이터 로드 실패');
@@ -533,7 +563,7 @@ const getHistoryStatusText = (item) => {
   const status = item.status || '';
 
   if (type === '계약') return formatContractStatus(status);
-  if (type.includes('견적') || type.includes('피드백') || type.includes('세그먼트')) return '완료';
+  if (type.includes('견적') || type.includes('피드백') || type.includes('세그먼트') || type.includes('쿠폰') || type.includes('프로모션')) { return '완료'; }
   if (type.includes('문의')) return status === 'C' ? '완료' : '진행 중';
   if (type.includes('AS') || type.includes('점검')) return status === 'C' ? '완료' : '진행 중';
 
@@ -552,8 +582,59 @@ const getHistoryDotColor = (item) => {
   return getHistoryStatusType(item) === 'success' ? '#0bbd87' : '#ff9900';
 };
 
+// 카테고리 토글 함수
+const toggleHistoryCategory = (val) => {
+  if (val === 'ALL') {
+    // '전체' 클릭 시: 토글 로직 (이미 전체면 해제, 아니면 전체만 선택)
+    if (selectedHistoryFilters.value.includes('ALL')) {
+      selectedHistoryFilters.value = [];
+    } else {
+      selectedHistoryFilters.value = ['ALL'];
+    }
+  } else {
+    // 개별 카테고리 클릭 시
+    // 만약 '전체'가 선택되어 있었다면, '전체'를 풀고 현재 클릭한 것만 선택
+    if (selectedHistoryFilters.value.includes('ALL')) {
+      selectedHistoryFilters.value = [val];
+    } else {
+      // 다중 선택 로직 (이미 있으면 제거, 없으면 추가)
+      const idx = selectedHistoryFilters.value.indexOf(val);
+      if (idx > -1) {
+        selectedHistoryFilters.value.splice(idx, 1);
+      } else {
+        selectedHistoryFilters.value.push(val);
+      }
+    }
+  }
+};
+
+// 필터링된 히스토리 리스트
 const filteredHistoryList = computed(() => {
-  let list = customer.value.historyList || [];
+  // 1. 카테고리 선택이 아예 없으면 -> 빈 배열 반환 (초기 상태)
+  if (selectedHistoryFilters.value.length === 0) {
+    return [];
+  }
+
+  // [중요] 원본 배열이 변경되지 않도록 복사본(...)을 사용합니다.
+  let list = [...(customer.value.historyList || [])];
+
+  // 2. 카테고리 필터 ('ALL'이 아닐 때만 필터링 수행)
+  if (!selectedHistoryFilters.value.includes('ALL')) {
+    list = list.filter(item => {
+      const type = item.type || '';
+      return selectedHistoryFilters.value.some(filter => {
+        if (filter === 'CONTRACT') return type === '계약';
+        if (filter === 'QUOTE') return type.includes('견적');
+        if (filter === 'SUPPORT') return type.includes('문의');
+        if (filter === 'FEEDBACK') return type.includes('피드백');
+        if (filter === 'CAMPAIGN') return type.includes('쿠폰') || type.includes('프로모션');
+        if (filter === 'AS') return type.includes('AS') || type.includes('점검');
+        return false;
+      });
+    });
+  }
+
+  // 3. 기존 상세 필터 (날짜)
   if (historyFilterDate.value && historyFilterDate.value.length === 2) {
     const startDate = new Date(historyFilterDate.value[0]);
     const endDate = new Date(historyFilterDate.value[1]);
@@ -564,6 +645,8 @@ const filteredHistoryList = computed(() => {
       return targetDate >= startDate && targetDate <= endDate;
     });
   }
+
+  // 4. 기존 상세 필터 (상태)
   if (historyFilterStatus.value !== 'ALL') {
     list = list.filter(item => {
       const statusText = getHistoryStatusText(item);
@@ -573,6 +656,8 @@ const filteredHistoryList = computed(() => {
       return true;
     });
   }
+
+  // 5. 기존 상세 필터 (검색어)
   if (historySearchKeyword.value) {
     const keyword = historySearchKeyword.value.toLowerCase();
     list = list.filter(item => {
@@ -582,7 +667,14 @@ const filteredHistoryList = computed(() => {
       return content.includes(keyword) || type.includes(keyword) || performer.includes(keyword);
     });
   }
-  return list;
+
+  // 마지막에 날짜순 정렬 로직 추가
+  // 필터링된 결과(list)를 날짜(date) 기준으로 내림차순(최신순) 정렬합니다.
+  return list.sort((a, b) => {
+    const dateA = a.date ? new Date(a.date).getTime() : 0;
+    const dateB = b.date ? new Date(b.date).getTime() : 0;
+    return dateB - dateA; // 큰 날짜(최신)가 앞으로 오도록 함
+  });
 });
 
 const highlightKeyword = (text) => {
@@ -591,15 +683,23 @@ const highlightKeyword = (text) => {
   return text.replace(regex, '<span style="background-color: yellow; font-weight: bold;">$1</span>');
 };
 
+// 안내 메시지
 const getEmptyDescription = computed(() => {
+  if (selectedHistoryFilters.value.length === 0) return '보고 싶은 히스토리 항목을 선택해주세요.';
   if (!customer.value.historyList || customer.value.historyList.length === 0) return '히스토리가 없습니다.';
   return '검색 결과가 없습니다.';
 });
 
+// 수정 모드 활성화 함수
 const enableEditMode = () => {
+  // 1. 탭을 먼저 '종합 정보'로 변경
+  activeMainTab.value = 'main_general';
+  
+  // 2. 폼 데이터 복사 및 수정 모드 켜기
   editForm.value = { ...customer.value };
   isEditMode.value = true;
 };
+
 const cancelEdit = () => { isEditMode.value = false; editForm.value = {}; };
 const saveEdit = async () => {
   try {
@@ -614,7 +714,7 @@ const handleDelete = () => { ElMessageBox.confirm('정말 삭제(비활성화) �
 const handleRestore = () => { ElMessageBox.confirm('고객을 다시 활성화 하시겠습니까?', '복구 확인', { type: 'success' }).then(async () => { try { await restoreCustomer(customerId); ElMessage.success('고객이 복구되었습니다.'); fetchData(); } catch (e) { ElMessage.error('복구 실패'); } }); };
 const goList = () => router.push('/customers');
 
-// 상태 및 유틸 함수들
+// 유틸 함수들
 const formatContractStatus = (status) => {
   const map = { P: '진행 중', C: '완료', W: '승인 대기', R: '반려', T: '해지', I: '만료 임박' };
   return map[status] || status;
@@ -678,6 +778,22 @@ const formatMoneyMan = (value) => {
   return `${man}만원`
 }
 
+// 탭 변경 감지 및 차단 함수
+const handleTabLeave = (activeName, oldActiveName) => {
+  // 수정 모드일 때 로직
+  if (isEditMode.value) {
+    // 목표 탭이 '종합 정보(main_general)'인 경우는 허용 
+    // (정보 수정 버튼 클릭 시 프로그램적으로 이동하는 것을 허용하기 위함)
+    if (activeName === 'main_general') {
+      return true;
+    }
+    // 그 외 다른 탭으로 이동하려고 하면 차단
+    ElMessage.warning('정보 수정 중에는 다른 탭으로 이동할 수 없습니다. 저장 또는 취소해주세요.');
+    return false; 
+  }
+  return true;
+};
+
 onMounted(fetchData);
 </script>
 
@@ -689,7 +805,7 @@ onMounted(fetchData);
 .ml-2 { margin-left: 10px; }
 .segment-tag { margin-left: 10px; }
 
-/* [추가] 클릭 가능한 ID 스타일 */
+/* 클릭 가능한 ID 스타일 */
 .clickable-link {
   color: #409eff;
   cursor: pointer;
@@ -721,21 +837,33 @@ onMounted(fetchData);
   font-size: 16px;
 }
 
-/* 히스토리 카드 헤더 스타일 */
-.history-header-row {
+/* 히스토리 카드 헤더 스타일 개선 */
+.history-header-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.history-top-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap; 
-  gap: 10px;
+  flex-wrap: wrap;
+}
+.category-filter-group {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
 }
 .history-filter-group {
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end; /* 필터를 우측으로 정렬 */
+  flex-wrap: wrap;
 }
 
 .mt-20 { margin-top: 20px; }
+.mt-2 { margin-top: 8px; }
 
 /* 텍스트 영역 스타일 */
 .memo-textarea :deep(.el-textarea__inner) {
@@ -749,10 +877,6 @@ onMounted(fetchData);
 
 .text-right {
   text-align: right;
-}
-
-.mt-2 {
-  margin-top: 10px;
 }
 
 .mb-20 {

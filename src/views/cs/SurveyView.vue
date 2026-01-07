@@ -4,12 +4,12 @@
     <div class="header">
       <div>
         <h2>설문조사 목록</h2>
-        <p>진행 중이거나 종료된 설문조사를 확인할 수 있습니다</p>
+        <p>완료된 설문조사를 확인할 수 있습니다</p>
       </div>
 
       <el-tooltip
   v-if="!canCreateSurvey"
-  content="설문조사 생성 권한이 없습니다"
+  content="설문조사 등록 권한이 없습니다"
   placement="bottom"
 >
   <span>
@@ -17,7 +17,7 @@
       type="primary"
       :disabled="true"
     >
-      설문조사 생성
+      설문조사 등록
     </el-button>
   </span>
 </el-tooltip>
@@ -27,7 +27,7 @@
   type="primary"
   @click.stop="goCreate"
 >
-  설문조사 생성
+  설문조사 등록
 </el-button>
     </div>
 
@@ -63,19 +63,6 @@
             :label="c.label"
             :value="c.value"
           />
-        </el-select>
-
-        <!-- 상태(단일) -->
-        <el-select
-          v-model="selectedStatus"
-          placeholder="상태 필터"
-          style="width: 140px;"
-          @change="handleSearch"
-        >
-          <el-option label="전체" value="ALL" />
-          <el-option label="진행중" value="OPEN" />
-          <el-option label="예정" value="READY" />
-          <el-option label="종료" value="CLOSED" />
         </el-select>
 
         <el-button type="primary" @click="handleSearch">검색</el-button>
@@ -115,13 +102,6 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="상태" width="120">
-          <template #default="{ row }">
-            <el-tag :type="statusTag(row.status)">
-              {{ statusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
 
       </el-table>
 

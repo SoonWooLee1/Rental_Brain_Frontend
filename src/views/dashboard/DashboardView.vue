@@ -56,7 +56,7 @@
       <!-- 3단: WORKBENCH (2열) -->
       <section class="grid-2 workbench-row">
         <div
-          class="panel clickable"
+          class="panel clickable chart-panel"
           role="button"
           tabindex="0"
           @click="goTo('segment')"
@@ -190,6 +190,10 @@ function goTo(key) {
   min-width: 0;          /* ✅ 핵심: 그리드/플렉스 overflow 튐 방지 */
 }
 
+.panel.chart-panel {
+  height: 400px;   /* 👈 명시적으로 고정 */
+}
+
 .panel > * {
   width: 100%;
   height: 100%;
@@ -221,6 +225,7 @@ function goTo(key) {
 /* 섹션 간 간격 */
 .snapshot-row { margin-top: 2px; }
 .workbench-row { margin-top: 6px; }
+
 
 /* =========================
    Responsive

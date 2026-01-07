@@ -13,7 +13,13 @@
         </div>
 
         <div v-if="selectedCoupon" class="price-item discount">
-          <label>할인 ({{ discountRate }}%)</label>
+          <label>할인 
+            <span v-if="selectedCoupon.type === 'R'">
+             ({{ selectedCoupon.rate }}%)
+            </span>
+            <span v-else>
+             ({{ formatPrice(selectedCoupon.rate) }})
+            </span></label>
           <strong>-{{ formatPrice(discountAmount) }}</strong>
         </div>
 
@@ -89,23 +95,23 @@
       v-for="c in coupons"
       :key="c.id"
       class="coupon-list"
+      :class="{ selected: selectedCoupon?.id === c.id }"
+      @click="toggleCoupon(c)"
     >
       <div class="coupon-text">
         <strong>{{ c.name }}</strong>
         <p class="desc">
-          {{ c.content }} ({{ c.rate }}%)
+          {{ c.content }}
+          <span v-if="c.type === 'R'">({{ c.rate }}%)</span>
+          <span v-else>({{ formatPrice(c.rate) }})</span>
         </p>
       </div>
-
-      <label class="coupon-label">
-        <input
-          type="radio"
-          name="coupon"
-          :value="c"
-          v-model="selectedCoupon"
-        />
-      </label>
+    
+      <span class="check">
+        <span v-if="selectedCoupon?.id === c.id">✔</span>
+      </span>
     </li>
+
   </ul>
 </section>
 
@@ -165,17 +171,35 @@
   })
 
   /* 할인 금액 */
-  const discountAmount = computed(() => {
-  return Math.floor(
-    originalMonthlyPayment.value * discountRate.value / 100
-  )
-  })
+const discountAmount = computed(() => {
+  if (!selectedCoupon.value) return 0
+
+  const coupon = selectedCoupon.value
+
+  // 비율 할인 (%)
+  if (coupon.type === 'R') {
+    return Math.floor(
+      originalMonthlyPayment.value * coupon.rate / 100
+    )
+  }
+
+  // 정액 할인 (금액 차감)
+  if (coupon.type === 'A') {
+    return coupon.rate
+  }
+
+  return 0
+})
+
 
   /* 할인 적용된 월 납부액 */
   const discountedMonthlyPayment = computed(() => {
-  return originalMonthlyPayment.value - discountAmount.value
-  })
+  const result =
+    originalMonthlyPayment.value - discountAmount.value
 
+  // 음수 방지
+  return Math.max(result, 0)
+})
   /* 계약 기간 */
   const contractDuration = computed(() => {
     return props.draft.contract?.duration || 0
@@ -199,6 +223,16 @@
   const res = await getCouponsForContract(props.draft.segmentId)
   coupons.value = res.data || []
   }
+
+  const toggleCoupon = (coupon) => {
+  // 이미 선택된 쿠폰이면 → 해제
+  if (selectedCoupon.value?.id === coupon.id) {
+    selectedCoupon.value = null
+  } else {
+    selectedCoupon.value = coupon
+  }
+}
+
 
   watch(
   () => props.draft.segmentId,
@@ -335,6 +369,34 @@
   accent-color: #248eff;
   transform: scale(1.5);
   cursor: pointer;
+}
+
+.coupon-list {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+  padding: 16px 20px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.coupon-list:hover {
+  border-color: #248eff;
+}
+
+.coupon-list.selected {
+  border-color: #248eff;
+  background: #f3f8ff;
+}
+
+.check {
+  font-size: 20px;
+  color: #248eff;
+  width: 24px;
+  text-align: center;
 }
 
   </style>

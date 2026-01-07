@@ -1,7 +1,7 @@
 <template>
     <div class="page">
         <el-card shadow="never" class="card">
-            <h2>설문조사 생성</h2>
+            <h2>설문조사 등록</h2>
 
             <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
                 <!-- 설문명 -->
@@ -40,7 +40,7 @@
                 <div class="actions">
                     <el-button @click="goBack">취소</el-button>
                     <el-button type="primary" @click="submit">
-                        설문 시작
+                        설문 등록
                     </el-button>
                 </div>
             </el-form>
@@ -64,7 +64,7 @@ const period = ref([])
 const form = ref({
     name: '',
     link: '',
-    status: '설문 시작',
+    status: '설문 등록',
     startDate: '',
     endDate: '',
     aiResponse: null,
@@ -153,11 +153,11 @@ const submit = async () => {
             ),
             ])
 
-            ElMessage.success('설문이 생성되었습니다')
+            ElMessage.success('설문이 등록되었습니다')
             router.push('/cs/survey')
         } catch (e) {
             console.error(e)
-            ElMessage.error('설문 생성 실패')
+            ElMessage.error('설문 등록 실패')
         } finally {
             loading.close()
         }

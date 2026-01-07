@@ -114,7 +114,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Bell, Check, Calendar, WarningFilled, DocumentCopy, Close, User, Box } from "@element-plus/icons-vue";
+import { Bell, Check, Calendar, WarningFilled, DocumentCopy, Close, User, Box, DocumentChecked, DocumentDelete, Suitcase } from "@element-plus/icons-vue";
 import dayjs from "dayjs";
 import { ElMessageBox } from "element-plus";
 
@@ -237,6 +237,7 @@ const deleteSelected = async () => {
 /* tabs */
 const tabs = [
   { key: "ALL", label: "전체" },
+  { key: "APPROVAL_REQUEST", label: "결재 대기" },
   { key: "APPROVAL", label: "결재 승인" },
   { key: "REJECT", label: "결재 반려" },
   { key: "CUSTOMER_REGIST", label: "고객 등록" },
@@ -267,8 +268,9 @@ const timeAgo = (date) => {
 
 const getIcon = (type) => {
   switch (type) {
-    case "APPROVAL": return Check;
-    case "REJECT": return Close;
+    case "APPROVAL_REQUEST": return Suitcase;
+    case "APPROVAL": return DocumentChecked;
+    case "REJECT": return DocumentDelete;
     case "CUSTOMER_REGIST": return User;
     case "PRODUCT_REGIST": return Box;
     case "AS_DUE": return WarningFilled;
@@ -401,8 +403,6 @@ const onClickNotice = async (item) => {
   opacity: 0.6;
 }
 
-
-
 .icon {
   width: 36px;
   height: 36px;
@@ -410,6 +410,11 @@ const onClickNotice = async (item) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.icon.APPROVAL_REQUEST {
+  background: #e9ecf0;
+  color: #183eea;
 }
 
 .icon.APPROVAL {
@@ -439,7 +444,7 @@ const onClickNotice = async (item) => {
 
 .icon.CUSTOMER_REGIST {
   background: #fdffe3;
-  color: #363636;
+  color: #646212;
 }
 
 .icon.PRODUCT_REGIST {
