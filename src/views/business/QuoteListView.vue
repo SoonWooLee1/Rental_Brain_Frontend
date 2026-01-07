@@ -2,7 +2,7 @@
   <div class="page-container">
     <div class="header-row">
       <div class="title-area">
-        <h2 class="page-title">고객 상담 내역</h2>
+        <h2 class="page-title">고객 견적 내역</h2>
         <p class="page-subtitle">기업 고객 문의 및 상담 관리</p>
       </div>
 
@@ -17,7 +17,7 @@
       class="btn-register"
       :disabled="true"
     >
-      <el-icon><Plus /></el-icon> 상담 추가
+       상담 등록
     </el-button>
   </span>
 </el-tooltip>
@@ -28,7 +28,7 @@
   class="btn-register"
   @click="handleCreate"
 >
-  <el-icon><Plus /></el-icon> 상담 추가
+   상담 등록
 </el-button>
     </div>
 
@@ -381,12 +381,12 @@ onMounted(fetchData);
 <style scoped>
 /* ✅ CustomerListView.vue 스타일을 그대로 가져오고, 필요한 것만 추가 */
 
-.page-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.page-container { padding: 24px;max-width: 1440px;margin: 0 auto;display: flex;flex-direction: column;gap: 10px; }
 
 /* 헤더 */
-.header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-.page-title { font-size: 24px; font-weight: 700; color: #333; margin: 0; }
-.page-subtitle { margin: 6px 0 0; color: #6b7280; font-size: 13px; }
+.header-row {display: flex;justify-content: space-between;align-items: center;margin-bottom: 20px;}
+.page-title {font-size: 24px;font-weight: 700;color: #333;margin: 0;}
+.page-subtitle {margin: 6px 0 0;color: #6b7280;font-size: 13px;}
 .title-area { display: flex; flex-direction: column; }
 
 /* 검색 & 필터 영역 */

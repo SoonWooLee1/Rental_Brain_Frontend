@@ -2,26 +2,19 @@
   <div class="detail-backdrop" @click.self="emitClose">
     <div class="detail-modal">
       <!-- 헤더 -->
-      <div class="detail-header">
-        <div>
-          <h2>{{ itemName }}</h2>
-          <p>{{ categoryName }}</p>
-        </div>
-        <el-tooltip
-  content="수정 권한이 없습니다"
-  placement="top"
-  :disabled="canUpdateItem"
->
-        <button
-  class="edit-btn"
-  :disabled="!canUpdateItem"
-  @click="canUpdateItem && openNameEditModal(itemName, monthlyPrice, categoryName)"
->
-  수정
-</button>
-</el-tooltip>
-        <button class="icon-btn" @click="emitClose">✕</button>
-      </div>
+  <div class="detail-header">
+    <!-- 왼쪽 -->
+    <div class="header-left">
+      <h2>{{ itemName }}</h2>
+      <p>{{ categoryName }}</p>
+    </div>
+
+    <!-- 오른쪽 -->
+    <div class="header-right">
+
+      <button class="icon-btn" @click="emitClose">✕</button>
+    </div>
+  </div>
 
       <!-- 상단 KPI 카드 5개 -->
       <div class="detail-kpi-row">
@@ -113,9 +106,30 @@
 
       <!-- 하단 버튼 영역 -->
       <div class="detail-footer">
-        <button class="primary-btn" @click="emitClose">
-          확인
-        </button>
+        <div class="footer-left"></div>
+
+        <div class="footer-right">
+          <el-tooltip
+            content="수정 권한이 없습니다"
+            placement="top"
+            :disabled="canUpdateItem"
+          >
+            <el-button
+              :disabled="!canUpdateItem"
+              @click="canUpdateItem && openNameEditModal(
+                itemName,
+                monthlyPrice,
+                categoryName
+              )"
+            >
+              수정
+            </el-button>
+          </el-tooltip>
+
+          <el-button type="primary" @click="emitClose">
+            확인
+          </el-button>
+        </div>
       </div>
 
       <!-- 개별 수정 모달 -->
@@ -362,13 +376,40 @@ watch(
   color: #6b7280;
 }
 
+.header-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .edit-btn {
   border: none;
   background: transparent;
   color: #2563eb;
   font-size: 15px;
   cursor: pointer;
-  margin-right: 650px;
+}
+
+.edit-btn:disabled {
+  color: #9ca3af;
+  cursor: default;
 }
 
 .icon-btn {
@@ -517,7 +558,17 @@ watch(
   padding: 12px 24px 16px;
   border-top: 1px solid #edf0f7;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  gap: 8px;
+}
+
+.footer-right {
+  display: flex;
   gap: 8px;
 }
 

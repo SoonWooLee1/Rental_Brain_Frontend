@@ -134,8 +134,8 @@ onMounted(fetchList)
   }
   
   .pagination-area {
+    margin-top: 20px;
     display: flex;
-    justify-content: flex-end;
-    margin-top: 16px;
+    justify-content: center;
   }
   </style>

@@ -4,7 +4,7 @@
     <!-- ===== Header ===== -->
     <div class="header-row">
       <div>
-        <h1 class="page-title">계약 목록</h1>
+        <h2 class="page-title">고객 계약 내역</h2>
         <p class="page-subtitle">계약 현황 및 진행 상태 관리</p>
       </div>
       <el-tooltip
@@ -14,8 +14,7 @@
 >
   <span>
     <el-button type="primary" disabled>
-      <el-icon><Plus /></el-icon>
-      계약 생성
+      계약 승인 요청
     </el-button>
   </span>
 </el-tooltip>
@@ -25,8 +24,7 @@
   type="primary"
   @click="goToCreateContract"
 >
-  <el-icon><Plus /></el-icon>
-  계약 생성
+  계약 승인 요청
 </el-button>
     </div>
 
@@ -239,9 +237,13 @@ onMounted(async () => {
 
 <style scoped>
 .page-container {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 24px;
+  max-width: 1440px;
   margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Header */
@@ -252,20 +254,17 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
-.header-row h1 {
-  font-size: 30px;
-  font-weight: 600;
-}
 .page-title {
   font-size: 24px;
   font-weight: 700;
   color: #333;
   margin: 0;
 }
+
 .page-subtitle {
-  margin-top: 6px;
-  font-size: 13px;
+  margin: 6px 0 0;
   color: #6b7280;
+  font-size: 13px;
 }
 
 /* Search */

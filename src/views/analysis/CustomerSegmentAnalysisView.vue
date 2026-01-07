@@ -5,7 +5,7 @@
       <div class="title-area">
         <h2 class="page-title">고객 세그먼트 분석</h2>
         <p class="page-subtitle">
-          고객을 상태와 행동 기준으로 분류하여 이탈 위험과 관리 우선순위를 파악합니다.
+          고객을 상태와 행동 기준으로 분류하여 이탈 위험과 관리 우선순위를 파악합니다
         </p>
       </div>
 

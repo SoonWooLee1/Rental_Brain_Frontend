@@ -65,7 +65,7 @@ use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer
 const emit = defineEmits(["monthClick"]);
 
 const props = defineProps({
-  title: { type: String, default: "월별 이탈 위험률 추이" },
+  title: { type: String, default: "월별 이탈 위험 고객 비중" },
   months: { type: Number, default: 12 },
 });
 

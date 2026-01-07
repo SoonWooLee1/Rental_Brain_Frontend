@@ -4,7 +4,7 @@
     <!-- ===== Header ===== -->
     <div class="detail-header">
       <div class="header-left">
-        <el-button circle plain @click="goList">
+        <el-button circle plain @click="goBack">
           <el-icon><ArrowLeft /></el-icon>
         </el-button>
 
@@ -23,11 +23,9 @@
             content="계약 해지 권한이 없습니다"
             placement="top"
           >
-            <span>
               <el-button type="warning" plain disabled>
                 계약 해지
               </el-button>
-            </span>
           </el-tooltip>
         
           <!-- 권한 있음 -->
@@ -42,15 +40,13 @@
         </template>
 
         <el-tooltip
-         v-if="!isAdmin"
-         content="관리자만 계약 삭제가 가능합니다"
+         v-if="!canTerminateContract"
+         content="계약 삭제 권한이 없습니다."
          placement="top"
        >
-         <span>
            <el-button type="danger" disabled>
              계약 삭제
            </el-button>
-         </span>
        </el-tooltip>
      
        <el-button
@@ -304,8 +300,7 @@
   <div class="terminate-desc">
     <p><strong>해당 계약을 삭제하시겠습니까?</strong></p>
     <p class="warn">
-      ⚠ 관리자만 계약 삭제가 가능하며<br />
-      삭제된 계약은 목록에서 제거됩니다.
+      ⚠ 삭제된 계약은 목록에서 제거됩니다.
     </p>
   </div>
 
@@ -386,8 +381,6 @@ function initVm() {
     overdueCount: 0
   }
 }
-
-const isAdmin = computed(() => authStore.positionId === 1)
 
 function openDeleteModal() {
   deleteDialogVisible.value = true
@@ -597,7 +590,13 @@ watch(
 /* =========================
    Utils
 ========================= */
-const goList = () => router.push({ name: 'contract-list' })
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push({ name: 'contract-list' })
+  }
+}
 const money = v => {
   if (typeof v !== 'number') return '-'
   if (v >= 100000000) {

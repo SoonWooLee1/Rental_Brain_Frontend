@@ -2,7 +2,12 @@
   <div class="page-container" v-loading="loading">
     
     <div class="header-row">
-      <h2 class="page-title">문의 관리</h2>
+      <div class="title-area">
+        <h2 class="page-title">문의 관리</h2>
+        <p class="page-subtitle">
+          렌탈 문의 현황과 처리 상태
+        </p>
+      </div>
 
       <el-tooltip v-if="!canCreateSupport" content="신규 문의 등록 권한이 없습니다" placement="bottom">
             <span>
@@ -17,9 +22,7 @@
           </el-button>
 
 
-      <!-- <el-button type="primary" class="btn-register" @click="openCreateModal">
-        <el-icon><Plus /></el-icon> 신규 문의 등록
-      </el-button> -->
+
     </div>
 
     <div class="search-area card-box">
@@ -241,9 +244,11 @@ import { Search, Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getSupportList, getSupportKpi, createSupport, updateSupport, deleteSupport, getInChargeList } from '@/api/customersupport';
 import { getCustomerList } from '@/api/customerlist'; 
-import { useRouter } from 'vue-router'; // 추가
+import { useRouter, useRoute } from 'vue-router'; // 추가
 import { useAuthStore } from '@/store/auth.store';
+
 const router = useRouter(); // 추가
+const route = useRoute();
 
 // 상태 변수들
 const loading = ref(false);
@@ -262,18 +267,33 @@ const canCreateSupport = computed(() =>
 const isEditMode = ref(false);
 
 // 검색 조건
+// URL 쿼리 파라미터에서 초기값 읽어오기
 const search = reactive({
-  keyword: '',
-  category: '',
-  status: '' 
+  keyword: route.query.keyword || '',
+  category: route.query.category ? Number(route.query.category) : '', // 숫자형 변환 주의
+  status: route.query.status || '' 
 });
 
 // 페이지네이션
 const page = reactive({
-  currentPage: 1,
+  currentPage: Number(route.query.page) || 1, // URL에 없으면 1
   pageSize: 10,
   totalCount: 0
 });
+
+// URL 업데이트 헬퍼 함수
+const updateUrl = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      page: page.currentPage,
+      keyword: search.keyword,
+      category: search.category || undefined,
+      status: search.status || undefined,
+      star: search.star || undefined
+    }
+  });
+};
 
 // 정렬 상태
 const sortState = reactive({
@@ -343,6 +363,7 @@ const fetchData = async () => {
 
 const handleSearch = () => {
   page.currentPage = 1;
+  updateUrl();
   fetchData();
 };
 
@@ -350,7 +371,11 @@ const resetSearch = () => {
   search.keyword = '';
   search.category = '';
   search.status = '';
-  handleSearch();
+  search.star = '';
+  page.currentPage = 1;
+  
+  router.replace({ query: {} }); // URL 초기화
+  fetchData();
 };
 
 const handleSortChange = ({ prop, order }) => {
@@ -370,6 +395,7 @@ const handleSortChange = ({ prop, order }) => {
 
 const handlePageChange = (val) => {
   page.currentPage = val;
+  updateUrl();
   fetchData();
 };
 
@@ -519,11 +545,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.page-container {padding: 24px;max-width: 1440px;margin: 0 auto;display: flex;flex-direction: column;gap: 10px;}
 
 /* 헤더 */
 .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.page-title { font-size: 24px; font-weight: 700; color: #333; margin: 0; }
+.page-title {font-size: 24px;font-weight: 700;color: #333;margin: 0;}
+.page-subtitle {margin: 6px 0 0;color: #6b7280;font-size: 13px;}
 
 /* 검색 & 필터 영역 */
 .search-area { 

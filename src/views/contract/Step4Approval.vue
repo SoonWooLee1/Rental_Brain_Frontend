@@ -183,10 +183,7 @@
     padding: 32px 48px;
   }
   
-  .title {
-    font-size: 22px;
-    margin-bottom: 20px;
-  }
+  .title {font-size: 20px;font-weight: 600;margin-bottom: 16px;}
   
   .card {
     background: #fff;

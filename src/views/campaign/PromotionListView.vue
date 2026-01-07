@@ -1,7 +1,8 @@
 <template>
+  <div class="page-container">
     <div class="header">
       <div>
-        <h1>프로모션</h1>
+        <h2>프로모션</h2>
         <p>자동 · 일반 프로모션 통합 관리</p>
       </div>
             <!-- 권한 없을 때 -->
@@ -147,6 +148,7 @@
       @created="fetchPromotionList"
       @close="handleModalClose"
     />
+  </div>
 </template>
 
 <script setup>
@@ -353,29 +355,36 @@ watch(() => route.query.recommendId, async (newVal) => {
 
 
 <style scoped>
-.header {
+.page-container {
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+
   display: flex;
-  padding-left: 24px;
-  padding-right: 24px;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  color: #222;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.header h1 {
-  font-size: 30px;
-  font-weight: 600;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
 }
 
 .header p {
-  font-size: 15px;
-  color: #999;
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
 }
 
-.promotion-page {
-  padding: 16px 24px;
-}
 
 .search-input {
   width: 500px;

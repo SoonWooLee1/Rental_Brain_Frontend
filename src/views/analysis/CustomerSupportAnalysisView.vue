@@ -5,7 +5,7 @@
       <div class="title-area">
         <h2 class="page-title">고객 응대 분석</h2>
         <p class="page-subtitle">
-          견적, 문의, 피드백 데이터를 기반으로 고객 응대 효율과 품질을 분석합니다.
+          견적, 문의, 피드백 데이터를 기반으로 고객 응대 효율과 품질을 분석합니다
         </p>
       </div>
 

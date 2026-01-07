@@ -351,7 +351,7 @@ const formatPrice = v =>
 
 <style scoped>
 .step-container {padding: 32px 48px;}
-.title {font-size: 22px;margin-bottom: 20px;}
+.title {font-size: 20px;font-weight: 600;margin-bottom: 16px;}
 .card {background: #fff;border-radius: 8px;padding: 20px;margin-bottom: 24px;}
 .section-title {font-size: 16px; margin-bottom: 12px;}
 .form-grid {display: grid;grid-template-columns: repeat(2, 1fr);gap: 16px;}

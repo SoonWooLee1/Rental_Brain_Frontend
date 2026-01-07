@@ -4,15 +4,12 @@
     <!-- 헤더 -->
     <div class="header-row">
       <div>
-        <h2 class="page-title">정기 점검 (AS)</h2>
+        <h2 class="page-title">AS / 정기점검</h2>
         <p class="page-desc">B2B 기업 자산 AS / 정기 점검 일정 관리 및 조회</p>
       </div>
       <el-tooltip content="점검 일정 추가 권한이 없습니다" placement="top" :disabled="canCreateAs">
         <el-button type="primary" :disabled="!canCreateAs" @click="canCreateAs && (showCreate = true)">
-          <el-icon>
-            <Calendar />
-          </el-icon>
-          점검 일정 추가
+          점검 일정 등록
         </el-button>
       </el-tooltip>
     </div>
@@ -62,8 +59,8 @@
 
     <!-- 테이블 -->
     <el-card shadow="never" class="table-card">
-      <el-table :data="list" style="width: 100%">
-        <el-table-column prop="after_service_code" label="점검 ID" width="120" align="center" />
+      <el-table :data="list" style="width: 100%" @sort-change="onSortChange">
+        <el-table-column prop="after_service_code" label="점검 ID" width="120" align="center" sortable="custom"/>
         <el-table-column prop="customerName" label="기업명" />
         <el-table-column prop="customerManager" label="담당자" width="100" align="center" />
         <el-table-column prop="itemName" label="렌탈 자산" />
@@ -76,7 +73,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="예정일" width="120" align="center" >
+        <el-table-column prop="dueDate" label="예정일" width="120" align="center" sortable="custom">
           <template #default="{ row }">
             {{ formatDate(row.dueDate) }}
           </template>
@@ -175,6 +172,11 @@ const canCreateAs = computed(() =>
   authStore.hasAuth('AS_SCHEDULE')
 )
 
+const sort = ref({
+  field: null,
+  direction: null
+})
+
 const page = ref({
   current: 1,
   size: 10
@@ -216,7 +218,9 @@ const fetchList = async () => {
       type: search.value.type,
       status: search.value.status,
       keyword: search.value.keyword,
-      summaryType: activeSummaryType.value
+      summaryType: activeSummaryType.value,
+      sortField: sort.value.field,
+      sortOrder: sort.value.direction
     }
   })
 
@@ -239,7 +243,6 @@ const onSummaryClick = (type) => {
   search.value.summaryType = type
   page.value.current = 1
 
-  // 백엔드 1차 필터
   search.value.type = ''
   search.value.keyword = ''
 
@@ -249,6 +252,24 @@ const onSummaryClick = (type) => {
     search.value.status = 'P'
   }
 
+  fetchList()
+}
+
+const onSortChange = ({ prop, order }) => {
+  if (!order) {
+    sort.value.field = null
+    sort.value.direction = null
+  } else {
+    if (prop === 'dueDate') {
+      sort.value.field = 'dueDate'
+    } else if (prop === 'after_service_code') {
+      sort.value.field = 'afterServiceCode'
+    }
+
+    sort.value.direction = order === 'ascending' ? 'ASC' : 'DESC'
+  }
+
+  page.value.current = 1
   fetchList()
 }
 
@@ -313,9 +334,13 @@ onMounted(() => {
 
 <style scoped>
 .page-container {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 24px;
+  max-width: 1440px;
   margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .header-row {
@@ -328,13 +353,14 @@ onMounted(() => {
 .page-title {
   font-size: 24px;
   font-weight: 700;
+  color: #333;
   margin: 0;
 }
 
 .page-desc {
-  margin-top: 4px;
-  color: #888;
-  font-size: 14px;
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .search-area.card-box {

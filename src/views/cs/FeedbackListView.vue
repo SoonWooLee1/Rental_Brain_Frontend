@@ -2,7 +2,12 @@
   <div class="page-container" v-loading="loading">
     
     <div class="header-row">
-      <h2 class="page-title">피드백 관리</h2>
+      <div class="title-area">
+        <h2 class="page-title">피드백 관리</h2>
+        <p class="page-subtitle">
+          고객 의견을 분석하여 개선 포인트를 도출
+        </p>
+      </div>
       <el-tooltip v-if="!canCreateFeedBack" content="신규 피드백 등록 권한이 없습니다" placement="bottom">
         <span>
           <el-button type="primary" class="btn-register" :disabled="true">
@@ -14,9 +19,7 @@
       <el-button v-else type="primary" class="btn-register" @click="openCreateModal">
         신규 피드백 등록
       </el-button>
-      <!-- <el-button type="primary" class="btn-register" @click="openCreateModal">
-        <el-icon><Plus /></el-icon> 신규 피드백 등록
-      </el-button> -->
+
     </div>
 
     <div class="search-area card-box">
@@ -265,7 +268,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue';
 
-import { useRouter } from 'vue-router'; 
+import { useRouter, useRoute } from 'vue-router'; 
 
 import { Search, Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -276,6 +279,7 @@ import { useAuthStore } from '@/store/auth.store';
 
 
 const router = useRouter();
+const route = useRoute();
 
 const loading = ref(false);
 const feedbackList = ref([]);
@@ -287,19 +291,33 @@ const authStore = useAuthStore();
 
 const isEditMode = ref(false);
 
-// [수정] 검색 상태에 star 추가 (필터 작동 핵심)
+// URL 쿼리 파라미터에서 초기값 읽어오기
 const search = reactive({
-  keyword: '',
-  category: '',
-  status: '',
-  star: '' 
+  keyword: route.query.keyword || '',
+  category: route.query.category ? Number(route.query.category) : '',
+  status: route.query.status || '',
+  star: route.query.star ? Number(route.query.star) : '' // [수정] 별점 추가
 });
 
 const page = reactive({
-  currentPage: 1,
+  currentPage: Number(route.query.page) || 1,
   pageSize: 10,
   totalCount: 0
 });
+
+// URL 업데이트 헬퍼 함수
+const updateUrl = () => {
+  router.replace({
+    query: {
+      ...route.query,
+      page: page.currentPage,
+      keyword: search.keyword,
+      category: search.category || undefined,
+      status: search.status || undefined,
+      star: search.star || undefined
+    }
+  });
+};
 
 const sortState = reactive({
   sortBy: 'id',
@@ -371,6 +389,7 @@ const fetchData = async () => {
 
 const handleSearch = () => {
   page.currentPage = 1;
+  updateUrl();
   fetchData();
 };
 
@@ -378,8 +397,11 @@ const resetSearch = () => {
   search.keyword = '';
   search.category = '';
   search.status = '';
-  search.star = ''; // [수정] 초기화 시 별점도 초기화
-  handleSearch();
+  search.star = '';
+  page.currentPage = 1;
+  
+  router.replace({ query: {} }); // URL 초기화
+  fetchData();
 };
 
 const handleSortChange = ({ prop, order }) => {
@@ -399,6 +421,7 @@ const handleSortChange = ({ prop, order }) => {
 
 const handlePageChange = (val) => {
   page.currentPage = val;
+  updateUrl();
   fetchData();
 };
 
@@ -505,10 +528,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.page-container {padding: 24px;max-width: 1440px;margin: 0 auto;display: flex;flex-direction: column;gap: 10px;}
 
 .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.page-title { font-size: 24px; font-weight: 700; color: #333; margin: 0; }
+.page-title {font-size: 24px;font-weight: 700;color: #333;margin: 0;}
+.page-subtitle {margin: 6px 0 0;color: #6b7280;font-size: 13px;}
 
 .search-area { 
     display: flex; justify-content: space-between; align-items: center; 

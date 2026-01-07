@@ -3,8 +3,8 @@
     <!-- 헤더 -->
     <div class="header">
       <div>
-        <h2>설문조사 목록</h2>
-        <p>완료된 설문조사를 확인할 수 있습니다</p>
+        <h2 class="page-title">설문조사 관리</h2>
+        <p class="page-subtitle">설문 업로드 · AI 분석 · 인사이트 제공</p>
       </div>
 
       <el-tooltip
@@ -328,10 +328,28 @@ const goCreate = () => {
 
 <style scoped>
 .page {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 24px;
+  max-width: 1440px;
   margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
 .header {
   display: flex;
   justify-content: space-between;

@@ -2,7 +2,7 @@
   <div class="page-container">
     <!-- Header -->
     <div class="header">
-      <h1>내 결재 내역</h1>
+      <h2>전자 결재</h2>
       <p class="subtitle">
         내가 처리해야 할 결재
       </p>
@@ -119,21 +119,31 @@ onMounted(fetchStatus)
 
 <style scoped>
 /* ===== Layout ===== */
-.page-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.page-container {
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 .header {
   margin-bottom: 24px;
 }
 
-.header h1 {
-  font-size: 30px;
-  font-weight: 600;
+.header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
 }
 
 .subtitle {
-  margin-top: 4px;
+  margin: 6px 0 0;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* ===== KPI (Contract Style) ===== */

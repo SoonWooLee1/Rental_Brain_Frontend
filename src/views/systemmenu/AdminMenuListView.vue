@@ -3,7 +3,7 @@
         <div class="page-title">
             <div class="title-left">
                 <h2>사용자 관리</h2>
-                <span>사용자별 권한을 관리합니다</span>
+                <p>사용자별 권한 관리</p>
             </div>
 
             <div class="title-right">
@@ -11,7 +11,7 @@
                     <el-icon>
                         <User />
                     </el-icon>
-                    사원 등록
+                   사원 등록
                 </el-button>
             </div>
         </div>
@@ -155,6 +155,18 @@ const syncEmployee = (payload) => {
 </script>
 
 <style scoped>
+.admin-auth-page {
+    padding-left: 24px;
+    padding-right: 12px;
+    padding-top: 24px;
+    max-width: 1440px;
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
 .header-top {
     display: flex;
     justify-content: space-between;
@@ -176,10 +188,19 @@ const syncEmployee = (payload) => {
     margin-bottom: 20px;
 }
 
-.title-left {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+
+
+.title-left h2 {
+    font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.title-left p {
+    margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .title-right {
@@ -187,6 +208,8 @@ const syncEmployee = (payload) => {
     align-items: center;
     padding-right: 20px;
 }
+
+
 
 .content {
     display: flex;

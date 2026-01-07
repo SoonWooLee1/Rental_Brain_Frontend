@@ -215,9 +215,4 @@ const save = async () => {
   text-align: center;
 }
 
-.header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
 </style>

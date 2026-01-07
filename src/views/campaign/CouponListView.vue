@@ -1,7 +1,8 @@
 <template>
+  <div class="page-container">
   <div class="header">
     <div>
-      <h1>쿠폰</h1>
+      <h2>쿠폰</h2>
       <p>금액 · 비율할인 쿠폰 통합 관리</p>
     </div>
 
@@ -154,6 +155,7 @@
       @deleted="fetchCouponList"
     />
   </div>
+</div>
 </template>
 
 <script setup>
@@ -371,24 +373,34 @@ watch(() => route.query.recommendId, async (newVal) => {
 </script>
 
 <style scoped>
-.header {
+.page-container {
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+
   display: flex;
-  padding-left: 24px;
-  padding-right: 24px;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  color: #222;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.header h1 {
-  font-size: 30px;
-  font-weight: 600;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
 }
 
 .header p {
-  font-size: 15px;
-  color: #999;
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .coupon-table :deep(.el-table__row) {
@@ -400,10 +412,6 @@ watch(() => route.query.recommendId, async (newVal) => {
   padding-top: 12px;
   /* 위아래 패딩도 같이 조절 */
   padding-bottom: 12px;
-}
-
-.coupon-page {
-  padding: 16px 24px;
 }
 
 .toolbar {

@@ -3,8 +3,8 @@
     <!-- 상단 타이틀 및 버튼 -->
     <div class="header">
       <div>
-        <h1>렌탈 제품 목록</h1>
-        <p>전체 제품 현황 및 수익성 관리</p>
+        <h2>제품 목록</h2>
+        <p>렌탈 제품 현황 및 수익성 관리</p>
       </div>
       <button class="primary-btn" :disabled="!canCreateItem" @click="canCreateItem && openCreateModal()">
         신규 제품 등록
@@ -297,8 +297,12 @@ onMounted(async () => {
 <style scoped>
 .product-list-page {
   padding: 24px;
-  background: #f5f7fb;
-  color: #222;
+  max-width: 1440px;
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .header {
@@ -306,6 +310,19 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+}
+
+.header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .kpi-row {

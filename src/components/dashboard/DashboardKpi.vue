@@ -265,6 +265,10 @@ const momClass = (p) => {
   color: #6b7280;
 }
 
+.left {
+  padding-left: 10px;
+}
+
 .right {
   display: flex;
   align-items: center;

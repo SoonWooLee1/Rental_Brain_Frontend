@@ -2,7 +2,12 @@
   <div class="page-container">
 
     <div class="header-row">
-      <h2 class="page-title">고객 목록</h2>
+      <div class="title-area">
+        <h2 class="page-title">고객 목록</h2>
+        <p class="page-subtitle">
+          계약·상담·이력 기반 고객 통합 관리
+        </p>
+      </div>
       <el-tooltip v-if="!canCreateCustomer" content="신규 기업 등록 권한이 없습니다" placement="bottom">
         <span>
           <el-button type="primary" class="btn-register" :disabled="true">
@@ -49,7 +54,7 @@
       <el-button class="btn-guide" @click="showSegmentGuideModal = true">
         <el-icon>
           <InfoFilled />
-        </el-icon> 세그먼트 기준표
+        </el-icon> &nbsp; 세그먼트 기준표
       </el-button>
     </div>
 
@@ -174,13 +179,14 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { getCustomerList, getCustomerKpi, createCustomer } from '@/api/customerlist';
 import { ElMessage } from 'element-plus';
 import { Search, Plus, InfoFilled, Edit } from '@element-plus/icons-vue'; // Edit 아이콘 추가
 import { useAuthStore } from '@/store/auth.store';
 
 const router = useRouter();
+const route = useRoute();
 
 // 상태 변수
 const kpiData = ref({});
@@ -188,13 +194,14 @@ const customerList = ref([]);
 const loading = ref(false);
 const totalCount = ref(0);
 const pageSize = ref(10);
-const currentPage = ref(1);
+// URL 쿼리 파라미터에서 초기값 읽어오기 (없으면 기본값 1)
+const currentPage = ref(Number(route.query.page) || 1);
 const authStore = useAuthStore();
 
 // 검색 및 필터
-const searchKeyword = ref('');
+const searchKeyword = ref(route.query.keyword || '');
 const selectedSegments = ref([]);
-const selectedStatus = ref('ACTIVE');
+const selectedStatus = ref(route.query.status || 'ACTIVE');
 
 // 정렬 상태
 const sortState = ref({
@@ -270,11 +277,24 @@ const fetchData = async () => {
   }
 };
 
+// 검색 핸들러
 const handleSearch = () => {
   currentPage.value = 1;
+  
+  // 검색 시 URL 업데이트 (페이지는 1로 초기화)
+  router.replace({ 
+    query: { 
+      ...route.query, 
+      page: 1,
+      keyword: searchKeyword.value,
+      status: selectedStatus.value
+    } 
+  });
+  
   fetchData();
 };
 
+// 초기화 핸들러
 const resetSearch = () => {
   searchKeyword.value = '';
   selectedSegments.value = [];
@@ -282,6 +302,10 @@ const resetSearch = () => {
   currentPage.value = 1;
   sortState.value.sortBy = 'id';
   sortState.value.sortOrder = 'desc';
+  
+  // URL 파라미터도 깨끗하게 정리
+  router.replace({ query: {} });
+  
   fetchData();
 };
 
@@ -293,8 +317,21 @@ const handleSortChange = ({ prop, order }) => {
   }
 };
 
+// 페이지 변경 핸들러
 const handlePageChange = (page) => {
   currentPage.value = page;
+  
+  // URL 업데이트 (현재 쿼리 유지하면서 page만 변경)
+  router.replace({ 
+    query: { 
+      ...route.query, 
+      page: page,
+      // 필요한 경우 검색 조건도 함께 명시
+      keyword: searchKeyword.value,
+      status: selectedStatus.value
+    } 
+  });
+
   fetchData();
 };
 
@@ -359,9 +396,13 @@ onMounted(fetchData);
 
 <style scoped>
 .page-container {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 24px;
+  max-width: 1440px;
   margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* 헤더 */
@@ -377,6 +418,12 @@ onMounted(fetchData);
   font-weight: 700;
   color: #333;
   margin: 0;
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* 검색 & 필터 영역 */

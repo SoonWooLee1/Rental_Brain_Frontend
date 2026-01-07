@@ -151,9 +151,10 @@ onMounted(fetchList)
 
 <template>
   <div class="risk-page">
-    <h2>연체 관리</h2>
-    <p class="desc">수납 연체 추적 · 제품 반납 관리 · 리스크 관리</p>
-
+    <div class="header-row">
+     <h2 class="page-title">연체 관리</h2>
+     <p class="desc">수납 연체 추적 · 제품 반납 관리 · 리스크 관리</p>
+    </div>  
     <!-- 탭 -->
     <el-tabs v-model="activeTab" @tab-change="onTabChange">
       <el-tab-pane label="수납 연체" name="pay" />
@@ -264,22 +265,29 @@ onMounted(fetchList)
 
 <style scoped>
 .risk-page {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 24px;
+  max-width: 1440px;
   margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* 페이지 타이틀 */
-.risk-page h2 {
+
+
+.page-title {
   font-size: 24px;
   font-weight: 700;
   color: #333;
-  margin-bottom: 4px;
+  margin: 0;
 }
 
 .desc {
-  color: #888;
-  margin-bottom: 20px;
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* 탭 영역 */

@@ -25,7 +25,8 @@ import Sidebar from "@/components/Sidebar.vue";
   flex: 1;              /* 화면 남은 공간 전부 차지 */
   background: #f7f9fc;
   overflow-y: auto;
-  padding: 24px;
+  padding-left: 12px;
+  padding-right: 12px;
   
 }
 </style>

@@ -38,9 +38,22 @@
           <span>로그인 상태 유지</span>
         </div> -->
 
-        <button type="button" class="login-btn" @click.stop="login">
-          로그인
-        </button>
+        <button
+  type="button"
+  class="login-btn"
+  :class="{ isLoading: loading }"
+  :disabled="loading"
+  @click.stop="login"
+>
+  <div v-if="!loading" class="btn-text">로그인</div>
+
+  <div v-else class="btn-loading">
+    <div class="spinner"></div>
+    <div class="btn-text">로그인 중...</div>
+  </div>
+</button>
+
+
       </form>
     </div>
 
@@ -61,7 +74,6 @@
 import api from '@/api/axios';
 import { useAuthStore } from '@/store/auth.store';
 import { useToastStore } from '@/store/useToast';
-import axios from 'axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -70,20 +82,24 @@ const pwd = ref('');
 const toastStore = useToastStore();
 const authStore = useAuthStore();
 const router = useRouter();
+const loading = ref(false);
 
 const login = async () => {
+  if (loading.value) return; // 중복 클릭 방지
+
   if (!empId.value || !pwd.value) {
     toastStore.showToast('아이디와 비밀번호를 입력하세요');
     return;
   }
-  console.log(empId.value, pwd.value);
+
+  loading.value = true;
 
   try {
     const response = await api.post(`/login`, {
       empId: empId.value,
       pwd: pwd.value
-    })
-    console.log("response: ", response);
+    });
+
     const data = response.data;
 
     authStore.setUserInfo(
@@ -96,19 +112,24 @@ const login = async () => {
       data.positionId,
       data.accessToken
     );
-    toastStore.showToast('로그인 되었습니다 :' + ' ' + authStore.employeeCode + ' ' + authStore.name);
-    router.push("/");
 
-  }
-  catch (e) {
-    console.log('로그인 실패', e);
-    toastStore.showToast(e.response?.data?.error);
+    toastStore.showToast(
+      `로그인 되었습니다 : ${authStore.employeeCode} ${authStore.name}`
+    );
+
+    router.push("/");
+  } catch (e) {
+    toastStore.showToast(e.response?.data?.error || '로그인 실패');
+  } finally {
+    loading.value = false; // ⭐ 반드시 finally
   }
 };
 
 </script>
 
 <style scoped>
+
+  
 .login-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #eff6ff, #ffffff, #eef2ff);
@@ -116,6 +137,7 @@ const login = async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  
 }
 
 /* 브랜드 */
@@ -219,12 +241,89 @@ const login = async () => {
   border: none;
   border-radius: 12px;
   background: linear-gradient(90deg, #3366cc, #1447e6);
-  color: #fff;
+  color: #ffffff;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(20, 71, 230, .35);
+  box-shadow: 0 8px 20px rgba(20, 71, 230, 0.35);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
 }
+
+.btn-text {
+  color: #ffffff;
+  line-height: 1;
+}
+
+.login-btn:hover:not(:disabled):not(.isLoading) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(20, 71, 230, 0.45);
+}
+
+.login-btn:active:not(:disabled):not(.isLoading) {
+  transform: translateY(0);
+  box-shadow: 0 6px 14px rgba(20, 71, 230, 0.35);
+}
+
+.login-btn:disabled {
+  cursor: not-allowed;
+  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.06);
+}
+
+.btn-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.login-btn:disabled {
+  cursor: not-allowed;
+  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.06);
+}
+
+/* 로딩 레이아웃 */
+.btn-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-btn.isLoading {
+  pointer-events: none;
+}
+
+/* 텍스트(전역 span 영향 없음) */
+.btn-text {
+  color: #fff;
+  line-height: 1;
+}
+
+/* 스피너 */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
 
 /* 하단 */
 .security {

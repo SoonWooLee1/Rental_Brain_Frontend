@@ -202,7 +202,7 @@ const submitContract = async () => {
   .page-container {
     max-width: 1280px;      /* 너무 넓지 않게 */
     margin: 0 auto;         /* 가운데 정렬 */
-    padding: 24px 32px;     /* 좌우 여백 */
+    padding: 24px 32px;
   }
   
   /* 반응형 (태블릿/모바일) */

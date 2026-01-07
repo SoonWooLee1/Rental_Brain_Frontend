@@ -5,7 +5,7 @@
       <div class="title-area">
         <h2 class="page-title">고객 요약 분석</h2>
         <p class="page-subtitle">
-          전체 고객 현황을 기반으로 규모, 위험도, 만족도를 종합적으로 분석합니다.
+          전체 고객 현황을 기반으로 규모, 위험도, 만족도를 종합적 분석합니다
         </p>
       </div>
 

@@ -35,8 +35,7 @@
 
                 <el-alert type="info" show-icon :closable="false" class="hint">
                     <ul>
-                        <li>영문 대/소문자, 숫자, 특수문자 포함(개발 중에는 미적용되어 있습니다.)</li>
-                        <li>8자 이상 입력</li>
+                        <li>영문 대/소문자, 숫자, 특수문자 포함 8자 이상의 비밀번호 설정을 권장합니다.</li>
                     </ul>
                 </el-alert>
 
